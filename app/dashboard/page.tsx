@@ -61,12 +61,20 @@ export default function DashboardPage() {
             Your pricing management system is ready.
           </p>
           <div className="space-y-4">
-            <a
-              href="/pricing"
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md"
-            >
-              Create New Pricing Quote
-            </a>
+            <div className="flex gap-4">
+              <a
+                href="/pricing"
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md"
+              >
+                Create New Pricing Quote
+              </a>
+              <a
+                href="/quotes"
+                className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md"
+              >
+                View Saved Quotes
+              </a>
+            </div>
           </div>
         </div>
       </main>

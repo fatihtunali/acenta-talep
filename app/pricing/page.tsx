@@ -1,13 +1,14 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { signOut } from 'next-auth/react';
 
 interface ExpenseItem {
   id: string;
-  description: string;
+  location: string; // City/Location (e.g., Istanbul, Cappadocia)
+  description: string; // Hotel/Restaurant name or description
   price: number;
   vehicleCount?: number; // For vehicle-based pricing
   pricePerVehicle?: number; // Price per vehicle
@@ -29,15 +30,180 @@ interface DayExpenses {
   parking: ExpenseItem[];
 }
 
+let idCounter = 0;
+const generateId = () => {
+  idCounter++;
+  return `item-${Date.now()}-${idCounter}`;
+};
+
+// ExpenseTable component - defined outside to prevent recreation
+const ExpenseTable = ({
+  title,
+  items,
+  dayIndex,
+  category,
+  isGeneral = false,
+  color = 'blue',
+  isTransportation = false,
+  pax,
+  transportPricingMode,
+  onAddRow,
+  onDeleteRow,
+  onUpdateItem,
+  onUpdateVehicleCount,
+  onUpdatePricePerVehicle
+}: {
+  title: string;
+  items: ExpenseItem[];
+  dayIndex: number;
+  category: keyof DayExpenses;
+  isGeneral?: boolean;
+  color?: string;
+  isTransportation?: boolean;
+  pax: number;
+  transportPricingMode: 'total' | 'vehicle';
+  onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
+  onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
+  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: any) => void;
+  onUpdateVehicleCount: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
+  onUpdatePricePerVehicle: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
+}) => {
+  const colorClasses = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-500',
+    red: 'bg-red-50 text-red-700 ring-red-500',
+    green: 'bg-green-50 text-green-700 ring-green-500',
+    orange: 'bg-orange-50 text-orange-700 ring-orange-500',
+    purple: 'bg-purple-50 text-purple-700 ring-purple-500'
+  }[color];
+
+  const isVehicleMode = isTransportation && transportPricingMode === 'vehicle';
+
+  return (
+    <div className="mb-2">
+      <div className="flex items-center justify-between mb-1">
+        <h4 className={`text-xs font-bold ${colorClasses}`}>{title}</h4>
+        <button
+          onClick={() => onAddRow(dayIndex, category)}
+          className="px-1.5 py-0.5 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded"
+        >
+          +
+        </button>
+      </div>
+      <table className="w-full border-collapse text-xs">
+        <tbody>
+          {items.map((item) => {
+            const calculatedPrice = isVehicleMode
+              ? (item.vehicleCount || 0) * (item.pricePerVehicle || 0)
+              : item.price || 0;
+
+            return (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="border border-gray-300 p-0 w-32">
+                  <input
+                    type="text"
+                    value={item.location}
+                    onChange={(e) => onUpdateItem(dayIndex, category, item.id, 'location', e.target.value)}
+                    placeholder="City/Location"
+                    className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </td>
+                <td className="border border-gray-300 p-0">
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => onUpdateItem(dayIndex, category, item.id, 'description', e.target.value)}
+                    placeholder="Hotel/Restaurant/Activity Name"
+                    className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </td>
+                {isVehicleMode ? (
+                  <>
+                    <td className="border border-gray-300 p-0 w-16">
+                      <input
+                        type="number"
+                        min="0"
+                        value={!item.vehicleCount || item.vehicleCount === 0 ? '' : item.vehicleCount}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                          onUpdateVehicleCount(dayIndex, category, item.id, value);
+                        }}
+                        placeholder="Qty"
+                        className="w-full px-1.5 py-1 text-xs text-center text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="border border-gray-300 p-0 w-20">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={!item.pricePerVehicle || item.pricePerVehicle === 0 ? '' : item.pricePerVehicle}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                          onUpdatePricePerVehicle(dayIndex, category, item.id, value);
+                        }}
+                        placeholder="Price"
+                        className="w-full px-1.5 py-1 text-xs text-right text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-bold text-gray-900 bg-gray-100 w-20">
+                      ${calculatedPrice.toFixed(2)}
+                    </td>
+                  </>
+                ) : (
+                  <td className="border border-gray-300 p-0 w-24">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.price === 0 ? '' : item.price}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                        onUpdateItem(dayIndex, category, item.id, 'price', value);
+                      }}
+                      className="w-full px-1.5 py-1 text-xs text-right text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </td>
+                )}
+                {isGeneral && (
+                  <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-semibold text-red-700 bg-red-50 w-20">
+                    ${(calculatedPrice / pax).toFixed(2)}
+                  </td>
+                )}
+                <td className="border border-gray-300 p-0 text-center w-8">
+                  <button
+                    onClick={() => onDeleteRow(dayIndex, category, item.id)}
+                    disabled={items.length === 1}
+                    className="text-red-600 hover:text-red-800 px-1.5 py-1 disabled:opacity-30 text-xs"
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 export default function PricingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pax, setPax] = useState<number>(2);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [tourType, setTourType] = useState<'SIC' | 'Private'>('Private');
   const [transportPricingMode, setTransportPricingMode] = useState<'total' | 'vehicle'>('total');
+  const [markup, setMarkup] = useState<number>(0); // Markup percentage
+  const [tax, setTax] = useState<number>(0); // Tax percentage
   const [days, setDays] = useState<DayExpenses[]>([]);
+  const [quoteName, setQuoteName] = useState<string>(''); // Quote name/reference
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string>('');
+  const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -45,18 +211,86 @@ export default function PricingPage() {
     }
   }, [status, router]);
 
+  // Load quote if ?load=<id> or ?copy=<id> parameter is present
+  useEffect(() => {
+    const loadId = searchParams.get('load');
+    const copyId = searchParams.get('copy');
+    const quoteId = loadId || copyId;
+
+    if (quoteId && status === 'authenticated') {
+      loadQuoteData(parseInt(quoteId), !!copyId);
+    }
+  }, [searchParams, status]);
+
+  const loadQuoteData = async (quoteId: number, isCopy: boolean) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/quotes/${quoteId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setPax(data.pax);
+        setStartDate(data.startDate.split('T')[0]); // Format date
+        setEndDate(data.endDate.split('T')[0]); // Format date
+        setTourType(data.tourType);
+        setTransportPricingMode(data.transportPricingMode);
+        setMarkup(data.markup);
+        setTax(data.tax);
+
+        // Load days with new IDs
+        const loadedDays = data.days.map((day: any) => ({
+          ...day,
+          hotelAccommodation: day.hotelAccommodation.map((item: any) => ({ ...item, id: generateId() })),
+          meals: day.meals.map((item: any) => ({ ...item, id: generateId() })),
+          entranceFees: day.entranceFees.map((item: any) => ({ ...item, id: generateId() })),
+          sicTourCost: day.sicTourCost.map((item: any) => ({ ...item, id: generateId() })),
+          tips: day.tips.map((item: any) => ({ ...item, id: generateId() })),
+          transportation: day.transportation.map((item: any) => ({ ...item, id: generateId() })),
+          guide: day.guide.map((item: any) => ({ ...item, id: generateId() })),
+          guideDriverAccommodation: day.guideDriverAccommodation.map((item: any) => ({ ...item, id: generateId() })),
+          parking: day.parking.map((item: any) => ({ ...item, id: generateId() }))
+        }));
+
+        setDays(loadedDays);
+
+        if (isCopy) {
+          // For copy, add "-Copy" suffix and clear the loaded ID
+          setQuoteName(data.quoteName + ' - Copy');
+          setLoadedQuoteId(null);
+          setSaveMessage('📋 Quote copied! Edit and save as new quote.');
+          setTimeout(() => setSaveMessage(''), 3000);
+        } else {
+          // For edit, keep the name and ID
+          setQuoteName(data.quoteName);
+          setLoadedQuoteId(quoteId);
+          setSaveMessage('📝 Quote loaded for editing.');
+          setTimeout(() => setSaveMessage(''), 3000);
+        }
+      } else {
+        setSaveMessage('❌ Failed to load quote');
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error loading quote:', error);
+      setSaveMessage('❌ Error loading quote');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const createEmptyDay = (dayNum: number, dateStr: string): DayExpenses => ({
     dayNumber: dayNum,
     date: dateStr,
-    hotelAccommodation: [{ id: `hotel-${Date.now()}`, description: '', price: 0 }],
-    meals: [{ id: `meal-${Date.now()}`, description: '', price: 0 }],
-    entranceFees: [{ id: `entrance-${Date.now()}`, description: '', price: 0 }],
-    sicTourCost: [{ id: `sic-${Date.now()}`, description: '', price: 0 }],
-    tips: [{ id: `tip-${Date.now()}`, description: '', price: 0 }],
-    transportation: [{ id: `transport-${Date.now()}`, description: '', price: 0 }],
-    guide: [{ id: `guide-${Date.now()}`, description: '', price: 0 }],
-    guideDriverAccommodation: [{ id: `gdaccom-${Date.now()}`, description: '', price: 0 }],
-    parking: [{ id: `parking-${Date.now()}`, description: '', price: 0 }]
+    hotelAccommodation: [{ id: generateId(), location: '', description: '', price: 0 }],
+    meals: [{ id: generateId(), location: '', description: '', price: 0 }],
+    entranceFees: [{ id: generateId(), location: '', description: '', price: 0 }],
+    sicTourCost: [{ id: generateId(), location: '', description: '', price: 0 }],
+    tips: [{ id: generateId(), location: '', description: '', price: 0 }],
+    transportation: [{ id: generateId(), location: '', description: '', price: 0 }],
+    guide: [{ id: generateId(), location: '', description: '', price: 0 }],
+    guideDriverAccommodation: [{ id: generateId(), location: '', description: '', price: 0 }],
+    parking: [{ id: generateId(), location: '', description: '', price: 0 }]
   });
 
   useEffect(() => {
@@ -81,35 +315,68 @@ export default function PricingPage() {
     }
   }, [startDate, endDate]);
 
-  const addRow = (dayIndex: number, category: keyof DayExpenses) => {
-    const newDays = [...days];
-    const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
-    categoryArray.push({
-      id: `${category}-${Date.now()}`,
-      description: '',
-      price: 0
+  const addRow = useCallback((dayIndex: number, category: keyof DayExpenses) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      categoryArray.push({
+        id: generateId(),
+        location: '',
+        description: '',
+        price: 0
+      });
+      return newDays;
     });
-    setDays(newDays);
-  };
+  }, []);
 
-  const deleteRow = (dayIndex: number, category: keyof DayExpenses, itemId: string) => {
-    const newDays = [...days];
-    const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
-    if (categoryArray.length > 1) {
-      newDays[dayIndex][category] = categoryArray.filter(e => e.id !== itemId) as any;
-      setDays(newDays);
-    }
-  };
+  const deleteRow = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      if (categoryArray.length > 1) {
+        newDays[dayIndex][category] = categoryArray.filter(e => e.id !== itemId) as any;
+      }
+      return newDays;
+    });
+  }, []);
 
-  const updateItem = (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'description' | 'price', value: any) => {
-    const newDays = [...days];
-    const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
-    const item = categoryArray.find(e => e.id === itemId);
-    if (item) {
-      item[field] = value;
-      setDays(newDays);
-    }
-  };
+  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: any) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      const item = categoryArray.find(e => e.id === itemId);
+      if (item) {
+        item[field] = value;
+      }
+      return newDays;
+    });
+  }, []);
+
+  const updateVehicleCount = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      const item = categoryArray.find(e => e.id === itemId);
+      if (item) {
+        item.vehicleCount = value;
+        item.price = (item.vehicleCount || 0) * (item.pricePerVehicle || 0);
+      }
+      return newDays;
+    });
+  }, []);
+
+  const updatePricePerVehicle = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      const item = categoryArray.find(e => e.id === itemId);
+      if (item) {
+        item.pricePerVehicle = value;
+        item.price = (item.vehicleCount || 0) * (item.pricePerVehicle || 0);
+      }
+      return newDays;
+    });
+  }, []);
 
   const calculateDayTotals = (day: DayExpenses) => {
     const perPersonTotal =
@@ -128,6 +395,84 @@ export default function PricingPage() {
     return { perPersonTotal, generalTotal };
   };
 
+  const saveQuote = async () => {
+    console.log('Save button clicked');
+
+    if (!quoteName.trim()) {
+      setSaveMessage('Please enter a quote name');
+      setTimeout(() => setSaveMessage(''), 3000);
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      setSaveMessage('Please select start and end dates');
+      setTimeout(() => setSaveMessage(''), 3000);
+      return;
+    }
+
+    if (days.length === 0) {
+      setSaveMessage('Please generate days by selecting dates');
+      setTimeout(() => setSaveMessage(''), 3000);
+      return;
+    }
+
+    console.log('Validation passed, preparing to save...');
+    console.log('Quote data:', { quoteName, startDate, endDate, tourType, pax, days: days.length });
+
+    setIsSaving(true);
+    setSaveMessage('');
+
+    try {
+      const isUpdate = loadedQuoteId !== null;
+      const url = isUpdate ? `/api/quotes/${loadedQuoteId}` : '/api/quotes';
+      const method = isUpdate ? 'PUT' : 'POST';
+
+      console.log(`Sending ${method} request to ${url}`);
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quoteName,
+          startDate,
+          endDate,
+          tourType,
+          pax,
+          markup,
+          tax,
+          transportPricingMode,
+          days
+        }),
+      });
+
+      console.log('Response status:', response.status);
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (response.ok) {
+        if (isUpdate) {
+          setSaveMessage('✅ Quote updated successfully!');
+        } else {
+          setSaveMessage('✅ Quote saved successfully!');
+          setLoadedQuoteId(data.quoteId); // Set the ID for future updates
+        }
+        setTimeout(() => setSaveMessage(''), 3000);
+      } else {
+        setSaveMessage(`❌ Error: ${data.error}`);
+        setTimeout(() => setSaveMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error saving quote:', error);
+      setSaveMessage(`❌ Failed to save quote: ${error.message}`);
+      setTimeout(() => setSaveMessage(''), 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const calculateGrandTotals = () => {
     let totalPerPerson = 0;
     let totalGeneral = 0;
@@ -139,156 +484,31 @@ export default function PricingPage() {
     });
 
     const generalPerPerson = pax > 0 ? totalGeneral / pax : 0;
-    const finalPerPerson = totalPerPerson + generalPerPerson;
+    const costPerPerson = totalPerPerson + generalPerPerson;
+    const subtotal = costPerPerson * pax;
+
+    // Apply markup
+    const markupAmount = subtotal * (markup / 100);
+    const afterMarkup = subtotal + markupAmount;
+
+    // Apply tax
+    const taxAmount = afterMarkup * (tax / 100);
+    const grandTotal = afterMarkup + taxAmount;
+
+    const finalPerPerson = grandTotal / pax;
 
     return {
       totalPerPerson,
       totalGeneral,
       generalPerPerson,
-      finalPerPerson,
-      grandTotal: finalPerPerson * pax
+      costPerPerson,
+      subtotal,
+      markupAmount,
+      afterMarkup,
+      taxAmount,
+      grandTotal,
+      finalPerPerson
     };
-  };
-
-  const ExpenseTable = ({
-    title,
-    items,
-    dayIndex,
-    category,
-    isGeneral = false,
-    color = 'blue',
-    isTransportation = false
-  }: {
-    title: string;
-    items: ExpenseItem[];
-    dayIndex: number;
-    category: keyof DayExpenses;
-    isGeneral?: boolean;
-    color?: string;
-    isTransportation?: boolean;
-  }) => {
-    const colorClasses = {
-      blue: 'bg-blue-50 text-blue-700 ring-blue-500',
-      red: 'bg-red-50 text-red-700 ring-red-500',
-      green: 'bg-green-50 text-green-700 ring-green-500',
-      orange: 'bg-orange-50 text-orange-700 ring-orange-500',
-      purple: 'bg-purple-50 text-purple-700 ring-purple-500'
-    }[color];
-
-    const isVehicleMode = isTransportation && transportPricingMode === 'vehicle';
-
-    return (
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-1">
-          <h4 className={`text-xs font-bold ${colorClasses}`}>{title}</h4>
-          <button
-            onClick={() => addRow(dayIndex, category)}
-            className="px-1.5 py-0.5 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded"
-          >
-            +
-          </button>
-        </div>
-        <table className="w-full border-collapse text-xs">
-          <tbody>
-            {items.map((item) => {
-              const calculatedPrice = isVehicleMode
-                ? (item.vehicleCount || 0) * (item.pricePerVehicle || 0)
-                : item.price || 0;
-
-              return (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 p-0">
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => updateItem(dayIndex, category, item.id, 'description', e.target.value)}
-                      placeholder="Description"
-                      className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    />
-                  </td>
-                  {isVehicleMode ? (
-                    <>
-                      <td className="border border-gray-300 p-0 w-16">
-                        <input
-                          type="number"
-                          min="0"
-                          value={!item.vehicleCount || item.vehicleCount === 0 ? '' : item.vehicleCount}
-                          onChange={(e) => {
-                            const newDays = [...days];
-                            const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
-                            const foundItem = categoryArray.find(i => i.id === item.id);
-                            if (foundItem) {
-                              const value = e.target.value === '' ? 0 : parseInt(e.target.value);
-                              foundItem.vehicleCount = value;
-                              foundItem.price = (foundItem.vehicleCount || 0) * (foundItem.pricePerVehicle || 0);
-                              setDays(newDays);
-                            }
-                          }}
-                          placeholder="Qty"
-                          className="w-full px-1.5 py-1 text-xs text-center text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        />
-                      </td>
-                      <td className="border border-gray-300 p-0 w-20">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={!item.pricePerVehicle || item.pricePerVehicle === 0 ? '' : item.pricePerVehicle}
-                          onChange={(e) => {
-                            const newDays = [...days];
-                            const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
-                            const foundItem = categoryArray.find(i => i.id === item.id);
-                            if (foundItem) {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              foundItem.pricePerVehicle = value;
-                              foundItem.price = (foundItem.vehicleCount || 0) * (foundItem.pricePerVehicle || 0);
-                              setDays(newDays);
-                            }
-                          }}
-                          placeholder="Price"
-                          className="w-full px-1.5 py-1 text-xs text-right text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-bold text-gray-900 bg-gray-100 w-20">
-                        ${calculatedPrice.toFixed(2)}
-                      </td>
-                    </>
-                  ) : (
-                    <td className="border border-gray-300 p-0 w-24">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={item.price === 0 ? '' : item.price}
-                        onChange={(e) => {
-                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                          updateItem(dayIndex, category, item.id, 'price', value);
-                        }}
-                        className="w-full px-1.5 py-1 text-xs text-right text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
-                    </td>
-                  )}
-                  {isGeneral && (
-                    <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-semibold text-red-700 bg-red-50 w-20">
-                      ${(calculatedPrice / pax).toFixed(2)}
-                    </td>
-                  )}
-                  <td className="border border-gray-300 p-0 text-center w-8">
-                    <button
-                      onClick={() => deleteRow(dayIndex, category, item.id)}
-                      disabled={items.length === 1}
-                      className="text-red-600 hover:text-red-800 px-1.5 py-1 disabled:opacity-30 text-xs"
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
   };
 
   if (status === 'loading') {
@@ -314,6 +534,7 @@ export default function PricingPage() {
             <div className="flex items-center space-x-6">
               <h1 className="text-lg font-semibold text-gray-900">Tour Pricing Calculator</h1>
               <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
+              <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</a>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>
@@ -329,9 +550,45 @@ export default function PricingPage() {
       </nav>
 
       <main className="max-w-full mx-auto px-4 py-3">
+        {/* Quote Name and Save Section */}
+        <div className="mb-3 bg-white shadow rounded-lg p-3">
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Quote Name / Reference (e.g., Company Code + Date)
+              </label>
+              <input
+                type="text"
+                value={quoteName}
+                onChange={(e) => setQuoteName(e.target.value)}
+                placeholder="e.g., ABC123-2025-03-15"
+                className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm"
+              />
+            </div>
+            <button
+              onClick={saveQuote}
+              disabled={isSaving}
+              className={`px-6 py-1.5 font-semibold text-white rounded text-sm ${
+                isSaving
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              {isSaving ? 'Saving...' : '💾 Save Quote'}
+            </button>
+            {saveMessage && (
+              <div className={`px-3 py-1.5 rounded text-sm font-medium ${
+                saveMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {saveMessage}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Tour Details */}
         <div className="mb-3 bg-white shadow rounded-lg p-3">
-          <div className="grid grid-cols-6 gap-3 items-end">
+          <div className="grid grid-cols-8 gap-3 items-end">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Start Date</label>
               <input
@@ -381,6 +638,28 @@ export default function PricingPage() {
                 <option value="total">Total Cost</option>
                 <option value="vehicle">Per Vehicle</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Markup %</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={markup}
+                onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)}
+                className="w-20 px-2 py-1.5 border-2 border-green-500 rounded text-gray-900 font-bold text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Tax %</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={tax}
+                onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
+                className="w-20 px-2 py-1.5 border-2 border-red-500 rounded text-gray-900 font-bold text-sm"
+              />
             </div>
             <div className="flex items-center gap-3 text-xs">
               <div>
@@ -474,6 +753,13 @@ export default function PricingPage() {
                     dayIndex={dayIndex}
                     category="hotelAccommodation"
                     color="blue"
+                    pax={pax}
+                    transportPricingMode={transportPricingMode}
+                    onAddRow={addRow}
+                    onDeleteRow={deleteRow}
+                    onUpdateItem={updateItem}
+                    onUpdateVehicleCount={updateVehicleCount}
+                    onUpdatePricePerVehicle={updatePricePerVehicle}
                   />
 
                   <ExpenseTable
@@ -482,6 +768,13 @@ export default function PricingPage() {
                     dayIndex={dayIndex}
                     category="meals"
                     color="green"
+                    pax={pax}
+                    transportPricingMode={transportPricingMode}
+                    onAddRow={addRow}
+                    onDeleteRow={deleteRow}
+                    onUpdateItem={updateItem}
+                    onUpdateVehicleCount={updateVehicleCount}
+                    onUpdatePricePerVehicle={updatePricePerVehicle}
                   />
 
                   <ExpenseTable
@@ -490,6 +783,13 @@ export default function PricingPage() {
                     dayIndex={dayIndex}
                     category="entranceFees"
                     color="orange"
+                    pax={pax}
+                    transportPricingMode={transportPricingMode}
+                    onAddRow={addRow}
+                    onDeleteRow={deleteRow}
+                    onUpdateItem={updateItem}
+                    onUpdateVehicleCount={updateVehicleCount}
+                    onUpdatePricePerVehicle={updatePricePerVehicle}
                   />
 
                   {tourType === 'SIC' && (
@@ -499,6 +799,13 @@ export default function PricingPage() {
                       dayIndex={dayIndex}
                       category="sicTourCost"
                       color="purple"
+                      pax={pax}
+                      transportPricingMode={transportPricingMode}
+                      onAddRow={addRow}
+                      onDeleteRow={deleteRow}
+                      onUpdateItem={updateItem}
+                      onUpdateVehicleCount={updateVehicleCount}
+                      onUpdatePricePerVehicle={updatePricePerVehicle}
                     />
                   )}
 
@@ -508,6 +815,13 @@ export default function PricingPage() {
                     dayIndex={dayIndex}
                     category="tips"
                     color="green"
+                    pax={pax}
+                    transportPricingMode={transportPricingMode}
+                    onAddRow={addRow}
+                    onDeleteRow={deleteRow}
+                    onUpdateItem={updateItem}
+                    onUpdateVehicleCount={updateVehicleCount}
+                    onUpdatePricePerVehicle={updatePricePerVehicle}
                   />
 
                   <div className="mt-2 p-2 bg-blue-100 rounded">
@@ -532,6 +846,13 @@ export default function PricingPage() {
                     isGeneral={true}
                     isTransportation={true}
                     color="red"
+                    pax={pax}
+                    transportPricingMode={transportPricingMode}
+                    onAddRow={addRow}
+                    onDeleteRow={deleteRow}
+                    onUpdateItem={updateItem}
+                    onUpdateVehicleCount={updateVehicleCount}
+                    onUpdatePricePerVehicle={updatePricePerVehicle}
                   />
 
                   {/* Private Tour Only Expenses */}
@@ -544,6 +865,13 @@ export default function PricingPage() {
                         category="guide"
                         isGeneral={true}
                         color="blue"
+                        pax={pax}
+                        transportPricingMode={transportPricingMode}
+                        onAddRow={addRow}
+                        onDeleteRow={deleteRow}
+                        onUpdateItem={updateItem}
+                        onUpdateVehicleCount={updateVehicleCount}
+                        onUpdatePricePerVehicle={updatePricePerVehicle}
                       />
 
                       <ExpenseTable
@@ -553,6 +881,13 @@ export default function PricingPage() {
                         category="parking"
                         isGeneral={true}
                         color="orange"
+                        pax={pax}
+                        transportPricingMode={transportPricingMode}
+                        onAddRow={addRow}
+                        onDeleteRow={deleteRow}
+                        onUpdateItem={updateItem}
+                        onUpdateVehicleCount={updateVehicleCount}
+                        onUpdatePricePerVehicle={updatePricePerVehicle}
                       />
 
                       <ExpenseTable
@@ -562,6 +897,13 @@ export default function PricingPage() {
                         category="guideDriverAccommodation"
                         isGeneral={true}
                         color="purple"
+                        pax={pax}
+                        transportPricingMode={transportPricingMode}
+                        onAddRow={addRow}
+                        onDeleteRow={deleteRow}
+                        onUpdateItem={updateItem}
+                        onUpdateVehicleCount={updateVehicleCount}
+                        onUpdatePricePerVehicle={updatePricePerVehicle}
                       />
                     </>
                   )}
@@ -577,6 +919,59 @@ export default function PricingPage() {
             </div>
           );
         })}
+
+        {/* COST BREAKDOWN */}
+        {days.length > 0 && (
+          <div className="bg-white shadow rounded-lg p-3 mb-3">
+            <h2 className="text-base font-bold text-gray-900 mb-3">💰 Cost Breakdown</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Per Person Expenses:</span>
+                  <span className="font-semibold text-blue-700">${totals.totalPerPerson.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">General Expenses Total:</span>
+                  <span className="font-semibold text-red-700">${totals.totalGeneral.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">General Per Person ({pax} PAX):</span>
+                  <span className="font-semibold text-red-700">${totals.generalPerPerson.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t">
+                  <span className="text-gray-700 font-semibold">Cost Per Person:</span>
+                  <span className="font-bold text-gray-900">${totals.costPerPerson.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700 font-semibold">Subtotal ({pax} PAX):</span>
+                  <span className="font-bold text-gray-900">${totals.subtotal.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Markup ({markup}%):</span>
+                  <span className="font-semibold text-green-700">+${totals.markupAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">After Markup:</span>
+                  <span className="font-semibold text-gray-700">${totals.afterMarkup.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tax ({tax}%):</span>
+                  <span className="font-semibold text-red-700">+${totals.taxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-lg pt-2 border-t">
+                  <span className="text-gray-900 font-bold">Grand Total:</span>
+                  <span className="font-bold text-green-600">${totals.grandTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm bg-indigo-50 p-2 rounded">
+                  <span className="text-indigo-700 font-semibold">Final Per Person:</span>
+                  <span className="font-bold text-indigo-700">${totals.finalPerPerson.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* PAX SLABS */}
         {days.length > 0 && (
@@ -596,8 +991,13 @@ export default function PricingPage() {
                 <tbody>
                   {paxSlabs.map((slabPax) => {
                     const generalPerPerson = slabPax > 0 ? totals.totalGeneral / slabPax : 0;
-                    const finalPerPerson = totals.totalPerPerson + generalPerPerson;
-                    const total = finalPerPerson * slabPax;
+                    const costPerPerson = totals.totalPerPerson + generalPerPerson;
+                    const subtotal = costPerPerson * slabPax;
+                    const markupAmount = subtotal * (markup / 100);
+                    const afterMarkup = subtotal + markupAmount;
+                    const taxAmount = afterMarkup * (tax / 100);
+                    const total = afterMarkup + taxAmount;
+                    const finalPerPerson = total / slabPax;
                     const isCurrentPax = slabPax === pax;
 
                     return (

@@ -1076,9 +1076,6 @@ function PricingPageContent() {
               <h1 className="text-lg font-semibold text-gray-900">Tour Pricing Calculator</h1>
               <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
               <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</a>
-              <a href="/hotels" className="text-sm text-gray-600 hover:text-gray-900">Hotels</a>
-              <a href="/sightseeing" className="text-sm text-gray-600 hover:text-gray-900">Entrance Fees</a>
-              <a href="/transfers" className="text-sm text-gray-600 hover:text-gray-900">Transfers</a>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>

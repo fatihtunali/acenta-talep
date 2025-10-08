@@ -53,28 +53,74 @@ export default function DashboardPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white shadow rounded-lg p-6">
+        {/* Pricing Management Section */}
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Welcome to Dashboard
+            📋 Pricing & Quotes
           </h2>
           <p className="text-gray-600 mb-6">
-            Your pricing management system is ready.
+            Create and manage your tour pricing quotes
           </p>
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <a
-                href="/pricing"
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md"
-              >
-                Create New Pricing Quote
-              </a>
-              <a
-                href="/quotes"
-                className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md"
-              >
-                View Saved Quotes
-              </a>
-            </div>
+          <div className="flex gap-4">
+            <a
+              href="/pricing"
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md text-lg"
+            >
+              ➕ Create New Quote
+            </a>
+            <a
+              href="/quotes"
+              className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md text-lg"
+            >
+              📂 View Saved Quotes
+            </a>
+          </div>
+        </div>
+
+        {/* Database Management Section */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            🗄️ Database Management
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Manage your pricing databases for hotels, tours, transfers, and entrance fees
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a
+              href="/hotels"
+              className="flex flex-col items-center justify-center p-6 bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 rounded-lg transition-colors"
+            >
+              <div className="text-4xl mb-3">🏨</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Hotels</h3>
+              <p className="text-sm text-gray-600 text-center">Manage hotel pricing by city</p>
+            </a>
+
+            <a
+              href="/sic-tours"
+              className="flex flex-col items-center justify-center p-6 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg transition-colors"
+            >
+              <div className="text-4xl mb-3">🚌</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">SIC Tours</h3>
+              <p className="text-sm text-gray-600 text-center">Shared in-coach tour pricing</p>
+            </a>
+
+            <a
+              href="/transfers"
+              className="flex flex-col items-center justify-center p-6 bg-green-50 hover:bg-green-100 border-2 border-green-200 rounded-lg transition-colors"
+            >
+              <div className="text-4xl mb-3">🚗</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Transfers</h3>
+              <p className="text-sm text-gray-600 text-center">Airport & city transfers</p>
+            </a>
+
+            <a
+              href="/sightseeing"
+              className="flex flex-col items-center justify-center p-6 bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 rounded-lg transition-colors"
+            >
+              <div className="text-4xl mb-3">🎫</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Entrance Fees</h3>
+              <p className="text-sm text-gray-600 text-center">Sightseeing & attractions</p>
+            </a>
           </div>
         </div>
       </main>

@@ -513,7 +513,9 @@ function PricingPageContent() {
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
   const [showPricingTable, setShowPricingTable] = useState<boolean>(false);
   const [hotels, setHotels] = useState<Array<{
-    id: number;
+    id: string; // Composite ID: hotelId-pricingId
+    hotel_id: number;
+    pricing_id: number;
     city: string;
     hotel_name: string;
     category: string;
@@ -556,7 +558,25 @@ function PricingPageContent() {
       const response = await fetch('/api/hotels');
       const data = await response.json();
       if (response.ok) {
-        setHotels(data.hotels);
+        // Flatten the nested structure: each hotel with each pricing period becomes a separate entry
+        const flattenedHotels = data.hotels.flatMap((hotel: any) =>
+          hotel.pricing.map((pricing: any) => ({
+            id: `${hotel.id}-${pricing.id}`, // Composite ID
+            hotel_id: hotel.id,
+            pricing_id: pricing.id,
+            city: hotel.city,
+            hotel_name: hotel.hotel_name,
+            category: hotel.category,
+            start_date: pricing.start_date,
+            end_date: pricing.end_date,
+            pp_dbl_rate: pricing.pp_dbl_rate,
+            single_supplement: pricing.single_supplement,
+            child_0to2: pricing.child_0to2,
+            child_3to5: pricing.child_3to5,
+            child_6to11: pricing.child_6to11
+          }))
+        );
+        setHotels(flattenedHotels);
       }
     } catch (error) {
       console.error('Error loading hotels:', error);

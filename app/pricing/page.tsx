@@ -296,6 +296,7 @@ function PricingPageContent() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
+  const [showPricingTable, setShowPricingTable] = useState<boolean>(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -479,13 +480,33 @@ function PricingPageContent() {
       day.sicTourCost.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.tips.reduce((sum, e) => sum + (e.price || 0), 0);
 
+    const singleSupplementTotal =
+      day.hotelAccommodation.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
+      day.meals.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
+      day.entranceFees.reduce((sum, e) => sum + (e.singleSupplement || 0), 0);
+
+    const child0to2Total =
+      day.hotelAccommodation.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+      day.meals.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+      day.entranceFees.reduce((sum, e) => sum + (e.child0to2 || 0), 0);
+
+    const child3to5Total =
+      day.hotelAccommodation.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+      day.meals.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+      day.entranceFees.reduce((sum, e) => sum + (e.child3to5 || 0), 0);
+
+    const child6to11Total =
+      day.hotelAccommodation.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+      day.meals.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+      day.entranceFees.reduce((sum, e) => sum + (e.child6to11 || 0), 0);
+
     const generalTotal =
       day.transportation.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.guide.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.guideDriverAccommodation.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.parking.reduce((sum, e) => sum + (e.price || 0), 0);
 
-    return { perPersonTotal, generalTotal };
+    return { perPersonTotal, singleSupplementTotal, child0to2Total, child3to5Total, child6to11Total, generalTotal };
   };
 
   const saveQuote = async () => {
@@ -568,11 +589,19 @@ function PricingPageContent() {
 
   const calculateGrandTotals = () => {
     let totalPerPerson = 0;
+    let totalSingleSupplement = 0;
+    let totalChild0to2 = 0;
+    let totalChild3to5 = 0;
+    let totalChild6to11 = 0;
     let totalGeneral = 0;
 
     days.forEach(day => {
       const dayTotals = calculateDayTotals(day);
       totalPerPerson += dayTotals.perPersonTotal;
+      totalSingleSupplement += dayTotals.singleSupplementTotal;
+      totalChild0to2 += dayTotals.child0to2Total;
+      totalChild3to5 += dayTotals.child3to5Total;
+      totalChild6to11 += dayTotals.child6to11Total;
       totalGeneral += dayTotals.generalTotal;
     });
 
@@ -592,6 +621,10 @@ function PricingPageContent() {
 
     return {
       totalPerPerson,
+      totalSingleSupplement,
+      totalChild0to2,
+      totalChild3to5,
+      totalChild6to11,
       totalGeneral,
       generalPerPerson,
       costPerPerson,
@@ -602,6 +635,93 @@ function PricingPageContent() {
       grandTotal,
       finalPerPerson
     };
+  };
+
+  // Copy pricing table to clipboard
+  const copyPricingTableToClipboard = () => {
+    const tableData = calculatePricingTable();
+
+    // Create tab-separated text for easy paste into Word/Excel
+    let text = 'PAX\tPer Person (DBL)\tSingle Suppl.\tChild 0-2 yrs\tChild 3-5 yrs\tChild 6-11 yrs\n';
+
+    tableData.forEach(row => {
+      text += `${row.pax}\t$${row.adultPerPerson.toFixed(2)}\t$${row.singleSupplement.toFixed(2)}\t$${row.child0to2.toFixed(2)}\t$${row.child3to5.toFixed(2)}\t$${row.child6to11.toFixed(2)}\n`;
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+      setSaveMessage('✅ Pricing table copied to clipboard!');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }).catch(() => {
+      setSaveMessage('❌ Failed to copy table');
+      setTimeout(() => setSaveMessage(''), 3000);
+    });
+  };
+
+  // Calculate pricing for different PAX slabs
+  const calculatePricingTable = () => {
+    const paxSlabs = tourType === 'SIC' ? [2, 4, 6, 8] : [pax];
+
+    let totalPerPerson = 0;
+    let totalSingleSupplement = 0;
+    let totalChild0to2 = 0;
+    let totalChild3to5 = 0;
+    let totalChild6to11 = 0;
+    let totalGeneral = 0;
+
+    days.forEach(day => {
+      const dayTotals = calculateDayTotals(day);
+      totalPerPerson += dayTotals.perPersonTotal;
+      totalSingleSupplement += dayTotals.singleSupplementTotal;
+      totalChild0to2 += dayTotals.child0to2Total;
+      totalChild3to5 += dayTotals.child3to5Total;
+      totalChild6to11 += dayTotals.child6to11Total;
+      totalGeneral += dayTotals.generalTotal;
+    });
+
+    return paxSlabs.map(currentPax => {
+      const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
+
+      // Adult pricing
+      const adultCost = totalPerPerson + generalPerPerson;
+      const adultSubtotal = adultCost * currentPax;
+      const adultWithMarkup = adultSubtotal * (1 + markup / 100);
+      const adultFinal = adultWithMarkup * (1 + tax / 100);
+      const adultPerPerson = adultFinal / currentPax;
+
+      // Single supplement (total for trip, with markup and tax)
+      const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
+      const sglFinal = sglWithMarkup * (1 + tax / 100);
+
+      // Child 0-2
+      const child0to2Cost = totalChild0to2 + generalPerPerson;
+      const child0to2Subtotal = child0to2Cost * currentPax;
+      const child0to2WithMarkup = child0to2Subtotal * (1 + markup / 100);
+      const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
+      const child0to2PerPerson = child0to2Final / currentPax;
+
+      // Child 3-5
+      const child3to5Cost = totalChild3to5 + generalPerPerson;
+      const child3to5Subtotal = child3to5Cost * currentPax;
+      const child3to5WithMarkup = child3to5Subtotal * (1 + markup / 100);
+      const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
+      const child3to5PerPerson = child3to5Final / currentPax;
+
+      // Child 6-11
+      const child6to11Cost = totalChild6to11 + generalPerPerson;
+      const child6to11Subtotal = child6to11Cost * currentPax;
+      const child6to11WithMarkup = child6to11Subtotal * (1 + markup / 100);
+      const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
+      const child6to11PerPerson = child6to11Final / currentPax;
+
+      return {
+        pax: currentPax,
+        adultPerPerson: adultPerPerson,
+        singleSupplement: sglFinal,
+        child0to2: child0to2PerPerson,
+        child3to5: child3to5PerPerson,
+        child6to11: child6to11PerPerson
+      };
+    });
   };
 
   if (status === 'loading') {
@@ -1125,11 +1245,111 @@ function PricingPageContent() {
           </div>
         )}
 
-        <div className="flex justify-end">
-          <button className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow">
-            Save Quote
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowPricingTable(true)}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow"
+          >
+            📊 Generate Pricing Table
+          </button>
+          <button
+            onClick={saveQuote}
+            disabled={isSaving}
+            className={`px-6 py-2 text-white font-bold rounded shadow ${
+              isSaving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            {isSaving ? 'Saving...' : '💾 Save Quote'}
           </button>
         </div>
+
+        {/* Pricing Table Modal */}
+        {showPricingTable && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Pricing Table for Word</h2>
+                <button
+                  onClick={() => setShowPricingTable(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">
+                  {tourType === 'SIC' ? 'SIC Tour - Fixed PAX slabs (2, 4, 6, 8)' : `Private Tour - ${pax} PAX`}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Markup: {markup}% | Tax: {tax}%
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-indigo-600 text-white">
+                      <th className="border border-gray-300 px-4 py-2 text-left">PAX</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">Per Person (DBL)</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">Single Suppl.</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">Child 0-2 yrs</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">Child 3-5 yrs</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">Child 6-11 yrs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calculatePricingTable().map((row, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-2 font-semibold">{row.pax}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                          ${row.adultPerPerson.toFixed(2)}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2 text-right text-orange-700">
+                          ${row.singleSupplement.toFixed(2)}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
+                          ${row.child0to2.toFixed(2)}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
+                          ${row.child3to5.toFixed(2)}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
+                          ${row.child6to11.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-6 flex gap-3 justify-end">
+                <button
+                  onClick={copyPricingTableToClipboard}
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow"
+                >
+                  📋 Copy to Clipboard
+                </button>
+                <button
+                  onClick={() => setShowPricingTable(false)}
+                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded shadow"
+                >
+                  Close
+                </button>
+              </div>
+
+              {saveMessage && (
+                <div className={`mt-4 px-4 py-2 rounded text-center ${
+                  saveMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {saveMessage}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

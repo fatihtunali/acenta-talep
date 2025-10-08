@@ -4,7 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-// GET - List all hotels for the current user, optionally filtered by city
+// GET - List all hotels with their pricing periods
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,34 +17,71 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const city = searchParams.get('city');
 
-    let query = `SELECT * FROM hotels WHERE user_id = ?`;
+    let query = `
+      SELECT
+        h.id as hotel_id,
+        h.city,
+        h.hotel_name,
+        h.category,
+        h.created_at as hotel_created_at,
+        hp.id as pricing_id,
+        hp.start_date,
+        hp.end_date,
+        hp.pp_dbl_rate,
+        hp.single_supplement,
+        hp.child_0to2,
+        hp.child_3to5,
+        hp.child_6to11,
+        hp.created_at as pricing_created_at
+      FROM hotels h
+      LEFT JOIN hotel_pricing hp ON h.id = hp.hotel_id
+      WHERE h.user_id = ?
+    `;
     const params: (number | string)[] = [userId];
 
     if (city) {
-      query += ` AND city LIKE ?`;
+      query += ` AND h.city LIKE ?`;
       params.push(`%${city}%`);
     }
 
-    query += ` ORDER BY city, hotel_name`;
+    query += ` ORDER BY h.city, h.hotel_name, hp.start_date`;
 
-    const [hotelRows] = await pool.execute<RowDataPacket[]>(query, params);
+    const [rows] = await pool.execute<RowDataPacket[]>(query, params);
 
-    // Convert decimal values to numbers
-    const hotels = hotelRows.map(hotel => ({
-      id: hotel.id,
-      city: hotel.city,
-      hotel_name: hotel.hotel_name,
-      category: hotel.category,
-      start_date: hotel.start_date,
-      end_date: hotel.end_date,
-      pp_dbl_rate: parseFloat(hotel.pp_dbl_rate),
-      single_supplement: hotel.single_supplement ? parseFloat(hotel.single_supplement) : null,
-      child_0to2: hotel.child_0to2 ? parseFloat(hotel.child_0to2) : null,
-      child_3to5: hotel.child_3to5 ? parseFloat(hotel.child_3to5) : null,
-      child_6to11: hotel.child_6to11 ? parseFloat(hotel.child_6to11) : null,
-      created_at: hotel.created_at,
-      updated_at: hotel.updated_at
-    }));
+    // Group pricing periods by hotel
+    const hotelsMap = new Map();
+
+    rows.forEach((row) => {
+      const hotelId = row.hotel_id;
+
+      if (!hotelsMap.has(hotelId)) {
+        hotelsMap.set(hotelId, {
+          id: hotelId,
+          city: row.city,
+          hotel_name: row.hotel_name,
+          category: row.category,
+          created_at: row.hotel_created_at,
+          pricing: []
+        });
+      }
+
+      // Add pricing period if it exists
+      if (row.pricing_id) {
+        hotelsMap.get(hotelId).pricing.push({
+          id: row.pricing_id,
+          start_date: row.start_date,
+          end_date: row.end_date,
+          pp_dbl_rate: parseFloat(row.pp_dbl_rate),
+          single_supplement: row.single_supplement ? parseFloat(row.single_supplement) : null,
+          child_0to2: row.child_0to2 ? parseFloat(row.child_0to2) : null,
+          child_3to5: row.child_3to5 ? parseFloat(row.child_3to5) : null,
+          child_6to11: row.child_6to11 ? parseFloat(row.child_6to11) : null,
+          created_at: row.pricing_created_at
+        });
+      }
+    });
+
+    const hotels = Array.from(hotelsMap.values());
 
     return NextResponse.json({ hotels });
   } catch (error) {
@@ -56,7 +93,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create new hotel
+// POST - Create new hotel (without pricing initially)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -69,27 +106,15 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO hotels (user_id, city, hotel_name, category, start_date, end_date, pp_dbl_rate, single_supplement, child_0to2, child_3to5, child_6to11)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        data.city,
-        data.hotelName,
-        data.category,
-        data.startDate || null,
-        data.endDate || null,
-        data.ppDblRate,
-        data.singleSupplement || null,
-        data.child0to2 || null,
-        data.child3to5 || null,
-        data.child6to11 || null
-      ]
+      `INSERT INTO hotels (user_id, city, hotel_name, category)
+       VALUES (?, ?, ?, ?)`,
+      [userId, data.city, data.hotelName, data.category]
     );
 
     return NextResponse.json({
       success: true,
       hotelId: result.insertId,
-      message: 'Hotel added successfully'
+      message: 'Hotel created successfully'
     });
   } catch (error) {
     console.error('Error creating hotel:', error);

@@ -5,144 +5,251 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 
-interface Meal {
+interface MenuItem {
+  id: number;
+  menu_option: string;
+  price: number;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+interface Restaurant {
   id: number;
   city: string;
   restaurant_name: string;
-  menu_option: string;
-  price: number;
+  menu: MenuItem[];
 }
 
 export default function MealsPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [filteredMeals, setFilteredMeals] = useState<Meal[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCity, setSearchCity] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
+  const [showAddRestaurantModal, setShowAddRestaurantModal] = useState(false);
+  const [showAddMenuItemModal, setShowAddMenuItemModal] = useState(false);
+  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [selectedRestaurantForMenu, setSelectedRestaurantForMenu] = useState<Restaurant | null>(null);
+  const [expandedRestaurantId, setExpandedRestaurantId] = useState<number | null>(null);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const [formData, setFormData] = useState({
+  const [restaurantFormData, setRestaurantFormData] = useState({
     city: '',
-    restaurantName: '',
+    restaurantName: ''
+  });
+
+  const [menuItemFormData, setMenuItemFormData] = useState({
     menuOption: '',
-    price: ''
+    price: '',
+    startDate: '',
+    endDate: ''
   });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
-      loadMeals();
+      loadRestaurants();
     }
   }, [status, router]);
 
   useEffect(() => {
     if (searchCity) {
-      setFilteredMeals(
-        meals.filter(meal =>
-          meal.city.toLowerCase().includes(searchCity.toLowerCase())
+      setFilteredRestaurants(
+        restaurants.filter(restaurant =>
+          restaurant.city.toLowerCase().includes(searchCity.toLowerCase())
         )
       );
     } else {
-      setFilteredMeals(meals);
+      setFilteredRestaurants(restaurants);
     }
-  }, [searchCity, meals]);
+  }, [searchCity, restaurants]);
 
-  const loadMeals = async () => {
+  const loadRestaurants = async () => {
     try {
       const response = await fetch('/api/meals');
       const data = await response.json();
-      setMeals(data.meals);
-      setFilteredMeals(data.meals);
+      setRestaurants(data.restaurants);
+      setFilteredRestaurants(data.restaurants);
     } catch (error) {
-      console.error('Error loading meals:', error);
+      console.error('Error loading restaurants:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdd = () => {
-    setEditingMeal(null);
-    setFormData({
+  const handleAddRestaurant = () => {
+    setEditingRestaurant(null);
+    setRestaurantFormData({
       city: '',
-      restaurantName: '',
-      menuOption: '',
-      price: ''
+      restaurantName: ''
     });
-    setShowAddModal(true);
+    setShowAddRestaurantModal(true);
   };
 
-  const handleEdit = (meal: Meal) => {
-    setEditingMeal(meal);
-    setFormData({
-      city: meal.city,
-      restaurantName: meal.restaurant_name,
-      menuOption: meal.menu_option,
-      price: meal.price.toString()
+  const handleEditRestaurant = (restaurant: Restaurant) => {
+    setEditingRestaurant(restaurant);
+    setRestaurantFormData({
+      city: restaurant.city,
+      restaurantName: restaurant.restaurant_name
     });
-    setShowAddModal(true);
+    setShowAddRestaurantModal(true);
   };
 
-  const handleSave = async () => {
+  const handleSaveRestaurant = async () => {
     try {
-      const url = editingMeal ? `/api/meals/${editingMeal.id}` : '/api/meals';
-      const method = editingMeal ? 'PUT' : 'POST';
+      const url = editingRestaurant ? `/api/meals/${editingRestaurant.id}` : '/api/meals';
+      const method = editingRestaurant ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          city: formData.city,
-          restaurantName: formData.restaurantName,
-          menuOption: formData.menuOption,
-          price: parseFloat(formData.price)
+          city: restaurantFormData.city,
+          restaurantName: restaurantFormData.restaurantName
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSaveMessage(`✅ Meal ${editingMeal ? 'updated' : 'added'} successfully`);
+        setSaveMessage(`Restaurant ${editingRestaurant ? 'updated' : 'added'} successfully`);
         setTimeout(() => setSaveMessage(''), 3000);
-        setShowAddModal(false);
-        loadMeals();
+        setShowAddRestaurantModal(false);
+        loadRestaurants();
       } else {
-        setSaveMessage('❌ Failed to save meal');
+        setSaveMessage('Failed to save restaurant');
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
-      console.error('Error saving meal:', error);
-      setSaveMessage('❌ Error saving meal');
+      console.error('Error saving restaurant:', error);
+      setSaveMessage('Error saving restaurant');
       setTimeout(() => setSaveMessage(''), 3000);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this meal?')) return;
+  const handleDeleteRestaurant = async (restaurantId: number) => {
+    if (!confirm('Are you sure you want to delete this restaurant? This will also delete all associated menu items.')) return;
 
     try {
-      const response = await fetch(`/api/meals/${id}`, {
+      const response = await fetch(`/api/meals/${restaurantId}`, {
         method: 'DELETE'
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSaveMessage('✅ Meal deleted successfully');
+        setSaveMessage('Restaurant deleted successfully');
         setTimeout(() => setSaveMessage(''), 3000);
-        loadMeals();
+        loadRestaurants();
       } else {
-        setSaveMessage('❌ Failed to delete meal');
+        setSaveMessage('Failed to delete restaurant');
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
-      console.error('Error deleting meal:', error);
-      setSaveMessage('❌ Error deleting meal');
+      console.error('Error deleting restaurant:', error);
+      setSaveMessage('Error deleting restaurant');
       setTimeout(() => setSaveMessage(''), 3000);
     }
+  };
+
+  const handleAddMenuItem = (restaurant: Restaurant) => {
+    setSelectedRestaurantForMenu(restaurant);
+    setEditingMenuItem(null);
+    setMenuItemFormData({
+      menuOption: '',
+      price: '',
+      startDate: '',
+      endDate: ''
+    });
+    setShowAddMenuItemModal(true);
+  };
+
+  const handleEditMenuItem = (restaurant: Restaurant, menuItem: MenuItem) => {
+    setSelectedRestaurantForMenu(restaurant);
+    setEditingMenuItem(menuItem);
+    setMenuItemFormData({
+      menuOption: menuItem.menu_option,
+      price: menuItem.price.toString(),
+      startDate: menuItem.start_date || '',
+      endDate: menuItem.end_date || ''
+    });
+    setShowAddMenuItemModal(true);
+  };
+
+  const handleSaveMenuItem = async () => {
+    if (!selectedRestaurantForMenu) return;
+
+    try {
+      const url = editingMenuItem
+        ? `/api/meals/${selectedRestaurantForMenu.id}/menu/${editingMenuItem.id}`
+        : `/api/meals/${selectedRestaurantForMenu.id}/menu`;
+      const method = editingMenuItem ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          menuOption: menuItemFormData.menuOption,
+          price: parseFloat(menuItemFormData.price),
+          startDate: menuItemFormData.startDate || null,
+          endDate: menuItemFormData.endDate || null
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSaveMessage(`Menu item ${editingMenuItem ? 'updated' : 'added'} successfully`);
+        setTimeout(() => setSaveMessage(''), 3000);
+        setShowAddMenuItemModal(false);
+        loadRestaurants();
+      } else {
+        setSaveMessage('Failed to save menu item');
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving menu item:', error);
+      setSaveMessage('Error saving menu item');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+
+  const handleDeleteMenuItem = async (restaurantId: number, menuItemId: number) => {
+    if (!confirm('Are you sure you want to delete this menu item?')) return;
+
+    try {
+      const response = await fetch(`/api/meals/${restaurantId}/menu/${menuItemId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSaveMessage('Menu item deleted successfully');
+        setTimeout(() => setSaveMessage(''), 3000);
+        loadRestaurants();
+      } else {
+        setSaveMessage('Failed to delete menu item');
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      setSaveMessage('Error deleting menu item');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD format
+  };
+
+  const toggleExpandRestaurant = (restaurantId: number) => {
+    setExpandedRestaurantId(expandedRestaurantId === restaurantId ? null : restaurantId);
   };
 
   if (status === 'loading' || loading) {
@@ -161,7 +268,7 @@ export default function MealsPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Meals & Restaurants Database</h1>
-              <p className="text-gray-600 mt-1">Manage restaurant and meal pricing by menu options</p>
+              <p className="text-gray-600 mt-1">Manage your restaurant listings and menu pricing</p>
             </div>
             <div className="flex gap-4">
               <button
@@ -204,54 +311,123 @@ export default function MealsPage() {
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
             />
             <button
-              onClick={handleAdd}
+              onClick={handleAddRestaurant}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
             >
-              + Add New Meal
+              + Add New Restaurant
             </button>
           </div>
         </div>
 
-        {/* Meals Table */}
+        {/* Restaurants Table */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-indigo-600 text-white">
                 <tr>
+                  <th className="px-4 py-3 text-left w-8"></th>
                   <th className="px-4 py-3 text-left">City</th>
                   <th className="px-4 py-3 text-left">Restaurant Name</th>
-                  <th className="px-4 py-3 text-left">Menu Option</th>
-                  <th className="px-4 py-3 text-right">Price (€)</th>
+                  <th className="px-4 py-3 text-center">Menu Items</th>
                   <th className="px-4 py-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredMeals.map((meal) => (
-                  <tr key={meal.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-900">{meal.city}</td>
-                    <td className="px-4 py-3 text-gray-900">{meal.restaurant_name}</td>
-                    <td className="px-4 py-3 text-gray-900">{meal.menu_option}</td>
-                    <td className="px-4 py-3 text-right text-gray-900">€{meal.price.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => handleEdit(meal)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(meal.id)}
-                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
+                {filteredRestaurants.map((restaurant) => (
+                  <>
+                    <tr key={restaurant.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => toggleExpandRestaurant(restaurant.id)}
+                          className="text-indigo-600 hover:text-indigo-800 font-bold text-lg"
+                        >
+                          {expandedRestaurantId === restaurant.id ? '−' : '+'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-gray-900">{restaurant.city}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">{restaurant.restaurant_name}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                          {restaurant.menu.length} item{restaurant.menu.length !== 1 ? 's' : ''}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => handleAddMenuItem(restaurant)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
+                        >
+                          Add Menu Item
+                        </button>
+                        <button
+                          onClick={() => handleEditRestaurant(restaurant)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRestaurant(restaurant.id)}
+                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedRestaurantId === restaurant.id && (
+                      <tr key={`${restaurant.id}-menu`}>
+                        <td colSpan={5} className="px-4 py-4 bg-gray-50">
+                          <div className="pl-12">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Menu Items</h3>
+                            {restaurant.menu.length === 0 ? (
+                              <p className="text-gray-500 italic">No menu items defined yet. Click "Add Menu Item" to add one.</p>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full border border-gray-200 rounded-lg">
+                                  <thead className="bg-gray-100">
+                                    <tr>
+                                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-700">Menu Option</th>
+                                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-700">Price</th>
+                                      <th className="px-3 py-2 text-center text-sm font-medium text-gray-700">Start Date</th>
+                                      <th className="px-3 py-2 text-center text-sm font-medium text-gray-700">End Date</th>
+                                      <th className="px-3 py-2 text-center text-sm font-medium text-gray-700">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-200">
+                                    {restaurant.menu.map((menuItem) => (
+                                      <tr key={menuItem.id} className="bg-white hover:bg-gray-50">
+                                        <td className="px-3 py-2 text-sm text-gray-900">{menuItem.menu_option}</td>
+                                        <td className="px-3 py-2 text-right text-sm text-gray-900">€{menuItem.price.toFixed(2)}</td>
+                                        <td className="px-3 py-2 text-center text-sm text-gray-900">{formatDate(menuItem.start_date)}</td>
+                                        <td className="px-3 py-2 text-center text-sm text-gray-900">{formatDate(menuItem.end_date)}</td>
+                                        <td className="px-3 py-2 text-center">
+                                          <button
+                                            onClick={() => handleEditMenuItem(restaurant, menuItem)}
+                                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 mr-1"
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteMenuItem(restaurant.id, menuItem.id)}
+                                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                                          >
+                                            Delete
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
-                {filteredMeals.length === 0 && (
+                {filteredRestaurants.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                      {searchCity ? 'No meals found for this city' : 'No meals added yet. Click "Add New Meal" to get started.'}
+                      {searchCity ? 'No restaurants found for this city' : 'No restaurants added yet. Click "Add New Restaurant" to get started.'}
                     </td>
                   </tr>
                 )}
@@ -260,12 +436,12 @@ export default function MealsPage() {
           </div>
         </div>
 
-        {/* Add/Edit Modal */}
-        {showAddModal && (
+        {/* Add/Edit Restaurant Modal */}
+        {showAddRestaurantModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {editingMeal ? 'Edit Meal' : 'Add New Meal'}
+                {editingRestaurant ? 'Edit Restaurant' : 'Add New Restaurant'}
               </h2>
 
               <div className="space-y-4">
@@ -275,8 +451,8 @@ export default function MealsPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    value={restaurantFormData.city}
+                    onChange={(e) => setRestaurantFormData({ ...restaurantFormData, city: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
                     placeholder="Istanbul"
                   />
@@ -288,50 +464,106 @@ export default function MealsPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.restaurantName}
-                    onChange={(e) => setFormData({ ...formData, restaurantName: e.target.value })}
+                    value={restaurantFormData.restaurantName}
+                    onChange={(e) => setRestaurantFormData({ ...restaurantFormData, restaurantName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                    placeholder="Restaurant name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Menu Option *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.menuOption}
-                    onChange={(e) => setFormData({ ...formData, menuOption: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                    placeholder="e.g., Breakfast, Lunch Set Menu, Dinner à la carte"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price (€) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                    placeholder="0.00"
+                    placeholder="Restaurant Name"
                   />
                 </div>
               </div>
 
               <div className="flex gap-4 mt-6">
                 <button
-                  onClick={handleSave}
+                  onClick={handleSaveRestaurant}
                   className="flex-1 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
                 >
-                  {editingMeal ? 'Update' : 'Add'} Meal
+                  {editingRestaurant ? 'Update Restaurant' : 'Add Restaurant'}
                 </button>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setShowAddRestaurantModal(false)}
+                  className="flex-1 px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add/Edit Menu Item Modal */}
+        {showAddMenuItemModal && selectedRestaurantForMenu && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {editingMenuItem ? 'Edit Menu Item' : 'Add Menu Item'}
+              </h2>
+              <p className="text-gray-600 mb-6">
+                {selectedRestaurantForMenu.restaurant_name} - {selectedRestaurantForMenu.city}
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Menu Option *
+                  </label>
+                  <input
+                    type="text"
+                    value={menuItemFormData.menuOption}
+                    onChange={(e) => setMenuItemFormData({ ...menuItemFormData, menuOption: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                    placeholder="e.g., Breakfast, Lunch Set Menu, Dinner a la carte"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price (EUR) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={menuItemFormData.price}
+                    onChange={(e) => setMenuItemFormData({ ...menuItemFormData, price: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date (optional for seasonal pricing)
+                    </label>
+                    <input
+                      type="date"
+                      value={menuItemFormData.startDate}
+                      onChange={(e) => setMenuItemFormData({ ...menuItemFormData, startDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date (optional for seasonal pricing)
+                    </label>
+                    <input
+                      type="date"
+                      value={menuItemFormData.endDate}
+                      onChange={(e) => setMenuItemFormData({ ...menuItemFormData, endDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={handleSaveMenuItem}
+                  className="flex-1 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                >
+                  {editingMenuItem ? 'Update Menu Item' : 'Add Menu Item'}
+                </button>
+                <button
+                  onClick={() => setShowAddMenuItemModal(false)}
                   className="flex-1 px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
                 >
                   Cancel

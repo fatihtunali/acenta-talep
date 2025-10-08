@@ -4,7 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { ResultSetHeader } from 'mysql2';
 
-// PUT - Update SIC tour
+// PUT - Update SIC tour base information (city, tour_name)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,18 +22,11 @@ export async function PUT(
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE sic_tours
-       SET city = ?, tour_name = ?, start_date = ?, end_date = ?, pp_dbl_rate = ?, single_supplement = ?, child_0to2 = ?, child_3to5 = ?, child_6to11 = ?
+       SET city = ?, tour_name = ?
        WHERE id = ? AND user_id = ?`,
       [
         data.city,
         data.tourName,
-        data.startDate || null,
-        data.endDate || null,
-        data.ppDblRate,
-        data.singleSupplement || null,
-        data.child0to2 || null,
-        data.child3to5 || null,
-        data.child6to11 || null,
         id,
         userId
       ]
@@ -56,7 +49,7 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete SIC tour
+// DELETE - Delete SIC tour (will cascade delete all pricing periods)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -82,7 +75,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'SIC tour deleted successfully'
+      message: 'SIC tour and all its pricing periods deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting SIC tour:', error);

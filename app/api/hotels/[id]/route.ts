@@ -4,7 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { ResultSetHeader } from 'mysql2';
 
-// PUT - Update hotel
+// PUT - Update hotel base information (city, name, category)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,20 +22,12 @@ export async function PUT(
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE hotels
-       SET city = ?, hotel_name = ?, category = ?, start_date = ?, end_date = ?, pp_dbl_rate = ?,
-           single_supplement = ?, child_0to2 = ?, child_3to5 = ?, child_6to11 = ?
+       SET city = ?, hotel_name = ?, category = ?
        WHERE id = ? AND user_id = ?`,
       [
         data.city,
         data.hotelName,
         data.category,
-        data.startDate || null,
-        data.endDate || null,
-        data.ppDblRate,
-        data.singleSupplement || null,
-        data.child0to2 || null,
-        data.child3to5 || null,
-        data.child6to11 || null,
         id,
         userId
       ]
@@ -58,7 +50,7 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete hotel
+// DELETE - Delete hotel (will cascade delete all pricing periods)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -84,7 +76,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Hotel deleted successfully'
+      message: 'Hotel and all its pricing periods deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting hotel:', error);

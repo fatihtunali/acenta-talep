@@ -10,6 +10,8 @@ interface Hotel {
   city: string;
   hotel_name: string;
   category: string;
+  start_date: string | null;
+  end_date: string | null;
   pp_dbl_rate: number;
   single_supplement: number | null;
   child_0to2: number | null;
@@ -32,6 +34,8 @@ export default function HotelsPage() {
     city: '',
     hotelName: '',
     category: '',
+    startDate: '',
+    endDate: '',
     ppDblRate: '',
     singleSupplement: '',
     child0to2: '',
@@ -78,6 +82,8 @@ export default function HotelsPage() {
       city: '',
       hotelName: '',
       category: '',
+      startDate: '',
+      endDate: '',
       ppDblRate: '',
       singleSupplement: '',
       child0to2: '',
@@ -93,6 +99,8 @@ export default function HotelsPage() {
       city: hotel.city,
       hotelName: hotel.hotel_name,
       category: hotel.category,
+      startDate: hotel.start_date || '',
+      endDate: hotel.end_date || '',
       ppDblRate: hotel.pp_dbl_rate.toString(),
       singleSupplement: hotel.single_supplement?.toString() || '',
       child0to2: hotel.child_0to2?.toString() || '',
@@ -114,6 +122,8 @@ export default function HotelsPage() {
           city: formData.city,
           hotelName: formData.hotelName,
           category: formData.category,
+          startDate: formData.startDate || null,
+          endDate: formData.endDate || null,
           ppDblRate: parseFloat(formData.ppDblRate),
           singleSupplement: formData.singleSupplement ? parseFloat(formData.singleSupplement) : null,
           child0to2: formData.child0to2 ? parseFloat(formData.child0to2) : null,
@@ -241,6 +251,8 @@ export default function HotelsPage() {
                   <th className="px-4 py-3 text-left">City</th>
                   <th className="px-4 py-3 text-left">Hotel Name</th>
                   <th className="px-4 py-3 text-left">Category</th>
+                  <th className="px-4 py-3 text-left">Start Date</th>
+                  <th className="px-4 py-3 text-left">End Date</th>
                   <th className="px-4 py-3 text-right">PP DBL</th>
                   <th className="px-4 py-3 text-right">Single Suppl.</th>
                   <th className="px-4 py-3 text-right">Child 0-2</th>
@@ -255,6 +267,8 @@ export default function HotelsPage() {
                     <td className="px-4 py-3 text-gray-900">{hotel.city}</td>
                     <td className="px-4 py-3 text-gray-900">{hotel.hotel_name}</td>
                     <td className="px-4 py-3 text-gray-900">{hotel.category}</td>
+                    <td className="px-4 py-3 text-gray-900">{hotel.start_date || '-'}</td>
+                    <td className="px-4 py-3 text-gray-900">{hotel.end_date || '-'}</td>
                     <td className="px-4 py-3 text-right text-gray-900">${hotel.pp_dbl_rate.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right text-gray-900">
                       {hotel.single_supplement ? `$${hotel.single_supplement.toFixed(2)}` : '-'}
@@ -286,7 +300,7 @@ export default function HotelsPage() {
                 ))}
                 {filteredHotels.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                       {searchCity ? 'No hotels found for this city' : 'No hotels added yet. Click "Add New Hotel" to get started.'}
                     </td>
                   </tr>
@@ -343,6 +357,31 @@ export default function HotelsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
                     placeholder="Hotel Name"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

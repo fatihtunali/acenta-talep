@@ -101,6 +101,8 @@ const ExpenseTable = ({
     city: string;
     hotel_name: string;
     category: string;
+    start_date: string | null;
+    end_date: string | null;
     pp_dbl_rate: number;
     single_supplement: number | null;
     child_0to2: number | null;
@@ -218,7 +220,14 @@ const ExpenseTable = ({
                           }}
                         >
                           <div className="font-semibold text-gray-900">{hotel.hotel_name}</div>
-                          <div className="text-gray-600">{hotel.city} - {hotel.category} - ${hotel.pp_dbl_rate}</div>
+                          <div className="text-gray-600">
+                            {hotel.city} - {hotel.category} - ${hotel.pp_dbl_rate}
+                            {hotel.start_date && hotel.end_date && (
+                              <span className="ml-2 text-blue-600">
+                                ({hotel.start_date} to {hotel.end_date})
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -387,6 +396,8 @@ function PricingPageContent() {
     city: string;
     hotel_name: string;
     category: string;
+    start_date: string | null;
+    end_date: string | null;
     pp_dbl_rate: number;
     single_supplement: number | null;
     child_0to2: number | null;

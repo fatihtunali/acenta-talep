@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
       city: hotel.city,
       hotel_name: hotel.hotel_name,
       category: hotel.category,
+      start_date: hotel.start_date,
+      end_date: hotel.end_date,
       pp_dbl_rate: parseFloat(hotel.pp_dbl_rate),
       single_supplement: hotel.single_supplement ? parseFloat(hotel.single_supplement) : null,
       child_0to2: hotel.child_0to2 ? parseFloat(hotel.child_0to2) : null,
@@ -67,13 +69,15 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO hotels (user_id, city, hotel_name, category, pp_dbl_rate, single_supplement, child_0to2, child_3to5, child_6to11)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO hotels (user_id, city, hotel_name, category, start_date, end_date, pp_dbl_rate, single_supplement, child_0to2, child_3to5, child_6to11)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         data.city,
         data.hotelName,
         data.category,
+        data.startDate || null,
+        data.endDate || null,
         data.ppDblRate,
         data.singleSupplement || null,
         data.child0to2 || null,

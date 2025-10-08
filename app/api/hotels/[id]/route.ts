@@ -22,13 +22,15 @@ export async function PUT(
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE hotels
-       SET city = ?, hotel_name = ?, category = ?, pp_dbl_rate = ?,
+       SET city = ?, hotel_name = ?, category = ?, start_date = ?, end_date = ?, pp_dbl_rate = ?,
            single_supplement = ?, child_0to2 = ?, child_3to5 = ?, child_6to11 = ?
        WHERE id = ? AND user_id = ?`,
       [
         data.city,
         data.hotelName,
         data.category,
+        data.startDate || null,
+        data.endDate || null,
         data.ppDblRate,
         data.singleSupplement || null,
         data.child0to2 || null,

@@ -533,13 +533,21 @@ function PricingPageContent() {
     price: number;
   }>>([]);
 
+  const [transfers, setTransfers] = useState<Array<{
+    id: number;
+    city: string;
+    transfer_type: string;
+    price: number;
+  }>>([]);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
-      // Load hotels and sightseeing when authenticated
+      // Load hotels, sightseeing, and transfers when authenticated
       loadHotels();
       loadSightseeing();
+      loadTransfers();
     }
   }, [status, router]);
 
@@ -564,6 +572,18 @@ function PricingPageContent() {
       }
     } catch (error) {
       console.error('Error loading sightseeing:', error);
+    }
+  };
+
+  const loadTransfers = async () => {
+    try {
+      const response = await fetch('/api/transfers');
+      const data = await response.json();
+      if (response.ok) {
+        setTransfers(data.transfers);
+      }
+    } catch (error) {
+      console.error('Error loading transfers:', error);
     }
   };
 
@@ -1057,7 +1077,8 @@ function PricingPageContent() {
               <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
               <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</a>
               <a href="/hotels" className="text-sm text-gray-600 hover:text-gray-900">Hotels</a>
-              <a href="/sightseeing" className="text-sm text-gray-600 hover:text-gray-900">Sightseeing</a>
+              <a href="/sightseeing" className="text-sm text-gray-600 hover:text-gray-900">Entrance Fees</a>
+              <a href="/transfers" className="text-sm text-gray-600 hover:text-gray-900">Transfers</a>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>

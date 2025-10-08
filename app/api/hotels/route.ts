@@ -27,7 +27,22 @@ export async function GET(request: NextRequest) {
 
     query += ` ORDER BY city, hotel_name`;
 
-    const [hotels] = await pool.execute<RowDataPacket[]>(query, params);
+    const [hotelRows] = await pool.execute<RowDataPacket[]>(query, params);
+
+    // Convert decimal values to numbers
+    const hotels = hotelRows.map(hotel => ({
+      id: hotel.id,
+      city: hotel.city,
+      hotel_name: hotel.hotel_name,
+      category: hotel.category,
+      pp_dbl_rate: parseFloat(hotel.pp_dbl_rate),
+      single_supplement: hotel.single_supplement ? parseFloat(hotel.single_supplement) : null,
+      child_0to2: hotel.child_0to2 ? parseFloat(hotel.child_0to2) : null,
+      child_3to5: hotel.child_3to5 ? parseFloat(hotel.child_3to5) : null,
+      child_6to11: hotel.child_6to11 ? parseFloat(hotel.child_6to11) : null,
+      created_at: hotel.created_at,
+      updated_at: hotel.updated_at
+    }));
 
     return NextResponse.json({ hotels });
   } catch (error) {

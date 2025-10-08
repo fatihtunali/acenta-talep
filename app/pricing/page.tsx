@@ -244,11 +244,13 @@ const ExpenseTable = ({
             const isEntranceFeesCategory = category === 'entranceFees';
             const isMealsCategory = category === 'meals';
             const isSicTourCategory = category === 'sicTourCost';
-            const showCityAutocomplete = (isHotelCategory || isEntranceFeesCategory || isMealsCategory || isSicTourCategory) && activeAutocomplete === `${item.id}-city` && filteredCities.length > 0;
+            const isTransportationCategory = category === 'transportation';
+            const showCityAutocomplete = (isHotelCategory || isEntranceFeesCategory || isMealsCategory || isSicTourCategory || isTransportationCategory) && activeAutocomplete === `${item.id}-city` && filteredCities.length > 0;
             const showHotelAutocomplete = isHotelCategory && activeAutocomplete === `${item.id}-hotel` && filteredHotels.length > 0;
             const showSightseeingAutocomplete = isEntranceFeesCategory && activeAutocomplete === `${item.id}-sightseeing` && filteredSightseeing.length > 0;
             const showMealsAutocomplete = isMealsCategory && activeAutocomplete === `${item.id}-meals` && filteredMeals.length > 0;
             const showSicTourAutocomplete = isSicTourCategory && activeAutocomplete === `${item.id}-sictour` && filteredSicTours.length > 0;
+            const showTransfersAutocomplete = isTransportationCategory && activeAutocomplete === `${item.id}-transfer` && filteredTransfers.length > 0;
 
             return (
               <tr key={item.id} className="hover:bg-gray-50">
@@ -258,9 +260,9 @@ const ExpenseTable = ({
                     value={item.location}
                     onChange={(e) => {
                       onUpdateItem(dayIndex, category, item.id, 'location', e.target.value);
-                      if ((isHotelCategory || isEntranceFeesCategory || isMealsCategory || isSicTourCategory) && e.target.value.length > 0) {
-                        // Filter cities for hotel, entrance fees, meals, and SIC tours categories
-                        const citiesToFilter = isHotelCategory ? hotelCities : isEntranceFeesCategory ? sightseeingCities : isMealsCategory ? mealCities : isSicTourCategory ? sicTourCities : allCities;
+                      if ((isHotelCategory || isEntranceFeesCategory || isMealsCategory || isSicTourCategory || isTransportationCategory) && e.target.value.length > 0) {
+                        // Filter cities for hotel, entrance fees, meals, SIC tours, and transportation categories
+                        const citiesToFilter = isHotelCategory ? hotelCities : isEntranceFeesCategory ? sightseeingCities : isMealsCategory ? mealCities : isSicTourCategory ? sicTourCities : isTransportationCategory ? transferCities : allCities;
                         const filtered = citiesToFilter.filter(city =>
                           city.toLowerCase().includes(e.target.value.toLowerCase())
                         );
@@ -271,12 +273,13 @@ const ExpenseTable = ({
                         setFilteredSightseeing([]);
                         setFilteredMeals([]);
                         setFilteredSicTours([]);
+                        setFilteredTransfers([]);
                         setActiveAutocomplete(null);
                       }
                     }}
                     onFocus={() => {
-                      if ((isHotelCategory || isEntranceFeesCategory || isMealsCategory || isSicTourCategory) && item.location.length > 0) {
-                        const citiesToFilter = isHotelCategory ? hotelCities : isEntranceFeesCategory ? sightseeingCities : isMealsCategory ? mealCities : isSicTourCategory ? sicTourCities : allCities;
+                      if ((isHotelCategory || isEntranceFeesCategory || isMealsCategory || isSicTourCategory || isTransportationCategory) && item.location.length > 0) {
+                        const citiesToFilter = isHotelCategory ? hotelCities : isEntranceFeesCategory ? sightseeingCities : isMealsCategory ? mealCities : isSicTourCategory ? sicTourCities : isTransportationCategory ? transferCities : allCities;
                         const filtered = citiesToFilter.filter(city =>
                           city.toLowerCase().includes(item.location.toLowerCase())
                         );
@@ -355,11 +358,20 @@ const ExpenseTable = ({
                         );
                         setFilteredSicTours(filtered);
                         setActiveAutocomplete(`${item.id}-sictour`);
+                      } else if (isTransportationCategory && item.location && e.target.value.length > 0) {
+                        // Filter transfers by selected city and typed text
+                        const filtered = transfers.filter(transfer =>
+                          transfer.city.trim() === item.location.trim() &&
+                          transfer.transfer_type.toLowerCase().includes(e.target.value.toLowerCase())
+                        );
+                        setFilteredTransfers(filtered);
+                        setActiveAutocomplete(`${item.id}-transfer`);
                       } else {
                         setFilteredHotels([]);
                         setFilteredSightseeing([]);
                         setFilteredMeals([]);
                         setFilteredSicTours([]);
+                        setFilteredTransfers([]);
                         setActiveAutocomplete(null);
                       }
                     }}
@@ -393,16 +405,24 @@ const ExpenseTable = ({
                         );
                         setFilteredSicTours(filtered);
                         setActiveAutocomplete(`${item.id}-sictour`);
+                      } else if (isTransportationCategory && item.location && item.description.length > 0) {
+                        const filtered = transfers.filter(transfer =>
+                          transfer.city.trim() === item.location.trim() &&
+                          transfer.transfer_type.toLowerCase().includes(item.description.toLowerCase())
+                        );
+                        setFilteredTransfers(filtered);
+                        setActiveAutocomplete(`${item.id}-transfer`);
                       }
                     }}
                     onBlur={() => {
                       setTimeout(() => {
-                        if (activeAutocomplete === `${item.id}-hotel` || activeAutocomplete === `${item.id}-sightseeing` || activeAutocomplete === `${item.id}-meals` || activeAutocomplete === `${item.id}-sictour`) {
+                        if (activeAutocomplete === `${item.id}-hotel` || activeAutocomplete === `${item.id}-sightseeing` || activeAutocomplete === `${item.id}-meals` || activeAutocomplete === `${item.id}-sictour` || activeAutocomplete === `${item.id}-transfer`) {
                           setActiveAutocomplete(null);
                           setFilteredHotels([]);
                           setFilteredSightseeing([]);
                           setFilteredMeals([]);
                           setFilteredSicTours([]);
+                          setFilteredTransfers([]);
                         }
                       }, 200);
                     }}
@@ -544,6 +564,32 @@ const ExpenseTable = ({
                               {tour.child_6to11 && `6-11: €${tour.child_6to11.toFixed(2)}`}
                             </div>
                           )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {showTransfersAutocomplete && (
+                    <div className="absolute z-50 top-full left-0 w-64 bg-white border border-gray-300 shadow-lg max-h-48 overflow-y-auto">
+                      {filteredTransfers.map((transfer) => (
+                        <div
+                          key={transfer.id}
+                          className="px-2 py-1 hover:bg-indigo-100 cursor-pointer text-xs"
+                          onMouseDown={() => {
+                            if (onSelectTransfer) {
+                              onSelectTransfer(dayIndex, category, item.id, {
+                                city: transfer.city,
+                                transfer_type: transfer.transfer_type,
+                                price: transfer.price
+                              });
+                            }
+                            setActiveAutocomplete(null);
+                            setFilteredTransfers([]);
+                          }}
+                        >
+                          <div className="font-semibold text-gray-900">{transfer.transfer_type}</div>
+                          <div className="text-gray-600">
+                            €{transfer.price.toFixed(2)}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1104,6 +1150,24 @@ function PricingPageContent() {
         item.child0to2 = tour.child_0to2 || 0;
         item.child3to5 = tour.child_3to5 || 0;
         item.child6to11 = tour.child_6to11 || 0;
+      }
+      return newDays;
+    });
+  }, []);
+
+  const handleSelectTransfer = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, transfer: {
+    city: string;
+    transfer_type: string;
+    price: number;
+  }) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      const item = categoryArray.find(e => e.id === itemId);
+      if (item) {
+        item.location = transfer.city;
+        item.description = transfer.transfer_type;
+        item.price = transfer.price;
       }
       return newDays;
     });
@@ -1736,11 +1800,13 @@ function PricingPageContent() {
                     color="red"
                     pax={pax}
                     transportPricingMode={transportPricingMode}
+                    transfers={transfers}
                     onAddRow={addRow}
                     onDeleteRow={deleteRow}
                     onUpdateItem={updateItem}
                     onUpdateVehicleCount={updateVehicleCount}
                     onUpdatePricePerVehicle={updatePricePerVehicle}
+                    onSelectTransfer={handleSelectTransfer}
                   />
 
                   {/* Private Tour Only Expenses */}

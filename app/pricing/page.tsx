@@ -235,7 +235,7 @@ const ExpenseTable = ({
                         >
                           <div className="font-semibold text-gray-900">{hotel.hotel_name}</div>
                           <div className="text-gray-600">
-                            {hotel.city} - {hotel.category} - ${hotel.pp_dbl_rate}
+                            {hotel.city} - {hotel.category} - €{hotel.pp_dbl_rate}
                             {hotel.start_date && hotel.end_date && (
                               <span className="ml-2 text-blue-600">
                                 ({hotel.start_date} to {hotel.end_date})
@@ -286,7 +286,7 @@ const ExpenseTable = ({
                       />
                     </td>
                     <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-bold text-gray-900 bg-gray-100 w-20">
-                      ${calculatedPrice.toFixed(2)}
+                      €{calculatedPrice.toFixed(2)}
                     </td>
                   </>
                 ) : (
@@ -367,7 +367,7 @@ const ExpenseTable = ({
                 )}
                 {isGeneral && (
                   <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-semibold text-red-700 bg-red-50 w-20">
-                    ${(calculatedPrice / pax).toFixed(2)}
+                    €{(calculatedPrice / pax).toFixed(2)}
                   </td>
                 )}
                 <td className="border border-gray-300 p-0 text-center w-8">
@@ -828,7 +828,7 @@ function PricingPageContent() {
     let text = 'PAX\tPer Person (DBL)\tSingle Suppl.\tChild 0-2 yrs\tChild 3-5 yrs\tChild 6-11 yrs\n';
 
     tableData.forEach(row => {
-      text += `${row.pax}\t$${row.adultPerPerson.toFixed(2)}\t$${row.singleSupplement.toFixed(2)}\t$${row.child0to2.toFixed(2)}\t$${row.child3to5.toFixed(2)}\t$${row.child6to11.toFixed(2)}\n`;
+      text += `${row.pax}\t€${row.adultPerPerson.toFixed(2)}\t€${row.singleSupplement.toFixed(2)}\t€${row.child0to2.toFixed(2)}\t€${row.child3to5.toFixed(2)}\t€${row.child6to11.toFixed(2)}\n`;
     });
 
     navigator.clipboard.writeText(text).then(() => {
@@ -1066,11 +1066,11 @@ function PricingPageContent() {
               </div>
               <div>
                 <span className="text-gray-600">Per Person: </span>
-                <span className="font-bold text-indigo-600 text-base">${totals.finalPerPerson.toFixed(2)}</span>
+                <span className="font-bold text-indigo-600 text-base">€{totals.finalPerPerson.toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-gray-600">Total: </span>
-                <span className="font-bold text-gray-900 text-base">${totals.grandTotal.toFixed(2)}</span>
+                <span className="font-bold text-gray-900 text-base">€{totals.grandTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -1134,9 +1134,9 @@ function PricingPageContent() {
                   Day {day.dayNumber} - {day.date ? new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Set dates'}
                 </h2>
                 <div className="text-xs">
-                  <span className="text-blue-700 font-semibold">Per Person: ${dayTotals.perPersonTotal.toFixed(2)}</span>
+                  <span className="text-blue-700 font-semibold">Per Person: €{dayTotals.perPersonTotal.toFixed(2)}</span>
                   <span className="mx-2">|</span>
-                  <span className="text-red-700 font-semibold">General: ${dayTotals.generalTotal.toFixed(2)} (${(dayTotals.generalTotal / pax).toFixed(2)}/pax)</span>
+                  <span className="text-red-700 font-semibold">General: €{dayTotals.generalTotal.toFixed(2)} (€{(dayTotals.generalTotal / pax).toFixed(2)}/pax)</span>
                 </div>
               </div>
 
@@ -1229,7 +1229,7 @@ function PricingPageContent() {
 
                   <div className="mt-2 p-2 bg-blue-100 rounded">
                     <div className="text-xs font-bold text-blue-900">
-                      Day {day.dayNumber} Per Person Total: ${dayTotals.perPersonTotal.toFixed(2)}
+                      Day {day.dayNumber} Per Person Total: €{dayTotals.perPersonTotal.toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -1313,8 +1313,8 @@ function PricingPageContent() {
 
                   <div className="mt-2 p-2 bg-red-100 rounded">
                     <div className="text-xs font-bold text-red-900">
-                      Day {day.dayNumber} General Total: ${dayTotals.generalTotal.toFixed(2)}
-                      <span className="ml-2">= ${(dayTotals.generalTotal / pax).toFixed(2)} per person</span>
+                      Day {day.dayNumber} General Total: €{dayTotals.generalTotal.toFixed(2)}
+                      <span className="ml-2">= €{(dayTotals.generalTotal / pax).toFixed(2)} per person</span>
                     </div>
                   </div>
                 </div>
@@ -1331,45 +1331,45 @@ function PricingPageContent() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Per Person Expenses:</span>
-                  <span className="font-semibold text-blue-700">${totals.totalPerPerson.toFixed(2)}</span>
+                  <span className="font-semibold text-blue-700">€{totals.totalPerPerson.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">General Expenses Total:</span>
-                  <span className="font-semibold text-red-700">${totals.totalGeneral.toFixed(2)}</span>
+                  <span className="font-semibold text-red-700">€{totals.totalGeneral.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">General Per Person ({pax} PAX):</span>
-                  <span className="font-semibold text-red-700">${totals.generalPerPerson.toFixed(2)}</span>
+                  <span className="font-semibold text-red-700">€{totals.generalPerPerson.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t">
                   <span className="text-gray-700 font-semibold">Cost Per Person:</span>
-                  <span className="font-bold text-gray-900">${totals.costPerPerson.toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">€{totals.costPerPerson.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700 font-semibold">Subtotal ({pax} PAX):</span>
-                  <span className="font-bold text-gray-900">${totals.subtotal.toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">€{totals.subtotal.toFixed(2)}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Markup ({markup}%):</span>
-                  <span className="font-semibold text-green-700">+${totals.markupAmount.toFixed(2)}</span>
+                  <span className="font-semibold text-green-700">+€{totals.markupAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">After Markup:</span>
-                  <span className="font-semibold text-gray-700">${totals.afterMarkup.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-700">€{totals.afterMarkup.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Tax ({tax}%):</span>
-                  <span className="font-semibold text-red-700">+${totals.taxAmount.toFixed(2)}</span>
+                  <span className="font-semibold text-red-700">+€{totals.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-lg pt-2 border-t">
                   <span className="text-gray-900 font-bold">Grand Total:</span>
-                  <span className="font-bold text-green-600">${totals.grandTotal.toFixed(2)}</span>
+                  <span className="font-bold text-green-600">€{totals.grandTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm bg-indigo-50 p-2 rounded">
                   <span className="text-indigo-700 font-semibold">Final Per Person:</span>
-                  <span className="font-bold text-indigo-700">${totals.finalPerPerson.toFixed(2)}</span>
+                  <span className="font-bold text-indigo-700">€{totals.finalPerPerson.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -1412,16 +1412,16 @@ function PricingPageContent() {
                           {slabPax} {isCurrentPax && '← CURRENT'}
                         </td>
                         <td className="border border-gray-300 px-3 py-2 text-right text-red-700">
-                          ${generalPerPerson.toFixed(2)}
+                          €{generalPerPerson.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-3 py-2 text-right text-blue-700">
-                          ${totals.totalPerPerson.toFixed(2)}
+                          €{totals.totalPerPerson.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-3 py-2 text-right font-bold text-green-700 bg-green-50">
-                          ${finalPerPerson.toFixed(2)}
+                          €{finalPerPerson.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-3 py-2 text-right font-bold text-gray-900 bg-green-100">
-                          ${total.toFixed(2)}
+                          €{total.toFixed(2)}
                         </td>
                       </tr>
                     );
@@ -1492,19 +1492,19 @@ function PricingPageContent() {
                       <tr key={idx} className="hover:bg-gray-50">
                         <td className="border border-gray-300 px-4 py-2 font-semibold">{row.pax}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
-                          ${row.adultPerPerson.toFixed(2)}
+                          €{row.adultPerPerson.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-orange-700">
-                          ${row.singleSupplement.toFixed(2)}
+                          €{row.singleSupplement.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          ${row.child0to2.toFixed(2)}
+                          €{row.child0to2.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          ${row.child3to5.toFixed(2)}
+                          €{row.child3to5.toFixed(2)}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          ${row.child6to11.toFixed(2)}
+                          €{row.child6to11.toFixed(2)}
                         </td>
                       </tr>
                     ))}

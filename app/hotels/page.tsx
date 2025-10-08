@@ -269,18 +269,18 @@ export default function HotelsPage() {
                     <td className="px-4 py-3 text-gray-900">{hotel.category}</td>
                     <td className="px-4 py-3 text-gray-900">{hotel.start_date || '-'}</td>
                     <td className="px-4 py-3 text-gray-900">{hotel.end_date || '-'}</td>
-                    <td className="px-4 py-3 text-right text-gray-900">${hotel.pp_dbl_rate.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-gray-900">€{hotel.pp_dbl_rate.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right text-gray-900">
-                      {hotel.single_supplement ? `$${hotel.single_supplement.toFixed(2)}` : '-'}
+                      {hotel.single_supplement ? `€${hotel.single_supplement.toFixed(2)}` : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-900">
-                      {hotel.child_0to2 ? `$${hotel.child_0to2.toFixed(2)}` : '-'}
+                      {hotel.child_0to2 ? `€${hotel.child_0to2.toFixed(2)}` : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-900">
-                      {hotel.child_3to5 ? `$${hotel.child_3to5.toFixed(2)}` : '-'}
+                      {hotel.child_3to5 ? `€${hotel.child_3to5.toFixed(2)}` : '-'}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-900">
-                      {hotel.child_6to11 ? `$${hotel.child_6to11.toFixed(2)}` : '-'}
+                      {hotel.child_6to11 ? `€${hotel.child_6to11.toFixed(2)}` : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button

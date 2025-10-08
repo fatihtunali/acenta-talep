@@ -170,7 +170,9 @@ const ExpenseTable = ({
               : item.price || 0;
 
             const isHotelCategory = category === 'hotelAccommodation';
-            const showAutocomplete = isHotelCategory && activeAutocomplete === item.id && filteredHotels.length > 0;
+            const isEntranceFeesCategory = category === 'entranceFees';
+            const showHotelAutocomplete = isHotelCategory && activeAutocomplete === item.id && filteredHotels.length > 0;
+            const showSightseeingAutocomplete = isEntranceFeesCategory && activeAutocomplete === item.id && filteredSightseeing.length > 0;
 
             return (
               <tr key={item.id} className="hover:bg-gray-50">
@@ -186,8 +188,15 @@ const ExpenseTable = ({
                         );
                         setFilteredHotels(filtered);
                         setActiveAutocomplete(item.id);
+                      } else if (isEntranceFeesCategory && e.target.value.length > 0) {
+                        const filtered = sightseeing.filter(place =>
+                          place.city.toLowerCase().includes(e.target.value.toLowerCase())
+                        );
+                        setFilteredSightseeing(filtered);
+                        setActiveAutocomplete(item.id);
                       } else {
                         setFilteredHotels([]);
+                        setFilteredSightseeing([]);
                         setActiveAutocomplete(null);
                       }
                     }}
@@ -198,6 +207,12 @@ const ExpenseTable = ({
                         );
                         setFilteredHotels(filtered);
                         setActiveAutocomplete(item.id);
+                      } else if (isEntranceFeesCategory && item.location.length > 0) {
+                        const filtered = sightseeing.filter(place =>
+                          place.city.toLowerCase().includes(item.location.toLowerCase())
+                        );
+                        setFilteredSightseeing(filtered);
+                        setActiveAutocomplete(item.id);
                       }
                     }}
                     onBlur={() => {
@@ -205,12 +220,13 @@ const ExpenseTable = ({
                       setTimeout(() => {
                         setActiveAutocomplete(null);
                         setFilteredHotels([]);
+                        setFilteredSightseeing([]);
                       }, 200);
                     }}
                     placeholder="City/Location"
                     className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
-                  {showAutocomplete && (
+                  {showHotelAutocomplete && (
                     <div className="absolute z-50 top-full left-0 w-64 bg-white border border-gray-300 shadow-lg max-h-48 overflow-y-auto">
                       {filteredHotels.map((hotel) => (
                         <div
@@ -241,6 +257,32 @@ const ExpenseTable = ({
                                 ({hotel.start_date} to {hotel.end_date})
                               </span>
                             )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {showSightseeingAutocomplete && (
+                    <div className="absolute z-50 top-full left-0 w-64 bg-white border border-gray-300 shadow-lg max-h-48 overflow-y-auto">
+                      {filteredSightseeing.map((place) => (
+                        <div
+                          key={place.id}
+                          className="px-2 py-1 hover:bg-indigo-100 cursor-pointer text-xs"
+                          onMouseDown={() => {
+                            if (onSelectSightseeing) {
+                              onSelectSightseeing(dayIndex, category, item.id, {
+                                city: place.city,
+                                place_name: place.place_name,
+                                price: place.price
+                              });
+                            }
+                            setActiveAutocomplete(null);
+                            setFilteredSightseeing([]);
+                          }}
+                        >
+                          <div className="font-semibold text-gray-900">{place.place_name}</div>
+                          <div className="text-gray-600">
+                            {place.city} - €{place.price.toFixed(2)}
                           </div>
                         </div>
                       ))}
@@ -624,6 +666,24 @@ function PricingPageContent() {
         item.child0to2 = hotel.child_0to2 || undefined;
         item.child3to5 = hotel.child_3to5 || undefined;
         item.child6to11 = hotel.child_6to11 || undefined;
+      }
+      return newDays;
+    });
+  }, []);
+
+  const handleSelectSightseeing = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, place: {
+    city: string;
+    place_name: string;
+    price: number;
+  }) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      const item = categoryArray.find(e => e.id === itemId);
+      if (item) {
+        item.location = place.city;
+        item.description = place.place_name;
+        item.price = place.price;
       }
       return newDays;
     });
@@ -1188,11 +1248,13 @@ function PricingPageContent() {
                     showChildRates={true}
                     pax={pax}
                     transportPricingMode={transportPricingMode}
+                    sightseeing={sightseeing}
                     onAddRow={addRow}
                     onDeleteRow={deleteRow}
                     onUpdateItem={updateItem}
                     onUpdateVehicleCount={updateVehicleCount}
                     onUpdatePricePerVehicle={updatePricePerVehicle}
+                    onSelectSightseeing={handleSelectSightseeing}
                   />
 
                   {tourType === 'SIC' && (

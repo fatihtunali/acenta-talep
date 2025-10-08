@@ -9,7 +9,11 @@ interface ExpenseItem {
   id: string;
   location: string; // City/Location (e.g., Istanbul, Cappadocia)
   description: string; // Hotel/Restaurant name or description
-  price: number;
+  price: number; // Adult per person rate
+  singleSupplement?: number; // Single supplement (mainly for hotels)
+  child0to2?: number; // Child 0-2.99 years rate
+  child3to5?: number; // Child 3-5.99 years rate
+  child6to11?: number; // Child 6-11.99 years rate
   vehicleCount?: number; // For vehicle-based pricing
   pricePerVehicle?: number; // Price per vehicle
 }
@@ -34,6 +38,10 @@ interface LoadedExpenseItem {
   location: string;
   description: string;
   price: number;
+  singleSupplement?: number;
+  child0to2?: number;
+  child3to5?: number;
+  child6to11?: number;
   vehicleCount?: number;
   pricePerVehicle?: number;
 }
@@ -67,6 +75,7 @@ const ExpenseTable = ({
   isGeneral = false,
   color = 'blue',
   isTransportation = false,
+  showChildRates = false,
   pax,
   transportPricingMode,
   onAddRow,
@@ -82,11 +91,12 @@ const ExpenseTable = ({
   isGeneral?: boolean;
   color?: string;
   isTransportation?: boolean;
+  showChildRates?: boolean;
   pax: number;
   transportPricingMode: 'total' | 'vehicle';
   onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
   onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
-  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: string | number) => void;
+  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => void;
   onUpdateVehicleCount: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
   onUpdatePricePerVehicle: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
 }) => {
@@ -182,9 +192,70 @@ const ExpenseTable = ({
                         const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                         onUpdateItem(dayIndex, category, item.id, 'price', value);
                       }}
+                      placeholder="Adult"
                       className="w-full px-1.5 py-1 text-xs text-right text-gray-900 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </td>
+                )}
+                {showChildRates && (
+                  <>
+                    <td className="border border-gray-300 p-0 w-20">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={!item.singleSupplement || item.singleSupplement === 0 ? '' : item.singleSupplement}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                          onUpdateItem(dayIndex, category, item.id, 'singleSupplement', value);
+                        }}
+                        placeholder="SGL"
+                        className="w-full px-1.5 py-1 text-xs text-right text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="border border-gray-300 p-0 w-20">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={!item.child0to2 || item.child0to2 === 0 ? '' : item.child0to2}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                          onUpdateItem(dayIndex, category, item.id, 'child0to2', value);
+                        }}
+                        placeholder="0-2"
+                        className="w-full px-1.5 py-1 text-xs text-right text-purple-900 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                    </td>
+                    <td className="border border-gray-300 p-0 w-20">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={!item.child3to5 || item.child3to5 === 0 ? '' : item.child3to5}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                          onUpdateItem(dayIndex, category, item.id, 'child3to5', value);
+                        }}
+                        placeholder="3-5"
+                        className="w-full px-1.5 py-1 text-xs text-right text-purple-900 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                    </td>
+                    <td className="border border-gray-300 p-0 w-20">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={!item.child6to11 || item.child6to11 === 0 ? '' : item.child6to11}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                          onUpdateItem(dayIndex, category, item.id, 'child6to11', value);
+                        }}
+                        placeholder="6-11"
+                        className="w-full px-1.5 py-1 text-xs text-right text-purple-900 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                    </td>
+                  </>
                 )}
                 {isGeneral && (
                   <td className="border border-gray-300 px-1.5 py-1 text-right text-xs font-semibold text-red-700 bg-red-50 w-20">
@@ -358,16 +429,16 @@ function PricingPageContent() {
     });
   }, []);
 
-  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: string | number) => {
+  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => {
     setDays(prevDays => {
       const newDays = [...prevDays];
       const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
       const item = categoryArray.find(e => e.id === itemId);
       if (item) {
-        if (field === 'price') {
-          item[field] = value as number;
-        } else {
+        if (field === 'location' || field === 'description') {
           item[field] = value as string;
+        } else {
+          item[field] = value as number;
         }
       }
       return newDays;
@@ -775,6 +846,7 @@ function PricingPageContent() {
                     dayIndex={dayIndex}
                     category="hotelAccommodation"
                     color="blue"
+                    showChildRates={true}
                     pax={pax}
                     transportPricingMode={transportPricingMode}
                     onAddRow={addRow}
@@ -789,6 +861,7 @@ function PricingPageContent() {
                     items={day.meals}
                     dayIndex={dayIndex}
                     category="meals"
+                    showChildRates={true}
                     color="green"
                     pax={pax}
                     transportPricingMode={transportPricingMode}
@@ -805,6 +878,7 @@ function PricingPageContent() {
                     dayIndex={dayIndex}
                     category="entranceFees"
                     color="orange"
+                    showChildRates={true}
                     pax={pax}
                     transportPricingMode={transportPricingMode}
                     onAddRow={addRow}

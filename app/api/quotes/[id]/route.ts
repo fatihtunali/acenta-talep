@@ -23,6 +23,10 @@ interface ExpenseItem {
   location: string;
   description: string;
   price: number;
+  singleSupplement?: number;
+  child0to2?: number;
+  child3to5?: number;
+  child6to11?: number;
   vehicleCount?: number;
   pricePerVehicle?: number;
 }
@@ -90,6 +94,10 @@ export async function GET(
           location: expense.location || '',
           description: expense.description || '',
           price: parseFloat(expense.price),
+          singleSupplement: expense.single_supplement ? parseFloat(expense.single_supplement) : undefined,
+          child0to2: expense.child_0to2 ? parseFloat(expense.child_0to2) : undefined,
+          child3to5: expense.child_3to5 ? parseFloat(expense.child_3to5) : undefined,
+          child6to11: expense.child_6to11 ? parseFloat(expense.child_6to11) : undefined,
           vehicleCount: expense.vehicle_count,
           pricePerVehicle: expense.price_per_vehicle ? parseFloat(expense.price_per_vehicle) : undefined
         };
@@ -199,14 +207,18 @@ export async function PUT(
           for (const expense of expenses) {
             if (expense.location || expense.description || expense.price > 0) {
               await connection.execute(
-                `INSERT INTO quote_expenses (quote_day_id, category, location, description, price, vehicle_count, price_per_vehicle)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO quote_expenses (quote_day_id, category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                   quoteDayId,
                   category,
                   expense.location,
                   expense.description,
                   expense.price,
+                  expense.singleSupplement || null,
+                  expense.child0to2 || null,
+                  expense.child3to5 || null,
+                  expense.child6to11 || null,
                   expense.vehicleCount || null,
                   expense.pricePerVehicle || null
                 ]

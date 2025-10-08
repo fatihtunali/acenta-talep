@@ -18,16 +18,23 @@ interface Pricing {
 
 interface Hotel {
   id: number;
+  cityId: number;
   city: string;
   hotel_name: string;
   category: string;
   pricing: Pricing[];
 }
 
+interface CityOption {
+  id: number;
+  name: string;
+}
+
 export default function HotelsPage() {
   const { status } = useSession();
   const router = useRouter();
   const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [filteredHotels, setFilteredHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCity, setSearchCity] = useState('');
@@ -41,6 +48,7 @@ export default function HotelsPage() {
 
   const [hotelFormData, setHotelFormData] = useState({
     city: '',
+    cityId: null as number | null,
     hotelName: '',
     category: ''
   });
@@ -59,6 +67,7 @@ export default function HotelsPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      loadCities();
       loadHotels();
     }
   }, [status, router]);
@@ -74,6 +83,18 @@ export default function HotelsPage() {
       setFilteredHotels(hotels);
     }
   }, [searchCity, hotels]);
+
+  const loadCities = async () => {
+    try {
+      const response = await fetch('/api/cities');
+      const data = await response.json();
+      if (response.ok) {
+        setCities(data.cities);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
 
   const loadHotels = async () => {
     try {
@@ -92,6 +113,7 @@ export default function HotelsPage() {
     setEditingHotel(null);
     setHotelFormData({
       city: '',
+      cityId: null,
       hotelName: '',
       category: ''
     });
@@ -102,6 +124,7 @@ export default function HotelsPage() {
     setEditingHotel(hotel);
     setHotelFormData({
       city: hotel.city,
+      cityId: hotel.cityId,
       hotelName: hotel.hotel_name,
       category: hotel.category
     });
@@ -118,6 +141,7 @@ export default function HotelsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city: hotelFormData.city,
+          cityId: hotelFormData.cityId,
           hotelName: hotelFormData.hotelName,
           category: hotelFormData.category
         })
@@ -129,6 +153,7 @@ export default function HotelsPage() {
         setSaveMessage(`Hotel ${editingHotel ? 'updated' : 'added'} successfully`);
         setTimeout(() => setSaveMessage(''), 3000);
         setShowAddHotelModal(false);
+        loadCities();
         loadHotels();
       } else {
         setSaveMessage('Failed to save hotel');
@@ -139,6 +164,22 @@ export default function HotelsPage() {
       setSaveMessage('Error saving hotel');
       setTimeout(() => setSaveMessage(''), 3000);
     }
+  };
+
+  const normalizeCityLabel = (value: string) =>
+    value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const handleHotelCityChange = (value: string) => {
+    const normalizedInput = normalizeCityLabel(value);
+    const matchedCity = cities.find(
+      (city) => normalizeCityLabel(city.name) === normalizedInput
+    );
+
+    setHotelFormData((prev) => ({
+      ...prev,
+      city: value,
+      cityId: matchedCity ? matchedCity.id : null
+    }));
   };
 
   const handleDeleteHotel = async (hotelId: number) => {
@@ -488,11 +529,18 @@ export default function HotelsPage() {
                     </label>
                     <input
                       type="text"
+                      list="hotel-city-options"
                       value={hotelFormData.city}
-                      onChange={(e) => setHotelFormData({ ...hotelFormData, city: e.target.value })}
+                      onChange={(e) => handleHotelCityChange(e.target.value)}
+                      onBlur={(e) => handleHotelCityChange(e.target.value.trim().replace(/\s+/g, ' '))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
                       placeholder="Istanbul"
                     />
+                    <datalist id="hotel-city-options">
+                      {cities.map((city) => (
+                        <option key={city.id} value={city.name} />
+                      ))}
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

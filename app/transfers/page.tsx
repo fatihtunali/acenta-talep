@@ -7,9 +7,15 @@ import { signOut } from 'next-auth/react';
 
 interface Transfer {
   id: number;
+  cityId: number;
   city: string;
   transfer_type: string;
   price: number;
+}
+
+interface CityOption {
+  id: number;
+  name: string;
 }
 
 const transferTypes = [
@@ -26,6 +32,7 @@ const transferTypes = [
 export default function TransfersPage() {
   const { status } = useSession();
   const router = useRouter();
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [filteredTransfers, setFilteredTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +43,7 @@ export default function TransfersPage() {
 
   const [formData, setFormData] = useState({
     city: '',
+    cityId: null as number | null,
     transferType: '',
     price: ''
   });
@@ -44,6 +52,7 @@ export default function TransfersPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      loadCities();
       loadTransfers();
     }
   }, [status, router]);
@@ -60,6 +69,18 @@ export default function TransfersPage() {
     }
   }, [searchCity, transfers]);
 
+  const loadCities = async () => {
+    try {
+      const response = await fetch('/api/cities');
+      const data = await response.json();
+      if (response.ok) {
+        setCities(data.cities);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
   const loadTransfers = async () => {
     try {
       const response = await fetch('/api/transfers');
@@ -73,10 +94,27 @@ export default function TransfersPage() {
     }
   };
 
+  const normalizeCityLabel = (value: string) =>
+    value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const handleCityChange = (value: string) => {
+    const normalizedInput = normalizeCityLabel(value);
+    const matchedCity = cities.find(
+      (city) => normalizeCityLabel(city.name) === normalizedInput
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      city: value,
+      cityId: matchedCity ? matchedCity.id : null
+    }));
+  };
+
   const handleAdd = () => {
     setEditingTransfer(null);
     setFormData({
       city: '',
+      cityId: null,
       transferType: '',
       price: ''
     });
@@ -87,6 +125,7 @@ export default function TransfersPage() {
     setEditingTransfer(transfer);
     setFormData({
       city: transfer.city,
+      cityId: transfer.cityId,
       transferType: transfer.transfer_type,
       price: transfer.price.toString()
     });
@@ -103,6 +142,7 @@ export default function TransfersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city: formData.city,
+          cityId: formData.cityId,
           transferType: formData.transferType,
           price: parseFloat(formData.price)
         })
@@ -111,21 +151,21 @@ export default function TransfersPage() {
       const data = await response.json();
 
       if (data.success) {
-        setSaveMessage(`✅ Transfer ${editingTransfer ? 'updated' : 'added'} successfully`);
+        setSaveMessage(`Transfer ${editingTransfer ? 'updated' : 'added'} successfully`);
         setTimeout(() => setSaveMessage(''), 3000);
         setShowAddModal(false);
+        loadCities();
         loadTransfers();
       } else {
-        setSaveMessage('❌ Failed to save transfer');
+        setSaveMessage('Failed to save transfer');
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
       console.error('Error saving transfer:', error);
-      setSaveMessage('❌ Error saving transfer');
+      setSaveMessage('Error saving transfer');
       setTimeout(() => setSaveMessage(''), 3000);
     }
   };
-
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this transfer?')) return;
 
@@ -279,11 +319,18 @@ export default function TransfersPage() {
                   </label>
                   <input
                     type="text"
+                    list="transfer-city-options"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    onBlur={(e) => handleCityChange(e.target.value.trim().replace(/\s+/g, ' '))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
                     placeholder="Istanbul"
                   />
+                  <datalist id="transfer-city-options">
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.name} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>

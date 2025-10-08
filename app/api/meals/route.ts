@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { resolveCityId } from '@/lib/cities';
 
 // GET - List all restaurants with their menu pricing
 export async function GET(request: NextRequest) {
@@ -16,11 +17,13 @@ export async function GET(request: NextRequest) {
     const userId = parseInt(session.user.id, 10);
     const { searchParams } = new URL(request.url);
     const city = searchParams.get('city');
+    const cityId = searchParams.get('cityId');
 
     let query = `
       SELECT
         r.id as restaurant_id,
-        r.city,
+        r.city_id,
+        c.name AS city_name,
         r.restaurant_name,
         r.created_at as restaurant_created_at,
         rmp.id as menu_id,
@@ -30,17 +33,21 @@ export async function GET(request: NextRequest) {
         rmp.end_date,
         rmp.created_at as menu_created_at
       FROM restaurants r
+      JOIN cities c ON c.id = r.city_id
       LEFT JOIN restaurant_menu_pricing rmp ON r.id = rmp.restaurant_id
       WHERE r.user_id = ?
     `;
     const params: (number | string)[] = [userId];
 
-    if (city) {
-      query += ` AND r.city LIKE ?`;
+    if (cityId) {
+      query += ` AND r.city_id = ?`;
+      params.push(parseInt(cityId, 10));
+    } else if (city) {
+      query += ` AND c.name LIKE ?`;
       params.push(`%${city}%`);
     }
 
-    query += ` ORDER BY r.city, r.restaurant_name, rmp.menu_option`;
+    query += ` ORDER BY c.name, r.restaurant_name, rmp.menu_option`;
 
     const [rows] = await pool.execute<RowDataPacket[]>(query, params);
 
@@ -53,7 +60,8 @@ export async function GET(request: NextRequest) {
       if (!restaurantsMap.has(restaurantId)) {
         restaurantsMap.set(restaurantId, {
           id: restaurantId,
-          city: row.city,
+          cityId: row.city_id,
+          city: row.city_name,
           restaurant_name: row.restaurant_name,
           created_at: row.restaurant_created_at,
           menu: []
@@ -97,10 +105,25 @@ export async function POST(request: NextRequest) {
     const userId = parseInt(session.user.id, 10);
     const data = await request.json();
 
+    let resolvedCityId: number;
+
+    try {
+      resolvedCityId = await resolveCityId(userId, {
+        cityId: data.cityId ?? null,
+        cityName: data.city ?? data.cityName ?? null
+      });
+    } catch (error) {
+      console.error('Error resolving city for restaurant:', error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to resolve city' },
+        { status: 400 }
+      );
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO restaurants (user_id, city, restaurant_name)
+      `INSERT INTO restaurants (user_id, city_id, restaurant_name)
        VALUES (?, ?, ?)`,
-      [userId, data.city, data.restaurantName]
+      [userId, resolvedCityId, data.restaurantName]
     );
 
     return NextResponse.json({

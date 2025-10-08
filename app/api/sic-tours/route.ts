@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { resolveCityId } from '@/lib/cities';
 
 // GET - List all SIC tours with their pricing periods
 export async function GET(request: NextRequest) {
@@ -16,11 +17,13 @@ export async function GET(request: NextRequest) {
     const userId = parseInt(session.user.id, 10);
     const { searchParams } = new URL(request.url);
     const city = searchParams.get('city');
+    const cityId = searchParams.get('cityId');
 
     let query = `
       SELECT
         st.id as tour_id,
-        st.city,
+        st.city_id,
+        c.name AS city_name,
         st.tour_name,
         st.created_at as tour_created_at,
         stp.id as pricing_id,
@@ -33,17 +36,21 @@ export async function GET(request: NextRequest) {
         stp.child_6to11,
         stp.created_at as pricing_created_at
       FROM sic_tours st
+      JOIN cities c ON c.id = st.city_id
       LEFT JOIN sic_tour_pricing stp ON st.id = stp.tour_id
       WHERE st.user_id = ?
     `;
     const params: (number | string)[] = [userId];
 
-    if (city) {
-      query += ` AND st.city LIKE ?`;
+    if (cityId) {
+      query += ` AND st.city_id = ?`;
+      params.push(parseInt(cityId, 10));
+    } else if (city) {
+      query += ` AND c.name LIKE ?`;
       params.push(`%${city}%`);
     }
 
-    query += ` ORDER BY st.city, st.tour_name, stp.start_date`;
+    query += ` ORDER BY c.name, st.tour_name, stp.start_date`;
 
     const [rows] = await pool.execute<RowDataPacket[]>(query, params);
 
@@ -56,7 +63,8 @@ export async function GET(request: NextRequest) {
       if (!toursMap.has(tourId)) {
         toursMap.set(tourId, {
           id: tourId,
-          city: row.city,
+          cityId: row.city_id,
+          city: row.city_name,
           tour_name: row.tour_name,
           created_at: row.tour_created_at,
           pricing: []
@@ -103,10 +111,25 @@ export async function POST(request: NextRequest) {
     const userId = parseInt(session.user.id, 10);
     const data = await request.json();
 
+    let resolvedCityId: number;
+
+    try {
+      resolvedCityId = await resolveCityId(userId, {
+        cityId: data.cityId ?? null,
+        cityName: data.city ?? data.cityName ?? null
+      });
+    } catch (error) {
+      console.error('Error resolving city for SIC tour:', error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to resolve city' },
+        { status: 400 }
+      );
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO sic_tours (user_id, city, tour_name)
+      `INSERT INTO sic_tours (user_id, city_id, tour_name)
        VALUES (?, ?, ?)`,
-      [userId, data.city, data.tourName]
+      [userId, resolvedCityId, data.tourName]
     );
 
     return NextResponse.json({

@@ -7,14 +7,21 @@ import { signOut } from 'next-auth/react';
 
 interface Sightseeing {
   id: number;
+  cityId: number;
   city: string;
   place_name: string;
   price: number;
 }
 
+interface CityOption {
+  id: number;
+  name: string;
+}
+
 export default function SightseeingPage() {
   const { status } = useSession();
   const router = useRouter();
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [sightseeing, setSightseeing] = useState<Sightseeing[]>([]);
   const [filteredSightseeing, setFilteredSightseeing] = useState<Sightseeing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +32,7 @@ export default function SightseeingPage() {
 
   const [formData, setFormData] = useState({
     city: '',
+    cityId: null as number | null,
     placeName: '',
     price: ''
   });
@@ -33,6 +41,7 @@ export default function SightseeingPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      loadCities();
       loadSightseeing();
     }
   }, [status, router]);
@@ -49,6 +58,18 @@ export default function SightseeingPage() {
     }
   }, [searchCity, sightseeing]);
 
+  const loadCities = async () => {
+    try {
+      const response = await fetch('/api/cities');
+      const data = await response.json();
+      if (response.ok) {
+        setCities(data.cities);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
   const loadSightseeing = async () => {
     try {
       const response = await fetch('/api/sightseeing');
@@ -62,10 +83,27 @@ export default function SightseeingPage() {
     }
   };
 
+  const normalizeCityLabel = (value: string) =>
+    value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const handleCityChange = (value: string) => {
+    const normalizedInput = normalizeCityLabel(value);
+    const matchedCity = cities.find(
+      (city) => normalizeCityLabel(city.name) === normalizedInput
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      city: value,
+      cityId: matchedCity ? matchedCity.id : null
+    }));
+  };
+
   const handleAdd = () => {
     setEditingItem(null);
     setFormData({
       city: '',
+      cityId: null,
       placeName: '',
       price: ''
     });
@@ -76,6 +114,7 @@ export default function SightseeingPage() {
     setEditingItem(item);
     setFormData({
       city: item.city,
+      cityId: item.cityId,
       placeName: item.place_name,
       price: item.price.toString()
     });
@@ -92,6 +131,7 @@ export default function SightseeingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city: formData.city,
+          cityId: formData.cityId,
           placeName: formData.placeName,
           price: parseFloat(formData.price)
         })
@@ -100,21 +140,21 @@ export default function SightseeingPage() {
       const data = await response.json();
 
       if (data.success) {
-        setSaveMessage(`✅ Sightseeing ${editingItem ? 'updated' : 'added'} successfully`);
+        setSaveMessage(`Sightseeing ${editingItem ? 'updated' : 'added'} successfully`);
         setTimeout(() => setSaveMessage(''), 3000);
         setShowAddModal(false);
+        loadCities();
         loadSightseeing();
       } else {
-        setSaveMessage('❌ Failed to save sightseeing');
+        setSaveMessage('Failed to save sightseeing');
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (error) {
       console.error('Error saving sightseeing:', error);
-      setSaveMessage('❌ Error saving sightseeing');
+      setSaveMessage('Error saving sightseeing');
       setTimeout(() => setSaveMessage(''), 3000);
     }
   };
-
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this sightseeing place?')) return;
 
@@ -268,11 +308,18 @@ export default function SightseeingPage() {
                   </label>
                   <input
                     type="text"
+                    list="sightseeing-city-options"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    onBlur={(e) => handleCityChange(e.target.value.trim().replace(/\s+/g, ' '))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
                     placeholder="Cappadocia"
                   />
+                  <datalist id="sightseeing-city-options">
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.name} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>

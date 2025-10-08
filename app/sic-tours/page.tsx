@@ -18,14 +18,21 @@ interface Pricing {
 
 interface SicTour {
   id: number;
+  cityId: number;
   city: string;
   tour_name: string;
   pricing: Pricing[];
 }
 
+interface CityOption {
+  id: number;
+  name: string;
+}
+
 export default function SicToursPage() {
   const { status } = useSession();
   const router = useRouter();
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [sicTours, setSicTours] = useState<SicTour[]>([]);
   const [filteredSicTours, setFilteredSicTours] = useState<SicTour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +47,7 @@ export default function SicToursPage() {
 
   const [tourFormData, setTourFormData] = useState({
     city: '',
+    cityId: null as number | null,
     tourName: ''
   });
 
@@ -57,6 +65,7 @@ export default function SicToursPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      loadCities();
       loadSicTours();
     }
   }, [status, router]);
@@ -73,6 +82,18 @@ export default function SicToursPage() {
     }
   }, [searchCity, sicTours]);
 
+  const loadCities = async () => {
+    try {
+      const response = await fetch('/api/cities');
+      const data = await response.json();
+      if (response.ok) {
+        setCities(data.cities);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
   const loadSicTours = async () => {
     try {
       const response = await fetch('/api/sic-tours');
@@ -86,10 +107,27 @@ export default function SicToursPage() {
     }
   };
 
+  const normalizeCityLabel = (value: string) =>
+    value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const handleTourCityChange = (value: string) => {
+    const normalizedInput = normalizeCityLabel(value);
+    const matchedCity = cities.find(
+      (city) => normalizeCityLabel(city.name) === normalizedInput
+    );
+
+    setTourFormData((prev) => ({
+      ...prev,
+      city: value,
+      cityId: matchedCity ? matchedCity.id : null
+    }));
+  };
+
   const handleAddTour = () => {
     setEditingTour(null);
     setTourFormData({
       city: '',
+      cityId: null,
       tourName: ''
     });
     setShowAddTourModal(true);
@@ -99,6 +137,7 @@ export default function SicToursPage() {
     setEditingTour(tour);
     setTourFormData({
       city: tour.city,
+      cityId: tour.cityId,
       tourName: tour.tour_name
     });
     setShowAddTourModal(true);
@@ -114,6 +153,7 @@ export default function SicToursPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city: tourFormData.city,
+          cityId: tourFormData.cityId,
           tourName: tourFormData.tourName
         })
       });
@@ -124,6 +164,7 @@ export default function SicToursPage() {
         setSaveMessage(`Tour ${editingTour ? 'updated' : 'added'} successfully`);
         setTimeout(() => setSaveMessage(''), 3000);
         setShowAddTourModal(false);
+        loadCities();
         loadSicTours();
       } else {
         setSaveMessage('Failed to save tour');
@@ -481,11 +522,18 @@ export default function SicToursPage() {
                     </label>
                     <input
                       type="text"
+                      list="sic-tour-city-options"
                       value={tourFormData.city}
-                      onChange={(e) => setTourFormData({ ...tourFormData, city: e.target.value })}
+                      onChange={(e) => handleTourCityChange(e.target.value)}
+                      onBlur={(e) => handleTourCityChange(e.target.value.trim().replace(/\s+/g, ' '))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-gray-900"
                       placeholder="Istanbul"
                     />
+                    <datalist id="sic-tour-city-options">
+                      {cities.map((city) => (
+                        <option key={city.id} value={city.name} />
+                      ))}
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

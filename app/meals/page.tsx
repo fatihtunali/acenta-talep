@@ -15,14 +15,21 @@ interface MenuItem {
 
 interface Restaurant {
   id: number;
+  cityId: number;
   city: string;
   restaurant_name: string;
   menu: MenuItem[];
 }
 
+interface CityOption {
+  id: number;
+  name: string;
+}
+
 export default function MealsPage() {
   const { status } = useSession();
   const router = useRouter();
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +44,7 @@ export default function MealsPage() {
 
   const [restaurantFormData, setRestaurantFormData] = useState({
     city: '',
+    cityId: null as number | null,
     restaurantName: ''
   });
 
@@ -51,6 +59,7 @@ export default function MealsPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      loadCities();
       loadRestaurants();
     }
   }, [status, router]);
@@ -67,6 +76,18 @@ export default function MealsPage() {
     }
   }, [searchCity, restaurants]);
 
+  const loadCities = async () => {
+    try {
+      const response = await fetch('/api/cities');
+      const data = await response.json();
+      if (response.ok) {
+        setCities(data.cities);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
   const loadRestaurants = async () => {
     try {
       const response = await fetch('/api/meals');
@@ -80,10 +101,27 @@ export default function MealsPage() {
     }
   };
 
+  const normalizeCityLabel = (value: string) =>
+    value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const handleRestaurantCityChange = (value: string) => {
+    const normalizedInput = normalizeCityLabel(value);
+    const matchedCity = cities.find(
+      (city) => normalizeCityLabel(city.name) === normalizedInput
+    );
+
+    setRestaurantFormData((prev) => ({
+      ...prev,
+      city: value,
+      cityId: matchedCity ? matchedCity.id : null
+    }));
+  };
+
   const handleAddRestaurant = () => {
     setEditingRestaurant(null);
     setRestaurantFormData({
       city: '',
+      cityId: null,
       restaurantName: ''
     });
     setShowAddRestaurantModal(true);
@@ -93,6 +131,7 @@ export default function MealsPage() {
     setEditingRestaurant(restaurant);
     setRestaurantFormData({
       city: restaurant.city,
+      cityId: restaurant.cityId,
       restaurantName: restaurant.restaurant_name
     });
     setShowAddRestaurantModal(true);
@@ -108,6 +147,7 @@ export default function MealsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city: restaurantFormData.city,
+          cityId: restaurantFormData.cityId,
           restaurantName: restaurantFormData.restaurantName
         })
       });
@@ -118,6 +158,7 @@ export default function MealsPage() {
         setSaveMessage(`Restaurant ${editingRestaurant ? 'updated' : 'added'} successfully`);
         setTimeout(() => setSaveMessage(''), 3000);
         setShowAddRestaurantModal(false);
+        loadCities();
         loadRestaurants();
       } else {
         setSaveMessage('Failed to save restaurant');
@@ -451,11 +492,18 @@ export default function MealsPage() {
                   </label>
                   <input
                     type="text"
+                    list="restaurant-city-options"
                     value={restaurantFormData.city}
-                    onChange={(e) => setRestaurantFormData({ ...restaurantFormData, city: e.target.value })}
+                    onChange={(e) => handleRestaurantCityChange(e.target.value)}
+                    onBlur={(e) => handleRestaurantCityChange(e.target.value.trim().replace(/\s+/g, ' '))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
                     placeholder="Istanbul"
                   />
+                  <datalist id="restaurant-city-options">
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.name} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>

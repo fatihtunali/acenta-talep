@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { ResultSetHeader } from 'mysql2';
+import { resolveCityId } from '@/lib/cities';
 
 // PUT - Update hotel base information (city, name, category)
 export async function PUT(
@@ -20,12 +21,27 @@ export async function PUT(
     const userId = parseInt(session.user.id, 10);
     const data = await request.json();
 
+    let resolvedCityId: number | null = null;
+
+    try {
+      resolvedCityId = await resolveCityId(userId, {
+        cityId: data.cityId ?? null,
+        cityName: data.city ?? data.cityName ?? null
+      });
+    } catch (error) {
+      console.error('Error resolving city for hotel update:', error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to resolve city' },
+        { status: 400 }
+      );
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE hotels
-       SET city = ?, hotel_name = ?, category = ?
+       SET city_id = ?, hotel_name = ?, category = ?
        WHERE id = ? AND user_id = ?`,
       [
-        data.city,
+        resolvedCityId,
         data.hotelName,
         data.category,
         id,

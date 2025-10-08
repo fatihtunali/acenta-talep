@@ -175,6 +175,12 @@ export default function HotelsPage() {
     }
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD format
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -267,8 +273,8 @@ export default function HotelsPage() {
                     <td className="px-4 py-3 text-gray-900">{hotel.city}</td>
                     <td className="px-4 py-3 text-gray-900">{hotel.hotel_name}</td>
                     <td className="px-4 py-3 text-gray-900">{hotel.category}</td>
-                    <td className="px-4 py-3 text-gray-900">{hotel.start_date || '-'}</td>
-                    <td className="px-4 py-3 text-gray-900">{hotel.end_date || '-'}</td>
+                    <td className="px-4 py-3 text-gray-900">{formatDate(hotel.start_date)}</td>
+                    <td className="px-4 py-3 text-gray-900">{formatDate(hotel.end_date)}</td>
                     <td className="px-4 py-3 text-right text-gray-900">€{hotel.pp_dbl_rate.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right text-gray-900">
                       {hotel.single_supplement ? `€${hotel.single_supplement.toFixed(2)}` : '-'}

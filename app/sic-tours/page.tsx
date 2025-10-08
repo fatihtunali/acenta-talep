@@ -170,6 +170,12 @@ export default function SicToursPage() {
     }
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD format
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -260,8 +266,8 @@ export default function SicToursPage() {
                   <tr key={tour.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-900">{tour.city}</td>
                     <td className="px-4 py-3 text-gray-900">{tour.tour_name}</td>
-                    <td className="px-4 py-3 text-gray-900">{tour.start_date || '-'}</td>
-                    <td className="px-4 py-3 text-gray-900">{tour.end_date || '-'}</td>
+                    <td className="px-4 py-3 text-gray-900">{formatDate(tour.start_date)}</td>
+                    <td className="px-4 py-3 text-gray-900">{formatDate(tour.end_date)}</td>
                     <td className="px-4 py-3 text-right text-gray-900">€{tour.pp_dbl_rate.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right text-gray-900">
                       {tour.single_supplement ? `€${tour.single_supplement.toFixed(2)}` : '-'}

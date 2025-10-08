@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh root@188.132.230.193 \"/root/.npm-global/bin/pm2 restart pricing && sleep 2 && /root/.npm-global/bin/pm2 status\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

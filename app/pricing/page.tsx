@@ -78,11 +78,13 @@ const ExpenseTable = ({
   showChildRates = false,
   pax,
   transportPricingMode,
+  hotels = [],
   onAddRow,
   onDeleteRow,
   onUpdateItem,
   onUpdateVehicleCount,
-  onUpdatePricePerVehicle
+  onUpdatePricePerVehicle,
+  onSelectHotel
 }: {
   title: string;
   items: ExpenseItem[];
@@ -94,12 +96,35 @@ const ExpenseTable = ({
   showChildRates?: boolean;
   pax: number;
   transportPricingMode: 'total' | 'vehicle';
+  hotels?: Array<{
+    id: number;
+    city: string;
+    hotel_name: string;
+    category: string;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }>;
   onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
   onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
   onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => void;
   onUpdateVehicleCount: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
   onUpdatePricePerVehicle: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
+  onSelectHotel?: (dayIndex: number, category: keyof DayExpenses, itemId: string, hotel: {
+    city: string;
+    hotel_name: string;
+    category: string;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }) => void;
 }) => {
+  const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
+  const [filteredHotels, setFilteredHotels] = useState<typeof hotels>([]);
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-700 ring-blue-500',
     red: 'bg-red-50 text-red-700 ring-red-500',
@@ -128,16 +153,76 @@ const ExpenseTable = ({
               ? (item.vehicleCount || 0) * (item.pricePerVehicle || 0)
               : item.price || 0;
 
+            const isHotelCategory = category === 'hotelAccommodation';
+            const showAutocomplete = isHotelCategory && activeAutocomplete === item.id && filteredHotels.length > 0;
+
             return (
               <tr key={item.id} className="hover:bg-gray-50">
-                <td className="border border-gray-300 p-0 w-32">
+                <td className="border border-gray-300 p-0 w-32 relative">
                   <input
                     type="text"
                     value={item.location}
-                    onChange={(e) => onUpdateItem(dayIndex, category, item.id, 'location', e.target.value)}
+                    onChange={(e) => {
+                      onUpdateItem(dayIndex, category, item.id, 'location', e.target.value);
+                      if (isHotelCategory && e.target.value.length > 0) {
+                        const filtered = hotels.filter(hotel =>
+                          hotel.city.toLowerCase().includes(e.target.value.toLowerCase())
+                        );
+                        setFilteredHotels(filtered);
+                        setActiveAutocomplete(item.id);
+                      } else {
+                        setFilteredHotels([]);
+                        setActiveAutocomplete(null);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (isHotelCategory && item.location.length > 0) {
+                        const filtered = hotels.filter(hotel =>
+                          hotel.city.toLowerCase().includes(item.location.toLowerCase())
+                        );
+                        setFilteredHotels(filtered);
+                        setActiveAutocomplete(item.id);
+                      }
+                    }}
+                    onBlur={() => {
+                      // Delay to allow clicking on dropdown
+                      setTimeout(() => {
+                        setActiveAutocomplete(null);
+                        setFilteredHotels([]);
+                      }, 200);
+                    }}
                     placeholder="City/Location"
                     className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
+                  {showAutocomplete && (
+                    <div className="absolute z-50 top-full left-0 w-64 bg-white border border-gray-300 shadow-lg max-h-48 overflow-y-auto">
+                      {filteredHotels.map((hotel) => (
+                        <div
+                          key={hotel.id}
+                          className="px-2 py-1 hover:bg-indigo-100 cursor-pointer text-xs"
+                          onMouseDown={() => {
+                            if (onSelectHotel) {
+                              onSelectHotel(dayIndex, category, item.id, {
+                                city: hotel.city,
+                                hotel_name: hotel.hotel_name,
+                                category: hotel.category,
+                                pp_dbl_rate: hotel.pp_dbl_rate,
+                                single_supplement: hotel.single_supplement,
+                                child_0to2: hotel.child_0to2,
+                                child_3to5: hotel.child_3to5,
+                                child_6to11: hotel.child_6to11
+                              });
+                            }
+                            setActiveAutocomplete(null);
+                            setFilteredHotels([]);
+                          }}
+                        >
+                          <div className="font-semibold text-gray-900">{hotel.hotel_name}</div>
+                          <div className="text-gray-600">{hotel.city} - {hotel.category} - ${hotel.pp_dbl_rate}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 <td className="border border-gray-300 p-0">
                   <input
@@ -297,12 +382,38 @@ function PricingPageContent() {
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
   const [showPricingTable, setShowPricingTable] = useState<boolean>(false);
+  const [hotels, setHotels] = useState<Array<{
+    id: number;
+    city: string;
+    hotel_name: string;
+    category: string;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }>>([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
+    } else if (status === 'authenticated') {
+      // Load hotels when authenticated
+      loadHotels();
     }
   }, [status, router]);
+
+  const loadHotels = async () => {
+    try {
+      const response = await fetch('/api/hotels');
+      const data = await response.json();
+      if (response.ok) {
+        setHotels(data.hotels);
+      }
+    } catch (error) {
+      console.error('Error loading hotels:', error);
+    }
+  };
 
   // Load quote if ?load=<id> or ?copy=<id> parameter is present
   useEffect(() => {
@@ -441,6 +552,33 @@ function PricingPageContent() {
         } else {
           item[field] = value as number;
         }
+      }
+      return newDays;
+    });
+  }, []);
+
+  const handleSelectHotel = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, hotel: {
+    city: string;
+    hotel_name: string;
+    category: string;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }) => {
+    setDays(prevDays => {
+      const newDays = [...prevDays];
+      const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
+      const item = categoryArray.find(e => e.id === itemId);
+      if (item) {
+        item.location = hotel.city;
+        item.description = `${hotel.hotel_name} (${hotel.category})`;
+        item.price = hotel.pp_dbl_rate;
+        item.singleSupplement = hotel.single_supplement || undefined;
+        item.child0to2 = hotel.child_0to2 || undefined;
+        item.child3to5 = hotel.child_3to5 || undefined;
+        item.child6to11 = hotel.child_6to11 || undefined;
       }
       return newDays;
     });
@@ -748,6 +886,7 @@ function PricingPageContent() {
               <h1 className="text-lg font-semibold text-gray-900">Tour Pricing Calculator</h1>
               <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
               <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</a>
+              <a href="/hotels" className="text-sm text-gray-600 hover:text-gray-900">Hotels</a>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>
@@ -969,11 +1108,13 @@ function PricingPageContent() {
                     showChildRates={true}
                     pax={pax}
                     transportPricingMode={transportPricingMode}
+                    hotels={hotels}
                     onAddRow={addRow}
                     onDeleteRow={deleteRow}
                     onUpdateItem={updateItem}
                     onUpdateVehicleCount={updateVehicleCount}
                     onUpdatePricePerVehicle={updatePricePerVehicle}
+                    onSelectHotel={handleSelectHotel}
                   />
 
                   <ExpenseTable

@@ -400,7 +400,7 @@ export default function HotelsPage() {
                           <div className="pl-12">
                             <h3 className="text-lg font-semibold text-gray-900 mb-3">Pricing Periods</h3>
                             {hotel.pricing.length === 0 ? (
-                              <p className="text-gray-500 italic">No pricing periods defined yet. Click "Add Pricing" to add one.</p>
+                              <p className="text-gray-500 italic">No pricing periods defined yet. Click &quot;Add Pricing&quot; to add one.</p>
                             ) : (
                               <div className="overflow-x-auto">
                                 <table className="w-full border border-gray-200 rounded-lg">

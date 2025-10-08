@@ -378,7 +378,7 @@ export default function MealsPage() {
                           <div className="pl-12">
                             <h3 className="text-lg font-semibold text-gray-900 mb-3">Menu Items</h3>
                             {restaurant.menu.length === 0 ? (
-                              <p className="text-gray-500 italic">No menu items defined yet. Click "Add Menu Item" to add one.</p>
+                              <p className="text-gray-500 italic">No menu items defined yet. Click &quot;Add Menu Item&quot; to add one.</p>
                             ) : (
                               <div className="overflow-x-auto">
                                 <table className="w-full border border-gray-200 rounded-lg">

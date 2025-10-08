@@ -99,7 +99,9 @@ const ExpenseTable = ({
   pax: number;
   transportPricingMode: 'total' | 'vehicle';
   hotels?: Array<{
-    id: number;
+    id: string; // Composite ID: hotelId-pricingId
+    hotel_id: number;
+    pricing_id: number;
     city: string;
     hotel_name: string;
     category: string;

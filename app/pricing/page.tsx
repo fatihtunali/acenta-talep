@@ -80,13 +80,19 @@ const ExpenseTable = ({
   transportPricingMode,
   hotels = [],
   sightseeing = [],
+  sicTours = [],
+  meals = [],
+  transfers = [],
   onAddRow,
   onDeleteRow,
   onUpdateItem,
   onUpdateVehicleCount,
   onUpdatePricePerVehicle,
   onSelectHotel,
-  onSelectSightseeing
+  onSelectSightseeing,
+  onSelectSicTour,
+  onSelectMeal,
+  onSelectTransfer
 }: {
   title: string;
   items: ExpenseItem[];
@@ -119,6 +125,37 @@ const ExpenseTable = ({
     place_name: string;
     price: number;
   }>;
+  sicTours?: Array<{
+    id: string;
+    tour_id: number;
+    pricing_id: number;
+    city: string;
+    tour_name: string;
+    start_date: string | null;
+    end_date: string | null;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }>;
+  meals?: Array<{
+    id: string;
+    restaurant_id: number;
+    menu_id: number;
+    city: string;
+    restaurant_name: string;
+    menu_option: string;
+    price: number;
+    start_date: string | null;
+    end_date: string | null;
+  }>;
+  transfers?: Array<{
+    id: number;
+    city: string;
+    transfer_type: string;
+    price: number;
+  }>;
   onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
   onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
   onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => void;
@@ -139,11 +176,34 @@ const ExpenseTable = ({
     place_name: string;
     price: number;
   }) => void;
+  onSelectSicTour?: (dayIndex: number, category: keyof DayExpenses, itemId: string, tour: {
+    city: string;
+    tour_name: string;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }) => void;
+  onSelectMeal?: (dayIndex: number, category: keyof DayExpenses, itemId: string, meal: {
+    city: string;
+    restaurant_name: string;
+    menu_option: string;
+    price: number;
+  }) => void;
+  onSelectTransfer?: (dayIndex: number, category: keyof DayExpenses, itemId: string, transfer: {
+    city: string;
+    transfer_type: string;
+    price: number;
+  }) => void;
 }) => {
   const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
   const [filteredHotels, setFilteredHotels] = useState<typeof hotels>([]);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const [filteredSightseeing, setFilteredSightseeing] = useState<typeof sightseeing>([]);
+  const [filteredSicTours, setFilteredSicTours] = useState<typeof sicTours>([]);
+  const [filteredMeals, setFilteredMeals] = useState<typeof meals>([]);
+  const [filteredTransfers, setFilteredTransfers] = useState<typeof transfers>([]);
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-700 ring-blue-500',
     red: 'bg-red-50 text-red-700 ring-red-500',
@@ -154,10 +214,13 @@ const ExpenseTable = ({
 
   const isVehicleMode = isTransportation && transportPricingMode === 'vehicle';
 
-  // Get unique cities from hotels and sightseeing
+  // Get unique cities from all sources
   const hotelCities = Array.from(new Set(hotels.map(h => h.city)));
   const sightseeingCities = Array.from(new Set(sightseeing.map(s => s.city)));
-  const allCities = Array.from(new Set([...hotelCities, ...sightseeingCities])).sort();
+  const sicTourCities = Array.from(new Set(sicTours.map(t => t.city)));
+  const mealCities = Array.from(new Set(meals.map(m => m.city)));
+  const transferCities = Array.from(new Set(transfers.map(t => t.city)));
+  const allCities = Array.from(new Set([...hotelCities, ...sightseeingCities, ...sicTourCities, ...mealCities, ...transferCities])).sort();
 
   return (
     <div className="mb-2">
@@ -544,14 +607,43 @@ function PricingPageContent() {
     price: number;
   }>>([]);
 
+  const [sicTours, setSicTours] = useState<Array<{
+    id: string; // Composite ID: tourId-pricingId
+    tour_id: number;
+    pricing_id: number;
+    city: string;
+    tour_name: string;
+    start_date: string | null;
+    end_date: string | null;
+    pp_dbl_rate: number;
+    single_supplement: number | null;
+    child_0to2: number | null;
+    child_3to5: number | null;
+    child_6to11: number | null;
+  }>>([]);
+
+  const [meals, setMeals] = useState<Array<{
+    id: string; // Composite ID: restaurantId-menuId
+    restaurant_id: number;
+    menu_id: number;
+    city: string;
+    restaurant_name: string;
+    menu_option: string;
+    price: number;
+    start_date: string | null;
+    end_date: string | null;
+  }>>([]);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
-      // Load hotels, sightseeing, and transfers when authenticated
+      // Load all data when authenticated
       loadHotels();
       loadSightseeing();
       loadTransfers();
+      loadSicTours();
+      loadMeals();
     }
   }, [status, router]);
 
@@ -606,6 +698,61 @@ function PricingPageContent() {
       }
     } catch (error) {
       console.error('Error loading transfers:', error);
+    }
+  };
+
+  const loadSicTours = async () => {
+    try {
+      const response = await fetch('/api/sic-tours');
+      const data = await response.json();
+      if (response.ok) {
+        // Flatten the nested structure: each tour with each pricing period becomes a separate entry
+        const flattenedTours = data.sicTours.flatMap((tour: any) =>
+          tour.pricing.map((pricing: any) => ({
+            id: `${tour.id}-${pricing.id}`, // Composite ID
+            tour_id: tour.id,
+            pricing_id: pricing.id,
+            city: tour.city,
+            tour_name: tour.tour_name,
+            start_date: pricing.start_date,
+            end_date: pricing.end_date,
+            pp_dbl_rate: pricing.pp_dbl_rate,
+            single_supplement: pricing.single_supplement,
+            child_0to2: pricing.child_0to2,
+            child_3to5: pricing.child_3to5,
+            child_6to11: pricing.child_6to11
+          }))
+        );
+        setSicTours(flattenedTours);
+      }
+    } catch (error) {
+      console.error('Error loading SIC tours:', error);
+    }
+  };
+
+  const loadMeals = async () => {
+    try {
+      const response = await fetch('/api/meals');
+      const data = await response.json();
+      if (response.ok) {
+        // Flatten the nested structure: each restaurant with each menu becomes a separate entry
+        const flattenedMeals = data.restaurants.flatMap((restaurant: any) =>
+          restaurant.menu.map((menuItem: any) => ({
+            id: `${restaurant.id}-${menuItem.id}`, // Composite ID
+            restaurant_id: restaurant.id,
+            menu_id: menuItem.id,
+            city: restaurant.city,
+            restaurant_name: restaurant.restaurant_name,
+            menu_option: menuItem.menu_option,
+            price: menuItem.price,
+            start_date: menuItem.start_date,
+            end_date: menuItem.end_date
+          }))
+        );
+        setMeals(flattenedMeals);
+      }
+    } catch (error) {
+      console.error('Error loading meals:', error);
     }
   };
 

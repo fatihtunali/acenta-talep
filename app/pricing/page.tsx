@@ -254,7 +254,7 @@ const ExpenseTable = ({
                       if (isHotelCategory && item.location && e.target.value.length > 0) {
                         // Filter hotels by selected city and typed text
                         const filtered = hotels.filter(hotel =>
-                          hotel.city === item.location &&
+                          hotel.city.trim() === item.location.trim() &&
                           hotel.hotel_name.toLowerCase().includes(e.target.value.toLowerCase())
                         );
                         setFilteredHotels(filtered);
@@ -262,7 +262,7 @@ const ExpenseTable = ({
                       } else if (isEntranceFeesCategory && item.location && e.target.value.length > 0) {
                         // Filter sightseeing by selected city and typed text
                         const filtered = sightseeing.filter(place =>
-                          place.city === item.location &&
+                          place.city.trim() === item.location.trim() &&
                           place.place_name.toLowerCase().includes(e.target.value.toLowerCase())
                         );
                         setFilteredSightseeing(filtered);
@@ -276,14 +276,14 @@ const ExpenseTable = ({
                     onFocus={() => {
                       if (isHotelCategory && item.location && item.description.length > 0) {
                         const filtered = hotels.filter(hotel =>
-                          hotel.city === item.location &&
+                          hotel.city.trim() === item.location.trim() &&
                           hotel.hotel_name.toLowerCase().includes(item.description.toLowerCase())
                         );
                         setFilteredHotels(filtered);
                         setActiveAutocomplete(`${item.id}-hotel`);
                       } else if (isEntranceFeesCategory && item.location && item.description.length > 0) {
                         const filtered = sightseeing.filter(place =>
-                          place.city === item.location &&
+                          place.city.trim() === item.location.trim() &&
                           place.place_name.toLowerCase().includes(item.description.toLowerCase())
                         );
                         setFilteredSightseeing(filtered);

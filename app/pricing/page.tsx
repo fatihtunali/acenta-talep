@@ -140,6 +140,7 @@ const ExpenseTable = ({
 }) => {
   const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
   const [filteredHotels, setFilteredHotels] = useState<typeof hotels>([]);
+  const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const [filteredSightseeing, setFilteredSightseeing] = useState<typeof sightseeing>([]);
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-700 ring-blue-500',
@@ -150,6 +151,11 @@ const ExpenseTable = ({
   }[color];
 
   const isVehicleMode = isTransportation && transportPricingMode === 'vehicle';
+
+  // Get unique cities from hotels and sightseeing
+  const hotelCities = Array.from(new Set(hotels.map(h => h.city)));
+  const sightseeingCities = Array.from(new Set(sightseeing.map(s => s.city)));
+  const allCities = Array.from(new Set([...hotelCities, ...sightseeingCities])).sort();
 
   return (
     <div className="mb-2">
@@ -171,8 +177,9 @@ const ExpenseTable = ({
 
             const isHotelCategory = category === 'hotelAccommodation';
             const isEntranceFeesCategory = category === 'entranceFees';
-            const showHotelAutocomplete = isHotelCategory && activeAutocomplete === item.id && filteredHotels.length > 0;
-            const showSightseeingAutocomplete = isEntranceFeesCategory && activeAutocomplete === item.id && filteredSightseeing.length > 0;
+            const showCityAutocomplete = (isHotelCategory || isEntranceFeesCategory) && activeAutocomplete === `${item.id}-city` && filteredCities.length > 0;
+            const showHotelAutocomplete = isHotelCategory && activeAutocomplete === `${item.id}-hotel` && filteredHotels.length > 0;
+            const showSightseeingAutocomplete = isEntranceFeesCategory && activeAutocomplete === `${item.id}-sightseeing` && filteredSightseeing.length > 0;
 
             return (
               <tr key={item.id} className="hover:bg-gray-50">
@@ -182,18 +189,82 @@ const ExpenseTable = ({
                     value={item.location}
                     onChange={(e) => {
                       onUpdateItem(dayIndex, category, item.id, 'location', e.target.value);
-                      if (isHotelCategory && e.target.value.length > 0) {
+                      if ((isHotelCategory || isEntranceFeesCategory) && e.target.value.length > 0) {
+                        // Filter cities for hotel and entrance fees categories
+                        const citiesToFilter = isHotelCategory ? hotelCities : isEntranceFeesCategory ? sightseeingCities : allCities;
+                        const filtered = citiesToFilter.filter(city =>
+                          city.toLowerCase().includes(e.target.value.toLowerCase())
+                        );
+                        setFilteredCities(filtered);
+                        setActiveAutocomplete(`${item.id}-city`);
+                      } else {
+                        setFilteredCities([]);
+                        setFilteredSightseeing([]);
+                        setActiveAutocomplete(null);
+                      }
+                    }}
+                    onFocus={() => {
+                      if ((isHotelCategory || isEntranceFeesCategory) && item.location.length > 0) {
+                        const citiesToFilter = isHotelCategory ? hotelCities : isEntranceFeesCategory ? sightseeingCities : allCities;
+                        const filtered = citiesToFilter.filter(city =>
+                          city.toLowerCase().includes(item.location.toLowerCase())
+                        );
+                        setFilteredCities(filtered);
+                        setActiveAutocomplete(`${item.id}-city`);
+                      }
+                    }}
+                    onBlur={() => {
+                      // Delay to allow clicking on dropdown
+                      setTimeout(() => {
+                        setActiveAutocomplete(null);
+                        setFilteredCities([]);
+                        setFilteredHotels([]);
+                        setFilteredSightseeing([]);
+                      }, 200);
+                    }}
+                    placeholder="City/Location"
+                    className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  {showCityAutocomplete && (
+                    <div className="absolute z-50 top-full left-0 w-48 bg-white border border-gray-300 shadow-lg max-h-48 overflow-y-auto">
+                      {filteredCities.map((city, idx) => (
+                        <div
+                          key={idx}
+                          className="px-2 py-1 hover:bg-indigo-100 cursor-pointer text-xs"
+                          onMouseDown={() => {
+                            onUpdateItem(dayIndex, category, item.id, 'location', city);
+                            setActiveAutocomplete(null);
+                            setFilteredCities([]);
+                          }}
+                        >
+                          <div className="font-semibold text-gray-900">{city}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td className="border border-gray-300 p-0 relative">
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => {
+                      onUpdateItem(dayIndex, category, item.id, 'description', e.target.value);
+                      if (isHotelCategory && item.location && e.target.value.length > 0) {
+                        // Filter hotels by selected city and typed text
                         const filtered = hotels.filter(hotel =>
-                          hotel.city.toLowerCase().includes(e.target.value.toLowerCase())
+                          hotel.city === item.location &&
+                          hotel.hotel_name.toLowerCase().includes(e.target.value.toLowerCase())
                         );
                         setFilteredHotels(filtered);
-                        setActiveAutocomplete(item.id);
-                      } else if (isEntranceFeesCategory && e.target.value.length > 0) {
+                        setActiveAutocomplete(`${item.id}-hotel`);
+                      } else if (isEntranceFeesCategory && item.location && e.target.value.length > 0) {
+                        // Filter sightseeing by selected city and typed text
                         const filtered = sightseeing.filter(place =>
-                          place.city.toLowerCase().includes(e.target.value.toLowerCase())
+                          place.city === item.location &&
+                          place.place_name.toLowerCase().includes(e.target.value.toLowerCase())
                         );
                         setFilteredSightseeing(filtered);
-                        setActiveAutocomplete(item.id);
+                        setActiveAutocomplete(`${item.id}-sightseeing`);
                       } else {
                         setFilteredHotels([]);
                         setFilteredSightseeing([]);
@@ -201,29 +272,32 @@ const ExpenseTable = ({
                       }
                     }}
                     onFocus={() => {
-                      if (isHotelCategory && item.location.length > 0) {
+                      if (isHotelCategory && item.location && item.description.length > 0) {
                         const filtered = hotels.filter(hotel =>
-                          hotel.city.toLowerCase().includes(item.location.toLowerCase())
+                          hotel.city === item.location &&
+                          hotel.hotel_name.toLowerCase().includes(item.description.toLowerCase())
                         );
                         setFilteredHotels(filtered);
-                        setActiveAutocomplete(item.id);
-                      } else if (isEntranceFeesCategory && item.location.length > 0) {
+                        setActiveAutocomplete(`${item.id}-hotel`);
+                      } else if (isEntranceFeesCategory && item.location && item.description.length > 0) {
                         const filtered = sightseeing.filter(place =>
-                          place.city.toLowerCase().includes(item.location.toLowerCase())
+                          place.city === item.location &&
+                          place.place_name.toLowerCase().includes(item.description.toLowerCase())
                         );
                         setFilteredSightseeing(filtered);
-                        setActiveAutocomplete(item.id);
+                        setActiveAutocomplete(`${item.id}-sightseeing`);
                       }
                     }}
                     onBlur={() => {
-                      // Delay to allow clicking on dropdown
                       setTimeout(() => {
-                        setActiveAutocomplete(null);
-                        setFilteredHotels([]);
-                        setFilteredSightseeing([]);
+                        if (activeAutocomplete === `${item.id}-hotel` || activeAutocomplete === `${item.id}-sightseeing`) {
+                          setActiveAutocomplete(null);
+                          setFilteredHotels([]);
+                          setFilteredSightseeing([]);
+                        }
                       }, 200);
                     }}
-                    placeholder="City/Location"
+                    placeholder="Hotel/Restaurant/Activity Name"
                     className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   {showHotelAutocomplete && (
@@ -251,7 +325,7 @@ const ExpenseTable = ({
                         >
                           <div className="font-semibold text-gray-900">{hotel.hotel_name}</div>
                           <div className="text-gray-600">
-                            {hotel.city} - {hotel.category} - €{hotel.pp_dbl_rate}
+                            {hotel.category} - €{hotel.pp_dbl_rate}
                             {hotel.start_date && hotel.end_date && (
                               <span className="ml-2 text-blue-600">
                                 ({hotel.start_date} to {hotel.end_date})
@@ -282,21 +356,12 @@ const ExpenseTable = ({
                         >
                           <div className="font-semibold text-gray-900">{place.place_name}</div>
                           <div className="text-gray-600">
-                            {place.city} - €{place.price.toFixed(2)}
+                            €{place.price.toFixed(2)}
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </td>
-                <td className="border border-gray-300 p-0">
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={(e) => onUpdateItem(dayIndex, category, item.id, 'description', e.target.value)}
-                    placeholder="Hotel/Restaurant/Activity Name"
-                    className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
                 </td>
                 {isVehicleMode ? (
                   <>

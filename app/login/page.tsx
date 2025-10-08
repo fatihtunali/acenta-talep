@@ -28,7 +28,7 @@ export default function LoginPage() {
       } else if (result?.ok) {
         router.push('/dashboard');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);

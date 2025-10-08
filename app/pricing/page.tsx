@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { signOut } from 'next-auth/react';
 
 interface ExpenseItem {
@@ -28,6 +28,28 @@ interface DayExpenses {
   guide: ExpenseItem[];
   guideDriverAccommodation: ExpenseItem[];
   parking: ExpenseItem[];
+}
+
+interface LoadedExpenseItem {
+  location: string;
+  description: string;
+  price: number;
+  vehicleCount?: number;
+  pricePerVehicle?: number;
+}
+
+interface LoadedDayExpenses {
+  dayNumber: number;
+  date: string;
+  hotelAccommodation: LoadedExpenseItem[];
+  meals: LoadedExpenseItem[];
+  entranceFees: LoadedExpenseItem[];
+  sicTourCost: LoadedExpenseItem[];
+  tips: LoadedExpenseItem[];
+  transportation: LoadedExpenseItem[];
+  guide: LoadedExpenseItem[];
+  guideDriverAccommodation: LoadedExpenseItem[];
+  parking: LoadedExpenseItem[];
 }
 
 let idCounter = 0;
@@ -64,7 +86,7 @@ const ExpenseTable = ({
   transportPricingMode: 'total' | 'vehicle';
   onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
   onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
-  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: any) => void;
+  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: string | number) => void;
   onUpdateVehicleCount: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
   onUpdatePricePerVehicle: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
 }) => {
@@ -187,7 +209,7 @@ const ExpenseTable = ({
   );
 };
 
-export default function PricingPage() {
+function PricingPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -203,7 +225,6 @@ export default function PricingPage() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
-  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -223,7 +244,6 @@ export default function PricingPage() {
   }, [searchParams, status]);
 
   const loadQuoteData = async (quoteId: number, isCopy: boolean) => {
-    setIsLoading(true);
     try {
       const response = await fetch(`/api/quotes/${quoteId}`);
       const data = await response.json();
@@ -238,17 +258,17 @@ export default function PricingPage() {
         setTax(data.tax);
 
         // Load days with new IDs
-        const loadedDays = data.days.map((day: any) => ({
+        const loadedDays = (data.days as LoadedDayExpenses[]).map((day: LoadedDayExpenses) => ({
           ...day,
-          hotelAccommodation: day.hotelAccommodation.map((item: any) => ({ ...item, id: generateId() })),
-          meals: day.meals.map((item: any) => ({ ...item, id: generateId() })),
-          entranceFees: day.entranceFees.map((item: any) => ({ ...item, id: generateId() })),
-          sicTourCost: day.sicTourCost.map((item: any) => ({ ...item, id: generateId() })),
-          tips: day.tips.map((item: any) => ({ ...item, id: generateId() })),
-          transportation: day.transportation.map((item: any) => ({ ...item, id: generateId() })),
-          guide: day.guide.map((item: any) => ({ ...item, id: generateId() })),
-          guideDriverAccommodation: day.guideDriverAccommodation.map((item: any) => ({ ...item, id: generateId() })),
-          parking: day.parking.map((item: any) => ({ ...item, id: generateId() }))
+          hotelAccommodation: day.hotelAccommodation.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          meals: day.meals.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          entranceFees: day.entranceFees.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          sicTourCost: day.sicTourCost.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          tips: day.tips.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          transportation: day.transportation.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          guide: day.guide.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          guideDriverAccommodation: day.guideDriverAccommodation.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() })),
+          parking: day.parking.map((item: LoadedExpenseItem) => ({ ...item, id: generateId() }))
         }));
 
         setDays(loadedDays);
@@ -274,8 +294,6 @@ export default function PricingPage() {
       console.error('Error loading quote:', error);
       setSaveMessage('❌ Error loading quote');
       setTimeout(() => setSaveMessage(''), 3000);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -334,19 +352,23 @@ export default function PricingPage() {
       const newDays = [...prevDays];
       const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
       if (categoryArray.length > 1) {
-        newDays[dayIndex][category] = categoryArray.filter(e => e.id !== itemId) as any;
+        (newDays[dayIndex][category] as ExpenseItem[]) = categoryArray.filter(e => e.id !== itemId);
       }
       return newDays;
     });
   }, []);
 
-  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: any) => {
+  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price', value: string | number) => {
     setDays(prevDays => {
       const newDays = [...prevDays];
       const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
       const item = categoryArray.find(e => e.id === itemId);
       if (item) {
-        item[field] = value;
+        if (field === 'price') {
+          item[field] = value as number;
+        } else {
+          item[field] = value as string;
+        }
       }
       return newDays;
     });
@@ -466,7 +488,7 @@ export default function PricingPage() {
       }
     } catch (error) {
       console.error('Error saving quote:', error);
-      setSaveMessage(`❌ Failed to save quote: ${error.message}`);
+      setSaveMessage(`❌ Failed to save quote: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setTimeout(() => setSaveMessage(''), 5000);
     } finally {
       setIsSaving(false);
@@ -1036,5 +1058,17 @@ export default function PricingPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <PricingPageContent />
+    </Suspense>
   );
 }

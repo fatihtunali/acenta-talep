@@ -104,12 +104,14 @@ export async function POST(request: NextRequest) {
         console.log('[API] Quote inserted successfully, ID:', quoteResult.insertId);
       } catch (insertError) {
         console.error('[API] INSERT ERROR:', insertError);
-        console.error('[API] SQL Error details:', {
-          message: (insertError as any).message,
-          code: (insertError as any).code,
-          sqlState: (insertError as any).sqlState,
-          sqlMessage: (insertError as any).sqlMessage
-        });
+        if (insertError instanceof Error) {
+          console.error('[API] SQL Error details:', {
+            message: insertError.message,
+            code: (insertError as Error & { code?: string }).code,
+            sqlState: (insertError as Error & { sqlState?: string }).sqlState,
+            sqlMessage: (insertError as Error & { sqlMessage?: string }).sqlMessage
+          });
+        }
         throw insertError;
       }
 

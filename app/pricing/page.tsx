@@ -79,12 +79,14 @@ const ExpenseTable = ({
   pax,
   transportPricingMode,
   hotels = [],
+  sightseeing = [],
   onAddRow,
   onDeleteRow,
   onUpdateItem,
   onUpdateVehicleCount,
   onUpdatePricePerVehicle,
-  onSelectHotel
+  onSelectHotel,
+  onSelectSightseeing
 }: {
   title: string;
   items: ExpenseItem[];
@@ -109,6 +111,12 @@ const ExpenseTable = ({
     child_3to5: number | null;
     child_6to11: number | null;
   }>;
+  sightseeing?: Array<{
+    id: number;
+    city: string;
+    place_name: string;
+    price: number;
+  }>;
   onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
   onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
   onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => void;
@@ -124,9 +132,15 @@ const ExpenseTable = ({
     child_3to5: number | null;
     child_6to11: number | null;
   }) => void;
+  onSelectSightseeing?: (dayIndex: number, category: keyof DayExpenses, itemId: string, place: {
+    city: string;
+    place_name: string;
+    price: number;
+  }) => void;
 }) => {
   const [activeAutocomplete, setActiveAutocomplete] = useState<string | null>(null);
   const [filteredHotels, setFilteredHotels] = useState<typeof hotels>([]);
+  const [filteredSightseeing, setFilteredSightseeing] = useState<typeof sightseeing>([]);
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-700 ring-blue-500',
     red: 'bg-red-50 text-red-700 ring-red-500',
@@ -405,12 +419,20 @@ function PricingPageContent() {
     child_6to11: number | null;
   }>>([]);
 
+  const [sightseeing, setSightseeing] = useState<Array<{
+    id: number;
+    city: string;
+    place_name: string;
+    price: number;
+  }>>([]);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
-      // Load hotels when authenticated
+      // Load hotels and sightseeing when authenticated
       loadHotels();
+      loadSightseeing();
     }
   }, [status, router]);
 
@@ -423,6 +445,18 @@ function PricingPageContent() {
       }
     } catch (error) {
       console.error('Error loading hotels:', error);
+    }
+  };
+
+  const loadSightseeing = async () => {
+    try {
+      const response = await fetch('/api/sightseeing');
+      const data = await response.json();
+      if (response.ok) {
+        setSightseeing(data.sightseeing);
+      }
+    } catch (error) {
+      console.error('Error loading sightseeing:', error);
     }
   };
 
@@ -898,6 +932,7 @@ function PricingPageContent() {
               <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
               <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</a>
               <a href="/hotels" className="text-sm text-gray-600 hover:text-gray-900">Hotels</a>
+              <a href="/sightseeing" className="text-sm text-gray-600 hover:text-gray-900">Sightseeing</a>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>

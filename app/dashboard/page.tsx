@@ -83,9 +83,9 @@ export default function DashboardPage() {
             🗄️ Database Management
           </h2>
           <p className="text-gray-600 mb-6">
-            Manage your pricing databases for hotels, tours, transfers, and entrance fees
+            Manage your pricing databases for hotels, tours, meals, transfers, and entrance fees
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <a
               href="/hotels"
               className="flex flex-col items-center justify-center p-6 bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 rounded-lg transition-colors"
@@ -102,6 +102,15 @@ export default function DashboardPage() {
               <div className="text-4xl mb-3">🚌</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">SIC Tours</h3>
               <p className="text-sm text-gray-600 text-center">Shared in-coach tour pricing</p>
+            </a>
+
+            <a
+              href="/meals"
+              className="flex flex-col items-center justify-center p-6 bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-200 rounded-lg transition-colors"
+            >
+              <div className="text-4xl mb-3">🍽️</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Meals</h3>
+              <p className="text-sm text-gray-600 text-center">Restaurant & menu pricing</p>
             </a>
 
             <a

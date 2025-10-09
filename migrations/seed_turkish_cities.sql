@@ -1,0 +1,124 @@
+-- Seed Turkish cities for existing users
+-- Migration: seed_turkish_cities
+-- Date: 2025-10-09
+
+-- Insert major Turkish cities (will skip if already exists due to unique constraint)
+INSERT IGNORE INTO cities (user_id, name, normalized_name)
+SELECT u.id, c.city_name, LOWER(TRIM(c.city_name))
+FROM users u
+CROSS JOIN (
+  SELECT 'Istanbul' AS city_name UNION ALL
+  SELECT 'Ankara' UNION ALL
+  SELECT 'Izmir' UNION ALL
+  SELECT 'Antalya' UNION ALL
+  SELECT 'Bursa' UNION ALL
+  SELECT 'Adana' UNION ALL
+  SELECT 'Gaziantep' UNION ALL
+  SELECT 'Konya' UNION ALL
+  SELECT 'Mersin' UNION ALL
+  SELECT 'Diyarbakir' UNION ALL
+  SELECT 'Kayseri' UNION ALL
+  SELECT 'Eskisehir' UNION ALL
+  SELECT 'Sanliurfa' UNION ALL
+  SELECT 'Samsun' UNION ALL
+  SELECT 'Denizli' UNION ALL
+  SELECT 'Trabzon' UNION ALL
+  SELECT 'Malatya' UNION ALL
+  SELECT 'Kahramanmaras' UNION ALL
+  SELECT 'Erzurum' UNION ALL
+  SELECT 'Van' UNION ALL
+  SELECT 'Batman' UNION ALL
+  SELECT 'Elazig' UNION ALL
+  SELECT 'Sivas' UNION ALL
+  SELECT 'Manisa' UNION ALL
+  SELECT 'Tarsus' UNION ALL
+  SELECT 'Sakarya' UNION ALL
+  SELECT 'Balikesir' UNION ALL
+  SELECT 'Aydin' UNION ALL
+  SELECT 'Tekirdag' UNION ALL
+  SELECT 'Canakkale' UNION ALL
+  SELECT 'Edirne' UNION ALL
+  SELECT 'Kutahya' UNION ALL
+  SELECT 'Mugla' UNION ALL
+  SELECT 'Bodrum' UNION ALL
+  SELECT 'Fethiye' UNION ALL
+  SELECT 'Marmaris' UNION ALL
+  SELECT 'Alanya' UNION ALL
+  SELECT 'Side' UNION ALL
+  SELECT 'Belek' UNION ALL
+  SELECT 'Kemer' UNION ALL
+  SELECT 'Kas' UNION ALL
+  SELECT 'Kalkan' UNION ALL
+  SELECT 'Oludeniz' UNION ALL
+  SELECT 'Kusadasi' UNION ALL
+  SELECT 'Cesme' UNION ALL
+  SELECT 'Didim' UNION ALL
+  SELECT 'Gumbet' UNION ALL
+  SELECT 'Turgutreis' UNION ALL
+  SELECT 'Bitez' UNION ALL
+  SELECT 'Yalikavak' UNION ALL
+  SELECT 'Goreme' UNION ALL
+  SELECT 'Nevsehir' UNION ALL
+  SELECT 'Urgup' UNION ALL
+  SELECT 'Avanos' UNION ALL
+  SELECT 'Pamukkale' UNION ALL
+  SELECT 'Hierapolis' UNION ALL
+  SELECT 'Ephesus' UNION ALL
+  SELECT 'Selcuk' UNION ALL
+  SELECT 'Sirince' UNION ALL
+  SELECT 'Bergama' UNION ALL
+  SELECT 'Assos' UNION ALL
+  SELECT 'Troy' UNION ALL
+  SELECT 'Gallipoli' UNION ALL
+  SELECT 'Burhaniye' UNION ALL
+  SELECT 'Ayvalik' UNION ALL
+  SELECT 'Bolu' UNION ALL
+  SELECT 'Abant' UNION ALL
+  SELECT 'Sapanca' UNION ALL
+  SELECT 'Izmit' UNION ALL
+  SELECT 'Yalova' UNION ALL
+  SELECT 'Mudanya' UNION ALL
+  SELECT 'Gemlik' UNION ALL
+  SELECT 'Adiyaman' UNION ALL
+  SELECT 'Afyonkarahisar' UNION ALL
+  SELECT 'Agri' UNION ALL
+  SELECT 'Aksaray' UNION ALL
+  SELECT 'Amasya' UNION ALL
+  SELECT 'Ardahan' UNION ALL
+  SELECT 'Artvin' UNION ALL
+  SELECT 'Bartin' UNION ALL
+  SELECT 'Bayburt' UNION ALL
+  SELECT 'Bilecik' UNION ALL
+  SELECT 'Bingol' UNION ALL
+  SELECT 'Bitlis' UNION ALL
+  SELECT 'Cankiri' UNION ALL
+  SELECT 'Corum' UNION ALL
+  SELECT 'Duzce' UNION ALL
+  SELECT 'Giresun' UNION ALL
+  SELECT 'Gumushane' UNION ALL
+  SELECT 'Hakkari' UNION ALL
+  SELECT 'Hatay' UNION ALL
+  SELECT 'Igdir' UNION ALL
+  SELECT 'Isparta' UNION ALL
+  SELECT 'Karaman' UNION ALL
+  SELECT 'Kars' UNION ALL
+  SELECT 'Kastamonu' UNION ALL
+  SELECT 'Kirikkale' UNION ALL
+  SELECT 'Kirklareli' UNION ALL
+  SELECT 'Kirsehir' UNION ALL
+  SELECT 'Kilis' UNION ALL
+  SELECT 'Mardin' UNION ALL
+  SELECT 'Mus' UNION ALL
+  SELECT 'Nigde' UNION ALL
+  SELECT 'Ordu' UNION ALL
+  SELECT 'Osmaniye' UNION ALL
+  SELECT 'Rize' UNION ALL
+  SELECT 'Siirt' UNION ALL
+  SELECT 'Sinop' UNION ALL
+  SELECT 'Sirnak' UNION ALL
+  SELECT 'Tokat' UNION ALL
+  SELECT 'Tunceli' UNION ALL
+  SELECT 'Usak' UNION ALL
+  SELECT 'Yozgat' UNION ALL
+  SELECT 'Zonguldak'
+) c;

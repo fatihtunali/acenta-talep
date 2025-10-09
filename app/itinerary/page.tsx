@@ -46,6 +46,7 @@ function ItineraryPageContent() {
   const [days, setDays] = useState<DayItinerary[]>([]);
   const [hotels, setHotels] = useState<HotelStay[]>([]);
   const [hotelCategoryPricing, setHotelCategoryPricing] = useState<HotelCategoryPricing[]>([]);
+  const [hotelsByCategory, setHotelsByCategory] = useState<any[]>([]);
   const [inclusions, setInclusions] = useState<string>('');
   const [exclusions, setExclusions] = useState<string>('');
   const [information, setInformation] = useState<string>('');
@@ -72,7 +73,7 @@ function ItineraryPageContent() {
       textarea.style.height = 'auto';
       textarea.style.height = textarea.scrollHeight + 'px';
     });
-  }, [days, inclusions, exclusions, information, hotelCategoryPricing]);
+  }, [days, inclusions, exclusions, information, hotelCategoryPricing, hotelsByCategory]);
 
   const generateAIDescription = async (dayData: any) => {
     try {
@@ -343,6 +344,38 @@ function ItineraryPageContent() {
         }
 
         setHotels(hotelStays);
+
+        // Extract hotels by city and category for display
+        const hotelsByCity: Record<string, Record<string, string[]>> = {};
+
+        data.days.forEach((day: any) => {
+          const hotelInfo = day.hotelAccommodation?.[0];
+          if (hotelInfo && hotelInfo.location && hotelInfo.description && hotelInfo.hotelCategory) {
+            const city = hotelInfo.location;
+            const category = hotelInfo.hotelCategory; // '3 stars', '4 stars', '5 stars'
+            const hotelName = hotelInfo.description;
+
+            if (!hotelsByCity[city]) {
+              hotelsByCity[city] = { '3 stars': [], '4 stars': [], '5 stars': [] };
+            }
+
+            // Add hotel if not already in the list for this city/category
+            if (!hotelsByCity[city][category]?.includes(hotelName)) {
+              if (!hotelsByCity[city][category]) {
+                hotelsByCity[city][category] = [];
+              }
+              hotelsByCity[city][category].push(hotelName);
+            }
+          }
+        });
+
+        // Convert to array format for easier rendering
+        const hotelsByCategoryArray = Object.keys(hotelsByCity).map(city => ({
+          city,
+          categories: hotelsByCity[city]
+        }));
+
+        setHotelsByCategory(hotelsByCategoryArray);
 
         // Use EXACT same pricing calculation as pricing page
         const selectedHotelCategories = ['3 stars', '4 stars', '5 stars'];
@@ -684,6 +717,10 @@ function ItineraryPageContent() {
             font-size: 20pt !important;
           }
 
+          .text-2xl {
+            font-size: 14pt !important;
+          }
+
           .text-xl {
             font-size: 12pt !important;
           }
@@ -772,13 +809,24 @@ function ItineraryPageContent() {
 
               {/* Tour Title and Duration */}
               <div className="text-center border-b-2 border-indigo-600 pb-6">
-                <input
-                  type="text"
-                  value={tourName}
-                  onChange={(e) => setTourName(e.target.value)}
-                  className="text-input text-4xl font-bold text-indigo-900 w-full text-center mb-2"
-                  placeholder="Tour Package Name"
-                />
+                {tourName.includes(':') ? (
+                  <div>
+                    <div className="text-4xl font-bold text-indigo-900 mb-1">
+                      {tourName.split(':')[0].trim()}
+                    </div>
+                    <div className="text-2xl font-semibold text-indigo-700 mb-2">
+                      {tourName.split(':')[1].trim()}
+                    </div>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={tourName}
+                    onChange={(e) => setTourName(e.target.value)}
+                    className="text-input text-4xl font-bold text-indigo-900 w-full text-center mb-2"
+                    placeholder="Tour Package Name"
+                  />
+                )}
                 <input
                   type="text"
                   value={duration}
@@ -916,6 +964,46 @@ function ItineraryPageContent() {
                 </div>
                 <p className="text-xs text-gray-500 mt-3 italic">
                   * Accommodation will be provided in selected hotel category
+                </p>
+              </div>
+            )}
+
+            {/* Hotel Options by Category */}
+            {hotelsByCategory.length > 0 && (
+              <div className="px-12 pb-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Hotel Options</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-indigo-600 text-white">
+                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">City</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">3-Star Hotels</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">4-Star Hotels</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">5-Star Hotels</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hotelsByCategory.map((cityData, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                            {cityData.city}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                            {cityData.categories['3 stars']?.join(', ') || '-'}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                            {cityData.categories['4 stars']?.join(', ') || '-'}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                            {cityData.categories['5 stars']?.join(', ') || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-gray-500 mt-3 italic">
+                  * Final hotel selection will be based on your chosen category and availability
                 </p>
               </div>
             )}

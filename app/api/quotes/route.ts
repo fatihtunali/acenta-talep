@@ -44,6 +44,21 @@ interface SaveQuoteRequest {
   days: DayExpenses[];
 }
 
+type HotelCategoryLabel = '3 stars' | '4 stars' | '5 stars';
+
+interface PricingCategoryTotals {
+  adultPerPerson: number;
+  singleSupplement: number;
+  child0to2: number | 'FOC';
+  child3to5: number | 'FOC';
+  child6to11: number | 'FOC';
+}
+
+interface PricingTableRow {
+  pax: number;
+  categories: Record<HotelCategoryLabel, PricingCategoryTotals>;
+}
+
 // POST - Save new quote
 export async function POST(request: NextRequest) {
   try {
@@ -121,13 +136,13 @@ export async function POST(request: NextRequest) {
         return { perPersonTotal, singleSupplementTotal, child0to2Total, child3to5Total, child6to11Total, generalTotal };
       };
 
-      const selectedHotelCategories = ['3 stars', '4 stars', '5 stars'];
+      const selectedHotelCategories: HotelCategoryLabel[] = ['3 stars', '4 stars', '5 stars'];
       const paxSlabs = [2, 4, 6, 8, 10];
       const markup = data.markup;
       const tax = data.tax;
 
-      const pricingTable = paxSlabs.map(currentPax => {
-        const categoriesData: Record<string, any> = {};
+      const pricingTable: PricingTableRow[] = paxSlabs.map(currentPax => {
+        const categoriesData: Partial<Record<HotelCategoryLabel, PricingCategoryTotals>> = {};
 
         selectedHotelCategories.forEach(category => {
           let totalPerPerson = 0;
@@ -180,7 +195,7 @@ export async function POST(request: NextRequest) {
 
         return {
           pax: currentPax,
-          categories: categoriesData
+          categories: categoriesData as Record<HotelCategoryLabel, PricingCategoryTotals>
         };
       });
 

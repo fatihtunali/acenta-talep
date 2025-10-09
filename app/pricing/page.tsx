@@ -63,6 +63,78 @@ interface LoadedDayExpenses {
   parking: LoadedExpenseItem[];
 }
 
+interface ApiHotelPricing {
+  id: number;
+  start_date: string | null;
+  end_date: string | null;
+  pp_dbl_rate: number;
+  single_supplement: number | null;
+  child_0to2: number | null;
+  child_3to5: number | null;
+  child_6to11: number | null;
+}
+
+interface ApiHotel {
+  id: number;
+  city: string;
+  hotel_name: string;
+  category: string;
+  pricing: ApiHotelPricing[];
+}
+
+interface HotelsApiResponse {
+  hotels: ApiHotel[];
+}
+
+interface ApiSicTourPricing {
+  id: number;
+  start_date: string | null;
+  end_date: string | null;
+  pp_dbl_rate: number;
+  single_supplement: number | null;
+  child_0to2: number | null;
+  child_3to5: number | null;
+  child_6to11: number | null;
+}
+
+interface ApiSicTour {
+  id: number;
+  city: string;
+  tour_name: string;
+  pricing: ApiSicTourPricing[];
+}
+
+interface SicToursApiResponse {
+  sicTours: ApiSicTour[];
+}
+
+interface ApiRestaurantMenu {
+  id: number;
+  menu_option: string;
+  price: number;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+interface ApiRestaurant {
+  id: number;
+  city: string;
+  restaurant_name: string;
+  menu: ApiRestaurantMenu[];
+}
+
+interface MealsApiResponse {
+  restaurants: ApiRestaurant[];
+}
+
+interface PricingCategoryTotals {
+  adultPerPerson: number;
+  singleSupplement: number;
+  child0to2: number | 'FOC';
+  child3to5: number | 'FOC';
+  child6to11: number | 'FOC';
+}
+
 let idCounter = 0;
 const generateId = () => {
   idCounter++;
@@ -844,12 +916,11 @@ function PricingPageContent() {
   const loadHotels = async () => {
     try {
       const response = await fetch('/api/hotels');
-      const data = await response.json();
+      const data = (await response.json()) as HotelsApiResponse;
       if (response.ok) {
-        // Flatten the nested structure: each hotel with each pricing period becomes a separate entry
-        const flattenedHotels = data.hotels.flatMap((hotel: any) =>
-          hotel.pricing.map((pricing: any) => ({
-            id: `${hotel.id}-${pricing.id}`, // Composite ID
+        const flattenedHotels = data.hotels.flatMap(hotel =>
+          (hotel.pricing ?? []).map(pricing => ({
+            id: `${hotel.id}-${pricing.id}`,
             hotel_id: hotel.id,
             pricing_id: pricing.id,
             city: hotel.city,
@@ -898,12 +969,11 @@ function PricingPageContent() {
   const loadSicTours = async () => {
     try {
       const response = await fetch('/api/sic-tours');
-      const data = await response.json();
+      const data = (await response.json()) as SicToursApiResponse;
       if (response.ok) {
-        // Flatten the nested structure: each tour with each pricing period becomes a separate entry
-        const flattenedTours = data.sicTours.flatMap((tour: any) =>
-          tour.pricing.map((pricing: any) => ({
-            id: `${tour.id}-${pricing.id}`, // Composite ID
+        const flattenedTours = data.sicTours.flatMap(tour =>
+          (tour.pricing ?? []).map(pricing => ({
+            id: `${tour.id}-${pricing.id}`,
             tour_id: tour.id,
             pricing_id: pricing.id,
             city: tour.city,
@@ -927,12 +997,11 @@ function PricingPageContent() {
   const loadMeals = async () => {
     try {
       const response = await fetch('/api/meals');
-      const data = await response.json();
+      const data = (await response.json()) as MealsApiResponse;
       if (response.ok) {
-        // Flatten the nested structure: each restaurant with each menu becomes a separate entry
-        const flattenedMeals = data.restaurants.flatMap((restaurant: any) =>
-          restaurant.menu.map((menuItem: any) => ({
-            id: `${restaurant.id}-${menuItem.id}`, // Composite ID
+        const flattenedMeals = data.restaurants.flatMap(restaurant =>
+          (restaurant.menu ?? []).map(menuItem => ({
+            id: `${restaurant.id}-${menuItem.id}`,
             restaurant_id: restaurant.id,
             menu_id: menuItem.id,
             city: restaurant.city,
@@ -1434,7 +1503,7 @@ function PricingPageContent() {
     const perPersonCategories = ['hotelAccommodation', 'meals', 'entranceFees', 'sicTourCost', 'tips'];
 
     // Iterate through all days and all categories
-    days.forEach((day, dayIdx) => {
+    days.forEach(day => {
       const categories: (keyof DayExpenses)[] = [
         'hotelAccommodation', 'meals', 'entranceFees', 'sicTourCost', 'tips',
         'transportation', 'guide', 'guideDriverAccommodation', 'parking'
@@ -1606,7 +1675,7 @@ function PricingPageContent() {
     const categories = selectedHotelCategories.length > 0 ? selectedHotelCategories : [''];
 
     return paxSlabs.map(currentPax => {
-      const categoriesData: Record<string, any> = {};
+      const categoriesData: Record<string, PricingCategoryTotals> = {};
 
       categories.forEach(category => {
         let totalPerPerson = 0;

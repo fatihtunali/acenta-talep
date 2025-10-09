@@ -37,19 +37,27 @@ export async function POST(request: NextRequest) {
       location,
       previousLocation,
       activities,
-      accommodation,
       meals,
       transfers,
-      transportation,
-      transportLocation,
       isFirstDay,
       isLastDay,
       isCityChange,
       transferMode,
-      hasAirportTransfer,
       tourType,
       tourName
     } = dayData;
+
+    interface TransferInfo {
+      description: string;
+      location?: string | null;
+    }
+
+    const normalizedTransfers: TransferInfo[] = Array.isArray(transfers)
+      ? transfers.filter(
+          (transfer: TransferInfo | null | undefined): transfer is TransferInfo =>
+            typeof transfer?.description === 'string' && transfer.description.trim().length > 0
+        )
+      : [];
 
     // Create a context-aware prompt for OpenAI
     let contextInstructions = '';
@@ -58,7 +66,9 @@ export async function POST(request: NextRequest) {
     const tourTypeText = isSIC ? 'SIC (Group Tour)' : 'Private Tour';
 
     // Get transfer details
-    const transferDetails = transfers?.map((t: any) => `${t.description} (${t.location || 'N/A'})`).join(', ') || 'No transfers';
+    const transferDetails =
+      normalizedTransfers.map(transfer => `${transfer.description} (${transfer.location || 'N/A'})`).join(', ') ||
+      'No transfers';
 
     if (isFirstDay) {
       if (hasActivities) {

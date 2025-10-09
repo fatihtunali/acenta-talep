@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface DayItinerary {
   dayNumber: number;
@@ -36,6 +37,110 @@ interface HotelCategoryPricing {
   pricingSlabs: PricingSlab[];
 }
 
+type HotelCategoryLabel = '3 stars' | '4 stars' | '5 stars';
+
+interface PricingCategoryTotals {
+  adultPerPerson: number;
+  singleSupplement: number;
+  child0to2: number | 'FOC';
+  child3to5: number | 'FOC';
+  child6to11: number | 'FOC';
+}
+
+interface PricingTableRow {
+  pax: number;
+  categories: Record<HotelCategoryLabel, PricingCategoryTotals>;
+}
+
+interface QuoteExpense {
+  id: string;
+  location?: string | null;
+  description?: string | null;
+  price?: number | null;
+  singleSupplement?: number | null;
+  child0to2?: number | null;
+  child3to5?: number | null;
+  child6to11?: number | null;
+  vehicleCount?: number | null;
+  pricePerVehicle?: number | null;
+  hotelCategory?: HotelCategoryLabel;
+}
+
+type ExpenseCategory =
+  | 'hotelAccommodation'
+  | 'meals'
+  | 'entranceFees'
+  | 'sicTourCost'
+  | 'tips'
+  | 'transportation'
+  | 'guide'
+  | 'guideDriverAccommodation'
+  | 'parking';
+
+type QuoteDay = Record<ExpenseCategory, QuoteExpense[]> & {
+  dayNumber: number;
+  date: string;
+};
+
+interface QuoteResponse {
+  id: number;
+  quoteName: string;
+  startDate: string;
+  endDate: string;
+  tourType: 'SIC' | 'Private';
+  pax: number;
+  markup: number;
+  tax: number;
+  transportPricingMode: 'total' | 'vehicle';
+  pricingTable: PricingTableRow[] | null;
+  days: QuoteDay[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TransferInfo {
+  description: string;
+  location?: string | null;
+}
+
+interface HotelsByCategoryEntry {
+  city: string;
+  categories: Record<HotelCategoryLabel, string[]>;
+}
+
+type TransferMode = 'flight' | 'airport' | 'road' | 'airport_arrival' | 'airport_departure' | '';
+
+interface GenerateAIDescriptionPayload {
+  dayNumber: number;
+  location: string;
+  previousLocation: string | null;
+  activities: string[];
+  accommodation: string;
+  meals: string[];
+  transfers: TransferInfo[];
+  transportation: string;
+  transportLocation: string;
+  isFirstDay: boolean;
+  isLastDay: boolean;
+  isCityChange: boolean;
+  transferMode: TransferMode;
+  hasAirportTransfer: boolean;
+  tourType: 'SIC' | 'Private';
+  tourName: string;
+}
+
+const isNonEmptyString = (value: string | null | undefined): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const isHotelCategoryLabel = (value: string | null | undefined): value is HotelCategoryLabel =>
+  value === '3 stars' || value === '4 stars' || value === '5 stars';
+
+const createEmptyHotelCategoryMap = (): Record<HotelCategoryLabel, string[]> => ({
+  '3 stars': [],
+  '4 stars': [],
+  '5 stars': []
+});
+
 function ItineraryPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -46,7 +151,7 @@ function ItineraryPageContent() {
   const [days, setDays] = useState<DayItinerary[]>([]);
   const [hotels, setHotels] = useState<HotelStay[]>([]);
   const [hotelCategoryPricing, setHotelCategoryPricing] = useState<HotelCategoryPricing[]>([]);
-  const [hotelsByCategory, setHotelsByCategory] = useState<any[]>([]);
+  const [hotelsByCategory, setHotelsByCategory] = useState<HotelsByCategoryEntry[]>([]);
   const [inclusions, setInclusions] = useState<string>('');
   const [exclusions, setExclusions] = useState<string>('');
   const [information, setInformation] = useState<string>('');
@@ -58,24 +163,16 @@ function ItineraryPageContent() {
     }
   }, [status, router]);
 
-  // Load quote if quoteId parameter is present
-  useEffect(() => {
-    const quoteId = searchParams.get('quote');
-    if (quoteId && session) {
-      loadQuoteForItinerary(quoteId);
-    }
-  }, [searchParams, session]);
-
   // Auto-resize all textareas after content is loaded
   useEffect(() => {
-    const textareas = document.querySelectorAll('textarea');
-    textareas.forEach((textarea: any) => {
+    const textareas = document.querySelectorAll<HTMLTextAreaElement>('textarea');
+    textareas.forEach(textarea => {
       textarea.style.height = 'auto';
-      textarea.style.height = textarea.scrollHeight + 'px';
+      textarea.style.height = `${textarea.scrollHeight}px`;
     });
   }, [days, inclusions, exclusions, information, hotelCategoryPricing, hotelsByCategory]);
 
-  const generateAIDescription = async (dayData: any) => {
+  const generateAIDescription = useCallback(async (dayData: GenerateAIDescriptionPayload) => {
     try {
       const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
@@ -84,458 +181,511 @@ function ItineraryPageContent() {
       });
 
       if (response.ok) {
-        const { description } = await response.json();
-        return description;
+        const { description } = (await response.json()) as { description?: string };
+        return description ?? '';
       }
     } catch (error) {
       console.error('Error generating AI description:', error);
     }
     return '';
-  };
+  }, []);
 
-  const loadQuoteForItinerary = async (quoteId: string) => {
+  const loadQuoteForItinerary = useCallback(async (quoteId: string) => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/quotes/${quoteId}`);
-      if (response.ok) {
-        const data = await response.json();
+      if (!response.ok) {
+        console.error(`Failed to load quote ${quoteId}`);
+        return;
+      }
 
-        // Calculate duration
-        const startDate = new Date(data.startDate);
-        const endDate = new Date(data.endDate);
-        const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        const daysCount = nights + 1;
+      const data = (await response.json()) as QuoteResponse;
 
-        // Generate AI title for the itinerary
-        const cities = [...new Set(data.days.map((d: any) => d.hotelAccommodation?.[0]?.location).filter(Boolean))];
-        const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
+      const startDate = new Date(data.startDate);
+      const endDate = new Date(data.endDate);
+      const nights = Math.max(
+        0,
+        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      );
+      const daysCount = nights + 1;
 
-        const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
+      const cities = [
+        ...new Set(
+          data.days
+            .map(day => day.hotelAccommodation?.[0]?.location)
+            .filter(isNonEmptyString)
+        )
+      ];
+      const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
 
-        Requirements:
-        - Make it catchy and professional
-        - Maximum 60 characters
-        - Don't use quotes
-        - Focus on the destinations and experience
+      const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
 
-        Examples of good titles:
-        - "Discovering Turkey: Istanbul to Cappadocia"
-        - "Ancient Wonders of Turkey"
-        - "Turkish Heritage Journey"
+          Requirements:
+          - Make it catchy and professional
+          - Maximum 60 characters
+          - Don't use quotes
+          - Focus on the destinations and experience
 
-        Generate only the title, nothing else:`;
+          Examples of good titles:
+          - "Discovering Turkey: Istanbul to Cappadocia"
+          - "Ancient Wonders of Turkey"
+          - "Turkish Heritage Journey"
 
-        try {
-          const titleResponse = await fetch('/api/generate-itinerary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              dayData: {
-                dayNumber: 1,
-                location: cities[0],
-                activities: [],
-                meals: [],
-                transfers: [],
-                isFirstDay: true
-              },
-              customPrompt: titlePrompt
-            })
-          });
+          Generate only the title, nothing else:`;
 
-          if (titleResponse.ok) {
-            const { description } = await titleResponse.json();
-            setTourName(description.trim() || data.quoteName);
-          } else {
-            setTourName(data.quoteName);
-          }
-        } catch (error) {
-          console.error('Error generating title:', error);
+      try {
+        const titleResponse = await fetch('/api/generate-itinerary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dayData: {
+              dayNumber: 1,
+              location: cities[0] ?? '',
+              activities: [],
+              meals: [],
+              transfers: [],
+              isFirstDay: true
+            },
+            customPrompt: titlePrompt
+          })
+        });
+
+        if (titleResponse.ok) {
+          const { description } = (await titleResponse.json()) as { description?: string };
+          setTourName(description?.trim() || data.quoteName);
+        } else {
           setTourName(data.quoteName);
         }
+      } catch (error) {
+        console.error('Error generating title:', error);
+        setTourName(data.quoteName);
+      }
 
-        setDuration(`${nights} Nights / ${daysCount} Days`);
+      setDuration(`${nights} Nights / ${daysCount} Days`);
 
-        // Initialize itinerary days with AI-generated descriptions
-        const itineraryDaysPromises = data.days.map(async (day: any, index: number) => {
-          const location = day.hotelAccommodation?.[0]?.location || 'Location';
+      const itineraryDaysPromises = data.days.map(async (day, index) => {
+        const location =
+          day.hotelAccommodation?.[0]?.location && isNonEmptyString(day.hotelAccommodation[0].location)
+            ? day.hotelAccommodation[0].location
+            : 'Location';
 
-          // For SIC tours, get tour details from sicTourCost, for Private tours use entranceFees
-          const isSIC = data.tourType === 'SIC';
-          let activities = [];
-          let tourName = '';
+        const isSIC = data.tourType === 'SIC';
+        const entrances = day.entranceFees.map(expense => expense.description).filter(isNonEmptyString);
 
-          if (isSIC && day.sicTourCost && day.sicTourCost.length > 0) {
-            // SIC Tour - extract tour name and location
-            const sicTour = day.sicTourCost[0];
-            tourName = sicTour.description || '';
-            const tourLocation = sicTour.location || '';
-            activities = tourName ? [tourName] : [];
+        let dayTourName = '';
+        let activities: string[] = [];
 
-            // Also add any entrance fees mentioned
-            if (day.entranceFees && day.entranceFees.length > 0) {
-              const entrances = day.entranceFees.map((e: any) => e.description).filter(Boolean);
-              activities = [...activities, ...entrances];
-            }
-          } else {
-            // Private Tour - use entrance fees as activities
-            activities = day.entranceFees?.map((e: any) => e.description).filter(Boolean) || [];
+        if (isSIC && day.sicTourCost.length > 0) {
+          const [sicTour] = day.sicTourCost;
+          dayTourName = sicTour?.description ?? '';
+          if (isNonEmptyString(dayTourName)) {
+            activities.push(dayTourName);
           }
-
-          // Keep full hotel info for AI context (but we won't show specific names in UI)
-          const accommodation = day.hotelAccommodation?.[0]?.description || '';
-          const meals = day.meals?.map((m: any) => m.description).filter(Boolean) || [];
-          const transportation = day.transportation?.[0]?.description || '';
-          const transportLocation = day.transportation?.[0]?.location || '';
-
-          // Get all transfer information
-          const transfers = day.transportation?.map((t: any) => ({
-            description: t.description,
-            location: t.location
-          })).filter((t: any) => t.description) || [];
-
-          // Determine if this is first day (arrival) or last day (departure)
-          const isFirstDay = index === 0;
-          const isLastDay = index === data.days.length - 1;
-
-          // Check if there's a city change (intercity transfer)
-          const previousLocation = index > 0 ? data.days[index - 1].hotelAccommodation?.[0]?.location : null;
-          const currentLocation = location;
-          const isCityChange = previousLocation && previousLocation !== currentLocation;
-
-          // Determine transfer type based on ALL transportation descriptions
-          let transferMode = '';
-          let hasAirportTransfer = false;
-          let airportTransferCount = 0;
-
-          transfers.forEach((t: any) => {
-            const desc = t.description.toLowerCase();
-            if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
-              transferMode = 'flight';
-            } else if (desc.includes('airport')) {
-              airportTransferCount++;
-              hasAirportTransfer = true;
-              if (!transferMode) transferMode = 'airport';
-            } else if (desc.includes('transfer') || desc.includes('drive')) {
-              if (!transferMode) transferMode = 'road';
-            }
-          });
-
-          // If there are 2+ airport transfers on a city change day, it means flight
-          // (one transfer to airport in origin city, one transfer from airport in destination city)
-          if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
-            transferMode = 'flight';
-          }
-
-          // For first day, it's always an airport arrival
-          if (isFirstDay) {
-            transferMode = 'airport_arrival';
-            hasAirportTransfer = true;
-          }
-
-          // For last day, it's airport departure
-          if (isLastDay) {
-            transferMode = 'airport_departure';
-            hasAirportTransfer = true;
-          }
-
-          // Determine meal code based on meals
-          let mealCode = '(';
-
-          // Breakfast is included on all days except arrival day (Day 1)
-          if (!isFirstDay) {
-            mealCode += 'B';
-          }
-
-          // For SIC tours, lunch is included on full day tours
-          if (isSIC && tourName && tourName.toLowerCase().includes('full day')) {
-            mealCode += mealCode.length > 1 ? '/L' : 'L';
-          }
-
-          // Check for explicitly mentioned meals
-          if (meals.some((m: string) => m.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
-            mealCode += mealCode.length > 1 ? '/L' : 'L';
-          }
-          if (meals.some((m: string) => m.toLowerCase().includes('dinner'))) {
-            mealCode += mealCode.length > 1 ? '/D' : 'D';
-          }
-
-          if (mealCode === '(') mealCode = '(-)';
-          else mealCode += ')';
-          mealCode = mealCode.replace('(/', '(');
-
-          // Generate AI description
-          const aiDescription = await generateAIDescription({
-            dayNumber: day.dayNumber,
-            location,
-            previousLocation,
-            activities,
-            accommodation,
-            meals,
-            transfers,
-            transportation,
-            transportLocation,
-            isFirstDay,
-            isLastDay,
-            isCityChange,
-            transferMode,
-            hasAirportTransfer,
-            tourType: data.tourType,
-            tourName
-          });
-
-          return {
-            dayNumber: day.dayNumber,
-            date: day.date,
-            title: `Day ${day.dayNumber} - ${location}`,
-            mealCode,
-            description: aiDescription || `After breakfast, your tour includes ${activities.join(', ') || 'various activities'}. Overnight in ${location}.`
-          };
-        });
-
-        const itineraryDays = await Promise.all(itineraryDaysPromises);
-        setDays(itineraryDays);
-
-        // Extract hotel information and determine category
-        const hotelStays: HotelStay[] = [];
-        let currentHotel = '';
-        let checkInDate = '';
-        let checkInCity = '';
-
-        data.days.forEach((day: any, index: number) => {
-          const hotelInfo = day.hotelAccommodation?.[0];
-          if (hotelInfo?.description) {
-            if (currentHotel !== hotelInfo.description) {
-              // New hotel detected
-              if (currentHotel) {
-                // Extract hotel category from name (e.g., "5 Star", "4 Star")
-                const categoryMatch = currentHotel.match(/(\d)\s*[Ss]tar/);
-                const category = categoryMatch ? `${categoryMatch[1]}-Star` : '4-Star';
-
-                // Save previous hotel stay
-                hotelStays.push({
-                  hotelName: currentHotel,
-                  city: checkInCity,
-                  checkIn: checkInDate,
-                  checkOut: day.date,
-                  nights: index - data.days.findIndex((d: any) => d.hotelAccommodation?.[0]?.description === currentHotel),
-                  category
-                });
-              }
-              currentHotel = hotelInfo.description;
-              checkInDate = day.date;
-              checkInCity = hotelInfo.location || 'N/A';
-            }
-          }
-        });
-
-        // Add the last hotel
-        if (currentHotel) {
-          const categoryMatch = currentHotel.match(/(\d)\s*[Ss]tar/);
-          const category = categoryMatch ? `${categoryMatch[1]}-Star` : '4-Star';
-
-          hotelStays.push({
-            hotelName: currentHotel,
-            city: checkInCity,
-            checkIn: checkInDate,
-            checkOut: data.endDate,
-            nights: data.days.filter((d: any) => d.hotelAccommodation?.[0]?.description === currentHotel).length,
-            category
-          });
+          activities = [...activities, ...entrances];
+        } else {
+          activities = entrances;
         }
 
-        setHotels(hotelStays);
+        const accommodation = day.hotelAccommodation?.[0]?.description ?? '';
+        const meals = day.meals.map(expense => expense.description).filter(isNonEmptyString);
+        const firstTransport = day.transportation[0];
+        const transportation = firstTransport?.description ?? '';
+        const transportLocation = firstTransport?.location ?? '';
 
-        // Extract hotels by city and category for display
-        const hotelsByCity: Record<string, Record<string, string[]>> = {};
+      const transfers: TransferInfo[] = day.transportation
+        .map<TransferInfo>(expense => ({
+          description: expense.description ?? '',
+          location: expense.location ?? null
+        }))
+        .filter(transfer => isNonEmptyString(transfer.description));
 
-        data.days.forEach((day: any) => {
-          // Loop through ALL hotel accommodations (not just [0])
-          day.hotelAccommodation?.forEach((hotelInfo: any) => {
-            if (hotelInfo && hotelInfo.location && hotelInfo.description && hotelInfo.hotelCategory) {
-              const city = hotelInfo.location;
-              const category = hotelInfo.hotelCategory; // '3 stars', '4 stars', '5 stars'
-              const hotelName = hotelInfo.description;
+        const isFirstDay = index === 0;
+        const isLastDay = index === data.days.length - 1;
 
-              if (!hotelsByCity[city]) {
-                hotelsByCity[city] = { '3 stars': [], '4 stars': [], '5 stars': [] };
-              }
+        const previousLocation =
+          index > 0 && isNonEmptyString(data.days[index - 1].hotelAccommodation?.[0]?.location)
+            ? data.days[index - 1].hotelAccommodation[0].location!
+            : null;
+        const currentLocation = location;
+        const isCityChange = Boolean(previousLocation && previousLocation !== currentLocation);
 
-              // Add hotel if not already in the list for this city/category
-              if (!hotelsByCity[city][category]?.includes(hotelName)) {
-                if (!hotelsByCity[city][category]) {
-                  hotelsByCity[city][category] = [];
-                }
-                hotelsByCity[city][category].push(hotelName);
-              }
+        let transferMode: TransferMode = '';
+        let hasAirportTransfer = false;
+        let airportTransferCount = 0;
+
+        transfers.forEach(transfer => {
+          const desc = transfer.description.toLowerCase();
+          if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
+            transferMode = 'flight';
+          } else if (desc.includes('airport')) {
+            airportTransferCount += 1;
+            hasAirportTransfer = true;
+            if (!transferMode) {
+              transferMode = 'airport';
             }
-          });
+          } else if (desc.includes('transfer') || desc.includes('drive')) {
+            if (!transferMode) {
+              transferMode = 'road';
+            }
+          }
         });
 
-        // Convert to array format for easier rendering
-        const hotelsByCategoryArray = Object.keys(hotelsByCity).map(city => ({
-          city,
-          categories: hotelsByCity[city]
-        }));
+        if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
+          transferMode = 'flight';
+        }
 
-        setHotelsByCategory(hotelsByCategoryArray);
+        if (isFirstDay) {
+          transferMode = 'airport_arrival';
+          hasAirportTransfer = true;
+        }
 
-        // Use EXACT same pricing calculation as pricing page
-        const selectedHotelCategories = ['3 stars', '4 stars', '5 stars'];
-        const markup = parseFloat(data.markup) || 0;
-        const tax = parseFloat(data.tax) || 0;
+        if (isLastDay) {
+          transferMode = 'airport_departure';
+          hasAirportTransfer = true;
+        }
 
-        // EXACT copy of calculateDayTotals from pricing page
-        const calculateDayTotals = (day: any, hotelCategory?: string) => {
-          const hotels = hotelCategory
-            ? (day.hotelAccommodation || []).filter((e: any) => e.hotelCategory === hotelCategory)
-            : (day.hotelAccommodation || []);
+        let mealCode = '(';
+        if (!isFirstDay) {
+          mealCode += 'B';
+        }
 
-          const perPersonTotal =
-            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.tips || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0);
+        if (isSIC && isNonEmptyString(dayTourName) && dayTourName.toLowerCase().includes('full day')) {
+          mealCode += mealCode.length > 1 ? '/L' : 'L';
+        }
 
-          const singleSupplementTotal =
-            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.singleSupplement) || 0), 0) +
-            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.singleSupplement) || 0), 0) +
-            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.singleSupplement) || 0), 0);
+        if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
+          mealCode += mealCode.length > 1 ? '/L' : 'L';
+        }
+        if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
+          mealCode += mealCode.length > 1 ? '/D' : 'D';
+        }
 
-          const child0to2Total =
-            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0) +
-            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0) +
-            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0) +
-            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0);
+        if (mealCode === '(') {
+          mealCode = '(-)';
+        } else {
+          mealCode += ')';
+          mealCode = mealCode.replace('(/', '(');
+        }
 
-          const child3to5Total =
-            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0) +
-            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0) +
-            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0) +
-            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0);
+        const aiDescription = await generateAIDescription({
+          dayNumber: day.dayNumber,
+          location,
+          previousLocation,
+          activities,
+          accommodation,
+          meals,
+          transfers,
+          transportation,
+          transportLocation,
+          isFirstDay,
+          isLastDay,
+          isCityChange,
+          transferMode,
+          hasAirportTransfer,
+          tourType: data.tourType,
+          tourName: dayTourName
+        });
 
-          const child6to11Total =
-            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0) +
-            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0) +
-            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0) +
-            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0);
+        const fallbackActivities =
+          activities.length > 0 ? activities.join(', ') : 'various activities';
 
-          const generalTotal =
-            (day.transportation || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.guide || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.guideDriverAccommodation || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
-            (day.parking || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0);
-
-          return { perPersonTotal, singleSupplementTotal, child0to2Total, child3to5Total, child6to11Total, generalTotal };
+        return {
+          dayNumber: day.dayNumber,
+          date: day.date,
+          title: `Day ${day.dayNumber} - ${location}`,
+          mealCode,
+          description:
+            aiDescription ||
+            `After breakfast, your tour includes ${fallbackActivities}. Overnight in ${location}.`
         };
+      });
 
-        // EXACT copy of calculatePricingTable from pricing page
-        const calculatePricingTable = () => {
-          const paxSlabs = [2, 4, 6, 8, 10];
-          const categories = selectedHotelCategories;
+      const itineraryDays = await Promise.all(itineraryDaysPromises);
+      setDays(itineraryDays);
 
-          return paxSlabs.map(currentPax => {
-            const categoriesData: Record<string, any> = {};
+      const hotelStays: HotelStay[] = [];
+      let currentHotelName = '';
+      let checkInDate = '';
+      let checkInCity = '';
 
-            categories.forEach(category => {
-              let totalPerPerson = 0;
-              let totalSingleSupplement = 0;
-              let totalChild0to2 = 0;
-              let totalChild3to5 = 0;
-              let totalChild6to11 = 0;
-              let totalGeneral = 0;
+      data.days.forEach((day, index) => {
+        const [hotelInfo] = day.hotelAccommodation;
+        if (!isNonEmptyString(hotelInfo?.description)) {
+          return;
+        }
 
-              data.days.forEach((day: any) => {
-                const dayTotals = calculateDayTotals(day, category);
-                totalPerPerson += dayTotals.perPersonTotal;
-                totalSingleSupplement += dayTotals.singleSupplementTotal;
-                totalChild0to2 += dayTotals.child0to2Total;
-                totalChild3to5 += dayTotals.child3to5Total;
-                totalChild6to11 += dayTotals.child6to11Total;
-                totalGeneral += dayTotals.generalTotal;
-              });
+        if (currentHotelName !== hotelInfo.description) {
+          if (currentHotelName) {
+            const categoryMatch = currentHotelName.match(/(\d)\s*[Ss]tar/);
+            const category = categoryMatch ? `${categoryMatch[1]}-Star` : '4-Star';
+            const firstIndex = data.days.findIndex(
+              dayEntry => dayEntry.hotelAccommodation?.[0]?.description === currentHotelName
+            );
+            const nightsAtHotel = firstIndex >= 0 ? index - firstIndex : 0;
 
-              const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
-              const adultCost = totalPerPerson + generalPerPerson;
-              const adultSubtotal = adultCost * currentPax;
-              const adultWithMarkup = adultSubtotal * (1 + markup / 100);
-              const adultFinal = adultWithMarkup * (1 + tax / 100);
-              const adultPerPerson = adultFinal / currentPax;
+            hotelStays.push({
+              hotelName: currentHotelName,
+              city: checkInCity,
+              checkIn: checkInDate,
+              checkOut: day.date,
+              nights: nightsAtHotel,
+              category
+            });
+          }
 
-              const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
-              const sglFinal = sglWithMarkup * (1 + tax / 100);
+          currentHotelName = hotelInfo.description;
+          checkInDate = day.date;
+          checkInCity = hotelInfo.location ?? 'N/A';
+        }
+      });
 
-              const child0to2IsFOC = totalChild0to2 === 0;
-              const child0to2WithMarkup = totalChild0to2 * (1 + markup / 100);
-              const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
+      if (currentHotelName) {
+        const categoryMatch = currentHotelName.match(/(\d)\s*[Ss]tar/);
+        const category = categoryMatch ? `${categoryMatch[1]}-Star` : '4-Star';
+        const nightsAtHotel = data.days.filter(
+          day => day.hotelAccommodation?.[0]?.description === currentHotelName
+        ).length;
 
-              const child3to5IsFOC = totalChild3to5 === 0;
-              const child3to5WithMarkup = totalChild3to5 * (1 + markup / 100);
-              const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
+        hotelStays.push({
+          hotelName: currentHotelName,
+          city: checkInCity,
+          checkIn: checkInDate,
+          checkOut: data.endDate,
+          nights: nightsAtHotel,
+          category
+        });
+      }
 
-              const child6to11IsFOC = totalChild6to11 === 0;
-              const child6to11WithMarkup = totalChild6to11 * (1 + markup / 100);
-              const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
+      setHotels(hotelStays);
 
-              categoriesData[category] = {
-                adultPerPerson: Math.round(adultPerPerson),
-                singleSupplement: Math.round(sglFinal),
-                child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2Final),
-                child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5Final),
-                child6to11: child6to11IsFOC ? 'FOC' : Math.round(child6to11Final)
-              };
+      const hotelsByCity: Record<string, Record<HotelCategoryLabel, string[]>> = {};
+
+      data.days.forEach(day => {
+        day.hotelAccommodation.forEach(hotelInfo => {
+          const { location: city, description, hotelCategory } = hotelInfo;
+          if (!isNonEmptyString(city) || !isNonEmptyString(description) || !isHotelCategoryLabel(hotelCategory)) {
+            return;
+          }
+
+          if (!hotelsByCity[city]) {
+            hotelsByCity[city] = createEmptyHotelCategoryMap();
+          }
+
+          const categoryList = hotelsByCity[city][hotelCategory];
+          if (!categoryList.includes(description)) {
+            categoryList.push(description);
+          }
+        });
+      });
+
+      const hotelsByCategoryArray: HotelsByCategoryEntry[] = Object.entries(hotelsByCity).map(
+        ([city, categories]) => ({
+          city,
+          categories
+        })
+      );
+
+      setHotelsByCategory(hotelsByCategoryArray);
+
+      const selectedHotelCategories: HotelCategoryLabel[] = ['3 stars', '4 stars', '5 stars'];
+      const markup = Number(data.markup ?? 0);
+      const tax = Number(data.tax ?? 0);
+
+      const toNumber = (value: number | null | undefined) =>
+        typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+      const calculateDayTotals = (day: QuoteDay, hotelCategory?: HotelCategoryLabel) => {
+        const hotels =
+          hotelCategory != null
+            ? day.hotelAccommodation.filter(expense => expense.hotelCategory === hotelCategory)
+            : day.hotelAccommodation;
+
+        const perPersonTotal =
+          hotels.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.meals.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.entranceFees.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.sicTourCost.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.tips.reduce((sum, expense) => sum + toNumber(expense.price), 0);
+
+        const singleSupplementTotal =
+          hotels.reduce((sum, expense) => sum + toNumber(expense.singleSupplement), 0) +
+          day.meals.reduce((sum, expense) => sum + toNumber(expense.singleSupplement), 0) +
+          day.entranceFees.reduce((sum, expense) => sum + toNumber(expense.singleSupplement), 0);
+
+        const child0to2Total =
+          hotels.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
+        day.meals.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
+          day.entranceFees.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
+          day.sicTourCost.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0);
+
+        const child3to5Total =
+          hotels.reduce((sum, expense) => sum + toNumber(expense.child3to5), 0) +
+          day.meals.reduce((sum, expense) => sum + toNumber(expense.child3to5), 0) +
+          day.entranceFees.reduce((sum, expense) => sum + toNumber(expense.child3to5), 0) +
+          day.sicTourCost.reduce((sum, expense) => sum + toNumber(expense.child3to5), 0);
+
+        const child6to11Total =
+          hotels.reduce((sum, expense) => sum + toNumber(expense.child6to11), 0) +
+          day.meals.reduce((sum, expense) => sum + toNumber(expense.child6to11), 0) +
+          day.entranceFees.reduce((sum, expense) => sum + toNumber(expense.child6to11), 0) +
+          day.sicTourCost.reduce((sum, expense) => sum + toNumber(expense.child6to11), 0);
+
+        const generalTotal =
+          day.transportation.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.guide.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.guideDriverAccommodation.reduce((sum, expense) => sum + toNumber(expense.price), 0) +
+          day.parking.reduce((sum, expense) => sum + toNumber(expense.price), 0);
+
+        return {
+          perPersonTotal,
+          singleSupplementTotal,
+          child0to2Total,
+          child3to5Total,
+          child6to11Total,
+          generalTotal
+        };
+      };
+
+      const calculatePricingTable = (): PricingTableRow[] => {
+        const paxSlabs = [2, 4, 6, 8, 10];
+
+        return paxSlabs.map(currentPax => {
+          const categoriesData: Partial<Record<HotelCategoryLabel, PricingCategoryTotals>> = {};
+
+          selectedHotelCategories.forEach(category => {
+            let totalPerPerson = 0;
+            let totalSingleSupplement = 0;
+            let totalChild0to2 = 0;
+            let totalChild3to5 = 0;
+            let totalChild6to11 = 0;
+            let totalGeneral = 0;
+
+            data.days.forEach(day => {
+              const dayTotals = calculateDayTotals(day, category);
+              totalPerPerson += dayTotals.perPersonTotal;
+              totalSingleSupplement += dayTotals.singleSupplementTotal;
+              totalChild0to2 += dayTotals.child0to2Total;
+              totalChild3to5 += dayTotals.child3to5Total;
+              totalChild6to11 += dayTotals.child6to11Total;
+              totalGeneral += dayTotals.generalTotal;
             });
 
-            return {
-              pax: currentPax,
-              categories: categoriesData
+            const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
+            const adultCost = totalPerPerson + generalPerPerson;
+            const adultSubtotal = adultCost * currentPax;
+            const adultWithMarkup = adultSubtotal * (1 + markup / 100);
+            const adultFinal = adultWithMarkup * (1 + tax / 100);
+            const adultPerPerson = currentPax > 0 ? adultFinal / currentPax : 0;
+
+            const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
+            const sglFinal = sglWithMarkup * (1 + tax / 100);
+
+            const child0to2IsFOC = totalChild0to2 === 0;
+            const child0to2WithMarkup = totalChild0to2 * (1 + markup / 100);
+            const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
+
+            const child3to5IsFOC = totalChild3to5 === 0;
+            const child3to5WithMarkup = totalChild3to5 * (1 + markup / 100);
+            const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
+
+            const child6to11IsFOC = totalChild6to11 === 0;
+            const child6to11WithMarkup = totalChild6to11 * (1 + markup / 100);
+            const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
+
+            categoriesData[category] = {
+              adultPerPerson: Math.round(adultPerPerson),
+              singleSupplement: Math.round(sglFinal),
+              child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2Final),
+              child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5Final),
+              child6to11: child6to11IsFOC ? 'FOC' : Math.round(child6to11Final)
             };
           });
-        };
-
-        // Use saved pricing table if available, otherwise calculate it
-        let pricingTableData;
-        if (data.pricingTable) {
-          // Use the saved pricing table from the quote
-          pricingTableData = data.pricingTable;
-          console.log('[ITINERARY] Using saved pricing table from quote');
-        } else {
-          // Calculate pricing table (fallback for older quotes without saved pricing)
-          pricingTableData = calculatePricingTable();
-          console.log('[ITINERARY] Calculated pricing table (no saved data)');
-        }
-
-        // Convert to the format used by the itinerary display
-        const categoryPricing: HotelCategoryPricing[] = selectedHotelCategories.map(category => {
-          const pricingSlabs = pricingTableData.map((row: any) => ({
-            pax: row.pax,
-            pricePerPerson: row.categories[category].adultPerPerson,
-            totalPrice: row.categories[category].adultPerPerson * row.pax
-          }));
 
           return {
-            category: category,
-            pricingSlabs
+            pax: currentPax,
+            categories: categoriesData as Record<HotelCategoryLabel, PricingCategoryTotals>
           };
         });
+      };
 
-        setHotelCategoryPricing(categoryPricing);
+      const pricingTableData = data.pricingTable ?? calculatePricingTable();
 
-        // Set default inclusions/exclusions/information
-        setInclusions(`• ${nights} nights accommodation in the mentioned hotels,\n• Meals are as per itinerary with code letters (B=Breakfast, L=Lunch, D=Dinner),\n• Return airport transfers on Private basis,\n• Professional English-Speaking Guidance on tour days,\n• Sightseeings as per itinerary on ${data.tourType === 'SIC' ? 'SIC (Group Tours)' : 'Private'} basis with entrance fees for mentioned places,\n• Local Taxes.`);
+      const categoryPricing = selectedHotelCategories.map(category => {
+        const pricingSlabs = pricingTableData.map(row => {
+          const categoryRates = row.categories[category];
+          return categoryRates
+            ? {
+                pax: row.pax,
+                pricePerPerson: categoryRates.adultPerPerson,
+                totalPrice: categoryRates.adultPerPerson * row.pax
+              }
+            : {
+                pax: row.pax,
+                pricePerPerson: 0,
+                totalPrice: 0
+              };
+        });
 
-        setExclusions(`• Flights,\n• Personal expenses,\n• Drinks at meals,\n• Tips and porterage at hotels,\n• Tips to the driver and the guide.`);
+        return {
+          category,
+          pricingSlabs
+        };
+      });
 
-        setInformation(`• Official Holidays and Religious Festivals: Grand Bazaar and Spice Market will be closed.\n• Grand Bazaar is closed on Sundays,\n• Please be ready on lobby floor minimum 5 minutes prior to pick up time for the tours and transfers.`);
-      }
+      setHotelCategoryPricing(categoryPricing);
+
+      setInclusions(
+        [
+          `- ${nights} nights accommodation in the mentioned hotels`,
+          '- Meals are as per itinerary with code letters (B=Breakfast, L=Lunch, D=Dinner)',
+          '- Return airport transfers on Private basis',
+          '- Professional English-Speaking Guidance on tour days',
+          `- Sightseeings as per itinerary on ${
+            data.tourType === 'SIC' ? 'SIC (Group Tours)' : 'Private'
+          } basis with entrance fees for mentioned places`,
+          '- Local Taxes.'
+        ].join('\n')
+      );
+
+      setExclusions(
+        [
+          '- Flights',
+          '- Personal expenses',
+          '- Drinks at meals',
+          '- Tips and porterage at hotels',
+          '- Tips to the driver and the guide.'
+        ].join('\n')
+      );
+
+      setInformation(
+        [
+          '- Official Holidays and Religious Festivals: Grand Bazaar and Spice Market will be closed.',
+          '- Grand Bazaar is closed on Sundays',
+          '- Please be ready on lobby floor minimum 5 minutes prior to pick up time for the tours and transfers.'
+        ].join('\n')
+      );
     } catch (error) {
       console.error('Error loading quote:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+}, [generateAIDescription]);
 
-  const updateDay = (dayIndex: number, field: keyof DayItinerary, value: any) => {
+  // Load quote if quoteId parameter is present
+  useEffect(() => {
+    const quoteId = searchParams.get('quote');
+    if (quoteId && session) {
+      loadQuoteForItinerary(quoteId);
+    }
+  }, [searchParams, session, loadQuoteForItinerary]);
+
+
+
+  const updateDay = <K extends keyof DayItinerary>(
+    dayIndex: number,
+    field: K,
+    value: DayItinerary[K]
+  ) => {
     const newDays = [...days];
     newDays[dayIndex] = { ...newDays[dayIndex], [field]: value };
     setDays(newDays);
@@ -794,10 +944,13 @@ function ItineraryPageContent() {
             {/* Header with Logo */}
             <div className="px-12 pt-10 pb-6">
               <div className="flex items-start justify-between mb-8">
-                <img
+                <Image
                   src="/images/Funny_Logo.png"
                   alt="Funny Tourism"
-                  className="h-20 object-contain"
+                  width={240}
+                  height={80}
+                  className="h-20 w-auto object-contain"
+                  priority
                 />
                 <div className="text-right text-xs text-gray-600 leading-relaxed">
                   <p className="font-semibold text-sm text-gray-800">Funny Tourism</p>
@@ -1057,10 +1210,12 @@ function ItineraryPageContent() {
             {/* Footer */}
             <div className="px-12 py-6 border-t-2 border-indigo-600 mt-8">
               <div className="flex items-center justify-between">
-                <img
+                <Image
                   src="/images/Funny_Logo.png"
                   alt="Funny Tourism"
-                  className="h-14 object-contain opacity-80"
+                  width={200}
+                  height={70}
+                  className="h-14 w-auto object-contain opacity-80"
                 />
                 <div className="text-right text-xs text-gray-600 leading-relaxed">
                   <p className="font-semibold text-sm text-gray-800">Funny Tourism</p>

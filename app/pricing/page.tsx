@@ -1408,7 +1408,7 @@ function PricingPageContent() {
 
     // Create tab-separated text for easy paste into Word/Excel
     // Header row
-    let text = 'PAX / Rate Type';
+    let text = 'PAX / PP in DBL';
     selectedHotelCategories.forEach(category => {
       text += `\t${category}`;
     });
@@ -2147,7 +2147,7 @@ function PricingPageContent() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-indigo-600 text-white">
-                      <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / Rate Type</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / PP in DBL</th>
                       {selectedHotelCategories.map(category => (
                         <th key={category} className="border border-gray-300 px-4 py-2 text-center font-bold">
                           {category}

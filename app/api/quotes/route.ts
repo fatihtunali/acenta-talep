@@ -123,9 +123,11 @@ export async function POST(request: NextRequest) {
 
       // Insert days and expenses
       for (const day of data.days) {
+        // Extract just the date part (YYYY-MM-DD) from ISO string
+        const dateOnly = day.date.split('T')[0];
         const [dayResult] = await connection.execute<ResultSetHeader>(
           `INSERT INTO quote_days (quote_id, day_number, date) VALUES (?, ?, ?)`,
-          [quoteId, day.dayNumber, day.date]
+          [quoteId, day.dayNumber, dateOnly]
         );
 
         const quoteDayId = dayResult.insertId;

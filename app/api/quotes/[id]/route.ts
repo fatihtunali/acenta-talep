@@ -242,7 +242,7 @@ export async function PUT(
           let totalChild6to11 = 0;
           let totalGeneral = 0;
 
-          data.days.forEach(day => {
+          data.days.forEach((day: DayExpenses) => {
             const dayTotals = calculateDayTotals(day, category);
             totalPerPerson += dayTotals.perPersonTotal;
             totalSingleSupplement += dayTotals.singleSupplementTotal;

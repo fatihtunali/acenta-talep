@@ -74,6 +74,12 @@ export default function DashboardPage() {
             >
               📂 View Saved Quotes
             </a>
+            <a
+              href="/itinerary"
+              className="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md text-lg"
+            >
+              📋 Create Itinerary
+            </a>
           </div>
         </div>
 

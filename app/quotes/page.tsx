@@ -89,6 +89,10 @@ export default function QuotesPage() {
     router.push(`/quotes/${id}`);
   };
 
+  const createItinerary = (id: number) => {
+    router.push(`/itinerary?quote=${id}`);
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -232,6 +236,13 @@ export default function QuotesPage() {
                           title="Create a copy of this quote"
                         >
                           Copy
+                        </button>
+                        <button
+                          onClick={() => createItinerary(quote.id)}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="Create itinerary from this quote"
+                        >
+                          Itinerary
                         </button>
                         <button
                           onClick={() => deleteQuote(quote.id, quote.quote_name)}

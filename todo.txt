@@ -1,4 +1,0 @@
-  A) Continue implementing the full feature now (1-2 hours) which includes:
-  - Category dropdown for each hotel row
-  - Multi-column pricing table showing all 5 categories side-by-side
-  - All API updates

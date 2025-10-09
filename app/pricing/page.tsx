@@ -1250,17 +1250,20 @@ function PricingPageContent() {
     const child0to2Total =
       hotels.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
-      day.entranceFees.reduce((sum, e) => sum + (e.child0to2 || 0), 0);
+      day.entranceFees.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+      day.sicTourCost.reduce((sum, e) => sum + (e.child0to2 || 0), 0);
 
     const child3to5Total =
       hotels.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
-      day.entranceFees.reduce((sum, e) => sum + (e.child3to5 || 0), 0);
+      day.entranceFees.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+      day.sicTourCost.reduce((sum, e) => sum + (e.child3to5 || 0), 0);
 
     const child6to11Total =
       hotels.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
-      day.entranceFees.reduce((sum, e) => sum + (e.child6to11 || 0), 0);
+      day.entranceFees.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+      day.sicTourCost.reduce((sum, e) => sum + (e.child6to11 || 0), 0);
 
     const generalTotal =
       day.transportation.reduce((sum, e) => sum + (e.price || 0), 0) +

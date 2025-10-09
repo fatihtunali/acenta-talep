@@ -599,8 +599,8 @@ const ExpenseTable = ({
                   )}
                 </td>
 
-                {/* Hotel Category Dropdown - only for hotels */}
-                {showChildRates && (
+                {/* Hotel Category Dropdown - only for hotel accommodation */}
+                {showChildRates && category === 'hotelAccommodation' && (
                   <td className="border border-gray-300 p-0 w-28">
                     <select
                       value={item.hotelCategory || ''}

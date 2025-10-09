@@ -298,83 +298,59 @@ function ItineraryPageContent() {
 
         setHotels(hotelStays);
 
-        // Calculate pricing for different PAX slabs and hotel categories
+        // Calculate pricing using EXACT same logic as pricing page
         const paxValues = [2, 4, 6, 8, 10];
         const hotelCategories = ['3 stars', '4 stars', '5 stars'];
         const markup = parseFloat(data.markup) || 0;
         const tax = parseFloat(data.tax) || 0;
 
-        // Function to calculate totals for a specific day and hotel category
-        const calculateDayTotals = (day: any, category?: string) => {
-          let perPersonTotal = 0;
-          let generalTotal = 0;
+        // EXACT same calculateDayTotals function from pricing page
+        const calculateDayTotals = (day: any, hotelCategory?: string) => {
+          // Filter hotels by category if specified, otherwise include all
+          const hotels = hotelCategory
+            ? (day.hotelAccommodation || []).filter((e: any) => e.hotelCategory === hotelCategory)
+            : (day.hotelAccommodation || []);
 
-          // Per-person expenses
-          const perPersonCategories = ['hotelAccommodation', 'meals', 'entranceFees'];
-          if (data.tourType === 'SIC') {
-            perPersonCategories.push('sicTourCost');
-          }
-          perPersonCategories.push('tips');
+          const perPersonTotal =
+            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.tips || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0);
 
-          perPersonCategories.forEach((cat: string) => {
-            const expenses = day[cat] || [];
-            expenses.forEach((expense: any) => {
-              // If category is specified, only include matching hotel expenses
-              if (cat === 'hotelAccommodation' && category) {
-                if (expense.hotelCategory === category) {
-                  perPersonTotal += parseFloat(expense.price) || 0;
-                }
-              } else {
-                perPersonTotal += parseFloat(expense.price) || 0;
-              }
-            });
-          });
-
-          // General expenses (divided by PAX)
-          const generalCategories = ['transportation', 'guide', 'guideDriverAccommodation', 'parking'];
-          generalCategories.forEach((cat: string) => {
-            const expenses = day[cat] || [];
-            expenses.forEach((expense: any) => {
-              if (data.transportPricingMode === 'perVehicle' && cat === 'transportation') {
-                const vehicleCount = expense.vehicleCount || 1;
-                const pricePerVehicle = parseFloat(expense.pricePerVehicle) || parseFloat(expense.price) || 0;
-                generalTotal += vehicleCount * pricePerVehicle;
-              } else {
-                generalTotal += parseFloat(expense.price) || 0;
-              }
-            });
-          });
+          const generalTotal =
+            (day.transportation || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.guide || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.guideDriverAccommodation || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
+            (day.parking || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0);
 
           return { perPersonTotal, generalTotal };
         };
 
-        // Calculate pricing for each hotel category
+        // Calculate pricing for each hotel category using EXACT same logic as pricing page
         const categoryPricing: HotelCategoryPricing[] = hotelCategories.map(category => {
-          const pricingSlabs = paxValues.map(slabPax => {
+          const pricingSlabs = paxValues.map(currentPax => {
             let totalPerPerson = 0;
             let totalGeneral = 0;
 
-            // Sum up all days
             data.days.forEach((day: any) => {
               const dayTotals = calculateDayTotals(day, category);
               totalPerPerson += dayTotals.perPersonTotal;
               totalGeneral += dayTotals.generalTotal;
             });
 
-            // Use exact same calculation as pricing page PAX SLABS table
-            const generalPerPerson = slabPax > 0 ? totalGeneral / slabPax : 0;
-            const costPerPerson = totalPerPerson + generalPerPerson;
-            const subtotal = costPerPerson * slabPax;
-            const markupAmount = subtotal * (markup / 100);
-            const afterMarkup = subtotal + markupAmount;
-            const taxAmount = afterMarkup * (tax / 100);
-            const total = afterMarkup + taxAmount;
-            const finalPerPerson = total / slabPax;
+            // EXACT same formula as pricing page
+            const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
+            const adultCost = totalPerPerson + generalPerPerson;
+            const adultSubtotal = adultCost * currentPax;
+            const adultWithMarkup = adultSubtotal * (1 + markup / 100);
+            const adultFinal = adultWithMarkup * (1 + tax / 100);
+            const adultPerPerson = adultFinal / currentPax;
 
             return {
-              pax: slabPax,
-              pricePerPerson: Math.round(finalPerPerson),
-              totalPrice: Math.round(total)
+              pax: currentPax,
+              pricePerPerson: Math.round(adultPerPerson),
+              totalPrice: Math.round(adultFinal)
             };
           });
 

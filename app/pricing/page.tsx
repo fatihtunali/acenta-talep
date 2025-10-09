@@ -1375,7 +1375,7 @@ function PricingPageContent() {
     let text = 'PAX\tPer Person (DBL)\tSingle Suppl.\tChild 0-2 yrs\tChild 3-5 yrs\tChild 6-11 yrs\n';
 
     tableData.forEach(row => {
-      text += `${row.pax}\t€${row.adultPerPerson.toFixed(2)}\t€${row.singleSupplement.toFixed(2)}\t€${row.child0to2.toFixed(2)}\t€${row.child3to5.toFixed(2)}\t€${row.child6to11.toFixed(2)}\n`;
+      text += `${row.pax}\t€${row.adultPerPerson}\t€${row.singleSupplement}\t€${row.child0to2}\t€${row.child3to5}\t€${row.child6to11}\n`;
     });
 
     navigator.clipboard.writeText(text).then(() => {
@@ -1445,11 +1445,11 @@ function PricingPageContent() {
 
       return {
         pax: currentPax,
-        adultPerPerson: adultPerPerson,
-        singleSupplement: sglFinal,
-        child0to2: child0to2PerPerson,
-        child3to5: child3to5PerPerson,
-        child6to11: child6to11PerPerson
+        adultPerPerson: Math.round(adultPerPerson),
+        singleSupplement: Math.round(sglFinal),
+        child0to2: Math.round(child0to2PerPerson),
+        child3to5: Math.round(child3to5PerPerson),
+        child6to11: Math.round(child6to11PerPerson)
       };
     });
   };
@@ -2046,19 +2046,19 @@ function PricingPageContent() {
                       <tr key={idx} className="hover:bg-gray-50">
                         <td className="border border-gray-300 px-4 py-2 font-semibold">{row.pax}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
-                          €{row.adultPerPerson.toFixed(2)}
+                          €{row.adultPerPerson}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-orange-700">
-                          €{row.singleSupplement.toFixed(2)}
+                          €{row.singleSupplement}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          €{row.child0to2.toFixed(2)}
+                          €{row.child0to2}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          €{row.child3to5.toFixed(2)}
+                          €{row.child3to5}
                         </td>
                         <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          €{row.child6to11.toFixed(2)}
+                          €{row.child6to11}
                         </td>
                       </tr>
                     ))}

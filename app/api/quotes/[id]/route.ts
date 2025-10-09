@@ -181,11 +181,119 @@ export async function PUT(
         return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
       }
 
+      // Calculate pricing table using same logic as pricing page
+      const calculateDayTotals = (day: DayExpenses, hotelCategory?: string) => {
+        const hotels = hotelCategory
+          ? day.hotelAccommodation.filter(e => e.hotelCategory === hotelCategory)
+          : day.hotelAccommodation;
+
+        const perPersonTotal =
+          hotels.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.meals.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.entranceFees.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.sicTourCost.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.tips.reduce((sum, e) => sum + (e.price || 0), 0);
+
+        const singleSupplementTotal =
+          hotels.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
+          day.meals.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
+          day.entranceFees.reduce((sum, e) => sum + (e.singleSupplement || 0), 0);
+
+        const child0to2Total =
+          hotels.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+          day.meals.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+          day.entranceFees.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+          day.sicTourCost.reduce((sum, e) => sum + (e.child0to2 || 0), 0);
+
+        const child3to5Total =
+          hotels.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+          day.meals.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+          day.entranceFees.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+          day.sicTourCost.reduce((sum, e) => sum + (e.child3to5 || 0), 0);
+
+        const child6to11Total =
+          hotels.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+          day.meals.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+          day.entranceFees.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+          day.sicTourCost.reduce((sum, e) => sum + (e.child6to11 || 0), 0);
+
+        const generalTotal =
+          day.transportation.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.guide.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.guideDriverAccommodation.reduce((sum, e) => sum + (e.price || 0), 0) +
+          day.parking.reduce((sum, e) => sum + (e.price || 0), 0);
+
+        return { perPersonTotal, singleSupplementTotal, child0to2Total, child3to5Total, child6to11Total, generalTotal };
+      };
+
+      const selectedHotelCategories = ['3 stars', '4 stars', '5 stars'];
+      const paxSlabs = [2, 4, 6, 8, 10];
+      const markup = data.markup;
+      const tax = data.tax;
+
+      const pricingTable = paxSlabs.map(currentPax => {
+        const categoriesData: Record<string, any> = {};
+
+        selectedHotelCategories.forEach(category => {
+          let totalPerPerson = 0;
+          let totalSingleSupplement = 0;
+          let totalChild0to2 = 0;
+          let totalChild3to5 = 0;
+          let totalChild6to11 = 0;
+          let totalGeneral = 0;
+
+          data.days.forEach(day => {
+            const dayTotals = calculateDayTotals(day, category);
+            totalPerPerson += dayTotals.perPersonTotal;
+            totalSingleSupplement += dayTotals.singleSupplementTotal;
+            totalChild0to2 += dayTotals.child0to2Total;
+            totalChild3to5 += dayTotals.child3to5Total;
+            totalChild6to11 += dayTotals.child6to11Total;
+            totalGeneral += dayTotals.generalTotal;
+          });
+
+          const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
+          const adultCost = totalPerPerson + generalPerPerson;
+          const adultSubtotal = adultCost * currentPax;
+          const adultWithMarkup = adultSubtotal * (1 + markup / 100);
+          const adultFinal = adultWithMarkup * (1 + tax / 100);
+          const adultPerPerson = adultFinal / currentPax;
+
+          const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
+          const sglFinal = sglWithMarkup * (1 + tax / 100);
+
+          const child0to2IsFOC = totalChild0to2 === 0;
+          const child0to2WithMarkup = totalChild0to2 * (1 + markup / 100);
+          const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
+
+          const child3to5IsFOC = totalChild3to5 === 0;
+          const child3to5WithMarkup = totalChild3to5 * (1 + markup / 100);
+          const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
+
+          const child6to11IsFOC = totalChild6to11 === 0;
+          const child6to11WithMarkup = totalChild6to11 * (1 + markup / 100);
+          const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
+
+          categoriesData[category] = {
+            adultPerPerson: Math.round(adultPerPerson),
+            singleSupplement: Math.round(sglFinal),
+            child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2Final),
+            child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5Final),
+            child6to11: child6to11IsFOC ? 'FOC' : Math.round(child6to11Final)
+          };
+        });
+
+        return {
+          pax: currentPax,
+          categories: categoriesData
+        };
+      });
+
       // Update quote
       await connection.execute(
         `UPDATE quotes
          SET quote_name = ?, start_date = ?, end_date = ?, tour_type = ?,
-             pax = ?, markup = ?, tax = ?, transport_pricing_mode = ?
+             pax = ?, markup = ?, tax = ?, transport_pricing_mode = ?, pricing_table = ?
          WHERE id = ?`,
         [
           data.quoteName,
@@ -196,6 +304,7 @@ export async function PUT(
           data.markup,
           data.tax,
           data.transportPricingMode,
+          JSON.stringify(pricingTable),
           id
         ]
       );

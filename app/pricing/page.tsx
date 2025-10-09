@@ -1423,7 +1423,9 @@ function PricingPageContent() {
       text += `${row.pax}`;
       selectedHotelCategories.forEach(category => {
         const data = row.categories[category];
-        text += `\t€${data.adultPerPerson}\t€${data.singleSupplement}\t€${data.child0to2}\t€${data.child3to5}\t€${data.child6to11}`;
+        const child0to2Display = data.child0to2 === 'FOC' ? 'FOC' : `€${data.child0to2}`;
+        const child3to5Display = data.child3to5 === 'FOC' ? 'FOC' : `€${data.child3to5}`;
+        text += `\t€${data.adultPerPerson}\t€${data.singleSupplement}\t${child0to2Display}\t${child3to5Display}\t€${data.child6to11}`;
       });
       text += '\n';
     });
@@ -1478,21 +1480,23 @@ function PricingPageContent() {
         const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
         const sglFinal = sglWithMarkup * (1 + tax / 100);
 
-        // Child 0-2
-        const child0to2Cost = totalChild0to2 + generalPerPerson;
+        // Child 0-2 (Infants - FOC unless specific price in database)
+        const child0to2IsFOC = totalChild0to2 === 0;
+        const child0to2Cost = child0to2IsFOC ? 0 : totalChild0to2 + generalPerPerson;
         const child0to2Subtotal = child0to2Cost * currentPax;
         const child0to2WithMarkup = child0to2Subtotal * (1 + markup / 100);
         const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
         const child0to2PerPerson = child0to2Final / currentPax;
 
-        // Child 3-5
-        const child3to5Cost = totalChild3to5 + generalPerPerson;
+        // Child 3-5 (Infants - FOC unless specific price in database)
+        const child3to5IsFOC = totalChild3to5 === 0;
+        const child3to5Cost = child3to5IsFOC ? 0 : totalChild3to5 + generalPerPerson;
         const child3to5Subtotal = child3to5Cost * currentPax;
         const child3to5WithMarkup = child3to5Subtotal * (1 + markup / 100);
         const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
         const child3to5PerPerson = child3to5Final / currentPax;
 
-        // Child 6-11
+        // Child 6-11 (Not infants - always calculate with general expenses)
         const child6to11Cost = totalChild6to11 + generalPerPerson;
         const child6to11Subtotal = child6to11Cost * currentPax;
         const child6to11WithMarkup = child6to11Subtotal * (1 + markup / 100);
@@ -1502,8 +1506,8 @@ function PricingPageContent() {
         categoriesData[category] = {
           adultPerPerson: Math.round(adultPerPerson),
           singleSupplement: Math.round(sglFinal),
-          child0to2: Math.round(child0to2PerPerson),
-          child3to5: Math.round(child3to5PerPerson),
+          child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2PerPerson),
+          child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5PerPerson),
           child6to11: Math.round(child6to11PerPerson)
         };
       });
@@ -2153,10 +2157,10 @@ function PricingPageContent() {
                                 €{categoryData.singleSupplement}
                               </td>
                               <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
-                                €{categoryData.child0to2}
+                                {categoryData.child0to2 === 'FOC' ? 'FOC' : `€${categoryData.child0to2}`}
                               </td>
                               <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
-                                €{categoryData.child3to5}
+                                {categoryData.child3to5 === 'FOC' ? 'FOC' : `€${categoryData.child3to5}`}
                               </td>
                               <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
                                 €{categoryData.child6to11}

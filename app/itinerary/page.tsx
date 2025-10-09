@@ -450,14 +450,18 @@ function ItineraryPageContent() {
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
           @page {
             size: A4;
-            margin: 2cm;
+            margin: 1.5cm;
           }
 
-          .print\\:hidden {
+          /* Hide all non-printable elements */
+          nav, button, .print\\:hidden {
             display: none !important;
           }
 
@@ -477,9 +481,10 @@ function ItineraryPageContent() {
             -webkit-print-color-adjust: exact;
           }
 
-          /* Remove shadows for cleaner print */
-          .shadow, .shadow-sm, .shadow-lg {
+          /* Remove shadows and rounded corners for cleaner print */
+          .shadow, .shadow-sm, .shadow-md, .shadow-lg, .rounded, .rounded-lg, .rounded-md {
             box-shadow: none !important;
+            border-radius: 0 !important;
           }
 
           /* Remove borders from inputs when printing */
@@ -506,9 +511,22 @@ function ItineraryPageContent() {
           tfoot {
             display: table-footer-group;
           }
+
+          /* Remove all unnecessary spacing */
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+          }
+
+          /* Make sure the itinerary container fills the page properly */
+          .min-h-screen {
+            min-height: auto !important;
+            background: white !important;
+          }
         }
       `}</style>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 print:bg-white">
         {/* Navigation */}
         <nav className="bg-white shadow-sm print:hidden border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -536,7 +554,7 @@ function ItineraryPageContent() {
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-4 py-8 print:p-0 print:max-w-full">
         {days.length === 0 ? (
           <div className="bg-white shadow rounded-lg p-8 text-center">
             <p className="text-gray-500 mb-4">No itinerary loaded. Select a quote to get started.</p>

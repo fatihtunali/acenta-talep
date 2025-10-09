@@ -17,6 +17,7 @@ interface ExpenseItem {
   child6to11?: number; // Child 6-11.99 years rate
   vehicleCount?: number; // For vehicle-based pricing
   pricePerVehicle?: number; // Price per vehicle
+  hotelCategory?: string; // Hotel category (3-star, 4-star, 5-star, etc.) - only for hotels
 }
 
 interface DayExpenses {
@@ -745,6 +746,7 @@ function PricingPageContent() {
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
   const [showPricingTable, setShowPricingTable] = useState<boolean>(false);
+  const [selectedHotelCategories, setSelectedHotelCategories] = useState<string[]>(['3-star', '4-star', '5-star']); // Categories to show in pricing table
   const [hotels, setHotels] = useState<Array<{
     id: string; // Composite ID: hotelId-pricingId
     hotel_id: number;

@@ -1413,6 +1413,7 @@ function PricingPageContent() {
       occurrences: number;
       pricePerOccurrence: number;
       totalPrice: number;
+      isPerPerson: boolean;
     }
 
     const vendorMap = new Map<string, VendorExpense>();
@@ -1429,6 +1430,9 @@ function PricingPageContent() {
       parking: 'Parking'
     };
 
+    // Per-person categories (multiply by PAX for actual vendor cost)
+    const perPersonCategories = ['hotelAccommodation', 'meals', 'entranceFees', 'sicTourCost', 'tips'];
+
     // Iterate through all days and all categories
     days.forEach((day, dayIdx) => {
       const categories: (keyof DayExpenses)[] = [
@@ -1438,10 +1442,15 @@ function PricingPageContent() {
 
       categories.forEach(category => {
         const items = day[category] as ExpenseItem[];
+        const isPerPerson = perPersonCategories.includes(category);
+
         items.forEach(item => {
           if (item.location || item.description || item.price > 0) {
             // Create unique key for vendor
             const key = `${category}|||${item.location}|||${item.description}`;
+
+            // For per-person expenses, multiply by PAX to get actual vendor cost
+            const actualPrice = isPerPerson ? item.price * pax : item.price;
 
             if (vendorMap.has(key)) {
               const existing = vendorMap.get(key)!;
@@ -1455,8 +1464,9 @@ function PricingPageContent() {
                 description: item.description,
                 days: [day.dayNumber],
                 occurrences: 1,
-                pricePerOccurrence: item.price,
-                totalPrice: item.price
+                pricePerOccurrence: actualPrice,
+                totalPrice: actualPrice,
+                isPerPerson: isPerPerson
               });
             }
           }
@@ -1483,6 +1493,7 @@ function PricingPageContent() {
     let text = 'VENDOR EXPENSE REPORT\n';
     text += `Quote: ${quoteName}\n`;
     text += `Period: ${startDate || 'N/A'} to ${endDate || 'N/A'}\n`;
+    text += `PAX: ${pax}\n`;
     text += '='.repeat(80) + '\n\n';
 
     let grandTotal = 0;
@@ -1497,8 +1508,10 @@ function PricingPageContent() {
           ? `Days ${Math.min(...vendor.days)}-${Math.max(...vendor.days)}`
           : `Day ${vendor.days[0]}`;
 
+        const paxNote = vendor.isPerPerson ? ` (${pax} PAX)` : '';
+
         text += `${vendor.location || 'N/A'} - ${vendor.description}\n`;
-        text += `  ${vendor.occurrences} × €${vendor.pricePerOccurrence.toFixed(2)} = €${vendor.totalPrice.toFixed(2)} (${daysStr})\n`;
+        text += `  ${vendor.occurrences} × €${vendor.pricePerOccurrence.toFixed(2)}${paxNote} = €${vendor.totalPrice.toFixed(2)} (${daysStr})\n`;
         categoryTotal += vendor.totalPrice;
       });
 
@@ -2405,7 +2418,7 @@ function PricingPageContent() {
               <div className="mb-4">
                 <p className="text-sm font-semibold text-gray-700">Quote: {quoteName}</p>
                 <p className="text-xs text-gray-500">
-                  Period: {startDate || 'N/A'} to {endDate || 'N/A'}
+                  Period: {startDate || 'N/A'} to {endDate || 'N/A'} | PAX: {pax}
                 </p>
               </div>
 
@@ -2441,7 +2454,7 @@ function PricingPageContent() {
                                           {vendor.location || 'N/A'} - {vendor.description}
                                         </p>
                                         <p className="text-sm text-gray-600">
-                                          {vendor.occurrences} × €{vendor.pricePerOccurrence.toFixed(2)} =
+                                          {vendor.occurrences} × €{vendor.pricePerOccurrence.toFixed(2)}{vendor.isPerPerson ? ` (${pax} PAX)` : ''} =
                                           <span className="font-semibold text-green-700"> €{vendor.totalPrice.toFixed(2)}</span>
                                           <span className="text-gray-500 ml-2">({daysStr})</span>
                                         </p>

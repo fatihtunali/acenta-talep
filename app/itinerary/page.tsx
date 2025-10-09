@@ -158,18 +158,26 @@ function ItineraryPageContent() {
           // Determine transfer type based on ALL transportation descriptions
           let transferMode = '';
           let hasAirportTransfer = false;
+          let airportTransferCount = 0;
 
           transfers.forEach((t: any) => {
             const desc = t.description.toLowerCase();
             if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
               transferMode = 'flight';
             } else if (desc.includes('airport')) {
+              airportTransferCount++;
               hasAirportTransfer = true;
               if (!transferMode) transferMode = 'airport';
             } else if (desc.includes('transfer') || desc.includes('drive')) {
               if (!transferMode) transferMode = 'road';
             }
           });
+
+          // If there are 2+ airport transfers on a city change day, it means flight
+          // (one transfer to airport in origin city, one transfer from airport in destination city)
+          if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
+            transferMode = 'flight';
+          }
 
           // For first day, it's always an airport arrival
           if (isFirstDay) {

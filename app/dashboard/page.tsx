@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -62,24 +63,24 @@ export default function DashboardPage() {
             Create and manage your tour pricing quotes
           </p>
           <div className="flex gap-4">
-            <a
+            <Link
               href="/pricing"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md text-lg"
             >
               ➕ Create New Quote
-            </a>
-            <a
+            </Link>
+            <Link
               href="/quotes"
               className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md text-lg"
             >
               📂 View Saved Quotes
-            </a>
-            <a
+            </Link>
+            <Link
               href="/itinerary"
               className="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md text-lg"
             >
               📋 Create Itinerary
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -92,50 +93,50 @@ export default function DashboardPage() {
             Manage your pricing databases for hotels, tours, meals, transfers, and entrance fees
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <a
+            <Link
               href="/hotels"
               className="flex flex-col items-center justify-center p-6 bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 rounded-lg transition-colors"
             >
               <div className="text-4xl mb-3">🏨</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Hotels</h3>
               <p className="text-sm text-gray-600 text-center">Manage hotel pricing by city</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/sic-tours"
               className="flex flex-col items-center justify-center p-6 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg transition-colors"
             >
               <div className="text-4xl mb-3">🚌</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">SIC Tours</h3>
               <p className="text-sm text-gray-600 text-center">Shared in-coach tour pricing</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/meals"
               className="flex flex-col items-center justify-center p-6 bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-200 rounded-lg transition-colors"
             >
               <div className="text-4xl mb-3">🍽️</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Meals</h3>
               <p className="text-sm text-gray-600 text-center">Restaurant & menu pricing</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/transfers"
               className="flex flex-col items-center justify-center p-6 bg-green-50 hover:bg-green-100 border-2 border-green-200 rounded-lg transition-colors"
             >
               <div className="text-4xl mb-3">🚗</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Transfers</h3>
               <p className="text-sm text-gray-600 text-center">Airport & city transfers</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/sightseeing"
               className="flex flex-col items-center justify-center p-6 bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 rounded-lg transition-colors"
             >
               <div className="text-4xl mb-3">🎫</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">Entrance Fees</h3>
               <p className="text-sm text-gray-600 text-center">Sightseeing & attractions</p>
-            </a>
+            </Link>
           </div>
         </div>
       </main>

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Suspense } from 'react';
+import Link from 'next/link';
 
 interface DayItinerary {
   dayNumber: number;
@@ -196,10 +197,10 @@ function ItineraryPageContent() {
           }
 
           // Check for explicitly mentioned meals
-          if (meals.some(m => m.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
+          if (meals.some((m: string) => m.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
             mealCode += mealCode.length > 1 ? '/L' : 'L';
           }
-          if (meals.some(m => m.toLowerCase().includes('dinner'))) {
+          if (meals.some((m: string) => m.toLowerCase().includes('dinner'))) {
             mealCode += mealCode.length > 1 ? '/D' : 'D';
           }
 
@@ -432,9 +433,9 @@ function ItineraryPageContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center space-x-4">
-              <a href="/dashboard" className="text-indigo-600 hover:text-indigo-800">
+              <Link href="/dashboard" className="text-indigo-600 hover:text-indigo-800">
                 ← Dashboard
-              </a>
+              </Link>
               <h1 className="text-xl font-semibold text-gray-900">
                 Itinerary Builder
               </h1>
@@ -458,12 +459,12 @@ function ItineraryPageContent() {
         {days.length === 0 ? (
           <div className="bg-white shadow rounded-lg p-8 text-center">
             <p className="text-gray-500 mb-4">No itinerary loaded. Select a quote to get started.</p>
-            <a
+            <Link
               href="/quotes"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md"
             >
               Select Quote
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="bg-white shadow-md print:shadow-none">

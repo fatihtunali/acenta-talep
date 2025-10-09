@@ -298,15 +298,13 @@ function ItineraryPageContent() {
 
         setHotels(hotelStays);
 
-        // Calculate pricing using EXACT same logic as pricing page
-        const paxValues = [2, 4, 6, 8, 10];
-        const hotelCategories = ['3 stars', '4 stars', '5 stars'];
+        // Use EXACT same pricing calculation as pricing page
+        const selectedHotelCategories = ['3 stars', '4 stars', '5 stars'];
         const markup = parseFloat(data.markup) || 0;
         const tax = parseFloat(data.tax) || 0;
 
-        // EXACT same calculateDayTotals function from pricing page
+        // EXACT copy of calculateDayTotals from pricing page
         const calculateDayTotals = (day: any, hotelCategory?: string) => {
-          // Filter hotels by category if specified, otherwise include all
           const hotels = hotelCategory
             ? (day.hotelAccommodation || []).filter((e: any) => e.hotelCategory === hotelCategory)
             : (day.hotelAccommodation || []);
@@ -318,41 +316,111 @@ function ItineraryPageContent() {
             (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
             (day.tips || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0);
 
+          const singleSupplementTotal =
+            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.singleSupplement) || 0), 0) +
+            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.singleSupplement) || 0), 0) +
+            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.singleSupplement) || 0), 0);
+
+          const child0to2Total =
+            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0) +
+            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0) +
+            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0) +
+            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child0to2) || 0), 0);
+
+          const child3to5Total =
+            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0) +
+            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0) +
+            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0) +
+            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child3to5) || 0), 0);
+
+          const child6to11Total =
+            hotels.reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0) +
+            (day.meals || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0) +
+            (day.entranceFees || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0) +
+            (day.sicTourCost || []).reduce((sum: number, e: any) => sum + (parseFloat(e.child6to11) || 0), 0);
+
           const generalTotal =
             (day.transportation || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
             (day.guide || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
             (day.guideDriverAccommodation || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0) +
             (day.parking || []).reduce((sum: number, e: any) => sum + (parseFloat(e.price) || 0), 0);
 
-          return { perPersonTotal, generalTotal };
+          return { perPersonTotal, singleSupplementTotal, child0to2Total, child3to5Total, child6to11Total, generalTotal };
         };
 
-        // Calculate pricing for each hotel category using EXACT same logic as pricing page
-        const categoryPricing: HotelCategoryPricing[] = hotelCategories.map(category => {
-          const pricingSlabs = paxValues.map(currentPax => {
-            let totalPerPerson = 0;
-            let totalGeneral = 0;
+        // EXACT copy of calculatePricingTable from pricing page
+        const calculatePricingTable = () => {
+          const paxSlabs = [2, 4, 6, 8, 10];
+          const categories = selectedHotelCategories;
 
-            data.days.forEach((day: any) => {
-              const dayTotals = calculateDayTotals(day, category);
-              totalPerPerson += dayTotals.perPersonTotal;
-              totalGeneral += dayTotals.generalTotal;
+          return paxSlabs.map(currentPax => {
+            const categoriesData: Record<string, any> = {};
+
+            categories.forEach(category => {
+              let totalPerPerson = 0;
+              let totalSingleSupplement = 0;
+              let totalChild0to2 = 0;
+              let totalChild3to5 = 0;
+              let totalChild6to11 = 0;
+              let totalGeneral = 0;
+
+              data.days.forEach((day: any) => {
+                const dayTotals = calculateDayTotals(day, category);
+                totalPerPerson += dayTotals.perPersonTotal;
+                totalSingleSupplement += dayTotals.singleSupplementTotal;
+                totalChild0to2 += dayTotals.child0to2Total;
+                totalChild3to5 += dayTotals.child3to5Total;
+                totalChild6to11 += dayTotals.child6to11Total;
+                totalGeneral += dayTotals.generalTotal;
+              });
+
+              const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
+              const adultCost = totalPerPerson + generalPerPerson;
+              const adultSubtotal = adultCost * currentPax;
+              const adultWithMarkup = adultSubtotal * (1 + markup / 100);
+              const adultFinal = adultWithMarkup * (1 + tax / 100);
+              const adultPerPerson = adultFinal / currentPax;
+
+              const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
+              const sglFinal = sglWithMarkup * (1 + tax / 100);
+
+              const child0to2IsFOC = totalChild0to2 === 0;
+              const child0to2WithMarkup = totalChild0to2 * (1 + markup / 100);
+              const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
+
+              const child3to5IsFOC = totalChild3to5 === 0;
+              const child3to5WithMarkup = totalChild3to5 * (1 + markup / 100);
+              const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
+
+              const child6to11IsFOC = totalChild6to11 === 0;
+              const child6to11WithMarkup = totalChild6to11 * (1 + markup / 100);
+              const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
+
+              categoriesData[category] = {
+                adultPerPerson: Math.round(adultPerPerson),
+                singleSupplement: Math.round(sglFinal),
+                child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2Final),
+                child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5Final),
+                child6to11: child6to11IsFOC ? 'FOC' : Math.round(child6to11Final)
+              };
             });
-
-            // EXACT same formula as pricing page
-            const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
-            const adultCost = totalPerPerson + generalPerPerson;
-            const adultSubtotal = adultCost * currentPax;
-            const adultWithMarkup = adultSubtotal * (1 + markup / 100);
-            const adultFinal = adultWithMarkup * (1 + tax / 100);
-            const adultPerPerson = adultFinal / currentPax;
 
             return {
               pax: currentPax,
-              pricePerPerson: Math.round(adultPerPerson),
-              totalPrice: Math.round(adultFinal)
+              categories: categoriesData
             };
           });
+        };
+
+        const pricingTableData = calculatePricingTable();
+
+        // Convert to the format used by the itinerary display
+        const categoryPricing: HotelCategoryPricing[] = selectedHotelCategories.map(category => {
+          const pricingSlabs = pricingTableData.map(row => ({
+            pax: row.pax,
+            pricePerPerson: row.categories[category].adultPerPerson,
+            totalPrice: row.categories[category].adultPerPerson * row.pax
+          }));
 
           return {
             category: category,

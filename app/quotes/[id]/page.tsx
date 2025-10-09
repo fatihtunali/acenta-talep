@@ -2,8 +2,9 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 interface ExpenseItem {
   location: string;
@@ -60,13 +61,8 @@ export default function ViewQuotePage() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (status === 'authenticated' && quoteId) {
-      fetchQuote();
-    }
-  }, [status, quoteId]);
-
-  const fetchQuote = async () => {
+  const fetchQuote = useCallback(async () => {
+    if (!quoteId) return;
     try {
       const response = await fetch(`/api/quotes/${quoteId}`);
       const data = await response.json();
@@ -78,7 +74,13 @@ export default function ViewQuotePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [quoteId]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchQuote();
+    }
+  }, [status, fetchQuote]);
 
   const calculateDayTotals = (day: DayExpenses) => {
     let perPersonTotal = 0;
@@ -172,8 +174,8 @@ export default function ViewQuotePage() {
           <div className="flex justify-between h-12 items-center">
             <div className="flex items-center space-x-6">
               <h1 className="text-lg font-semibold text-gray-900">View Quote</h1>
-              <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Back to Quotes</a>
-              <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
+              <Link href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Back to Quotes</Link>
+              <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</Link>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>

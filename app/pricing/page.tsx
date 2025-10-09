@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 interface ExpenseItem {
   id: string;
@@ -1476,8 +1477,8 @@ function PricingPageContent() {
           <div className="flex justify-between h-12 items-center">
             <div className="flex items-center space-x-6">
               <h1 className="text-lg font-semibold text-gray-900">Tour Pricing Calculator</h1>
-              <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</a>
-              <a href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</a>
+              <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</Link>
+              <Link href="/quotes" className="text-sm text-gray-600 hover:text-gray-900">Saved Quotes</Link>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{session.user.name}</span>

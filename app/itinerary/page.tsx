@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -52,6 +52,15 @@ interface PricingTableRow {
   categories: Record<HotelCategoryLabel, PricingCategoryTotals>;
 }
 
+interface SavedItineraryData {
+  tourName: string;
+  duration: string;
+  days: DayItinerary[];
+  inclusions: string;
+  exclusions: string;
+  information: string;
+}
+
 interface QuoteExpense {
   id: string;
   location?: string | null;
@@ -96,6 +105,7 @@ interface QuoteResponse {
   days: QuoteDay[];
   createdAt: string;
   updatedAt: string;
+  itineraryData?: SavedItineraryData | null;
 }
 
 interface TransferInfo {
@@ -156,6 +166,37 @@ function ItineraryPageContent() {
   const [exclusions, setExclusions] = useState<string>('');
   const [information, setInformation] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [currentQuoteId, setCurrentQuoteId] = useState<number | null>(null);
+  const [isSavingItinerary, setIsSavingItinerary] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string>('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+
+  const markUnsavedChanges = useCallback(() => setHasUnsavedChanges(true), []);
+  const saveMessageTimeoutRef = useRef<number | null>(null);
+
+  const displaySaveMessage = useCallback((message: string, duration = 4000) => {
+    if (saveMessageTimeoutRef.current) {
+      window.clearTimeout(saveMessageTimeoutRef.current);
+      saveMessageTimeoutRef.current = null;
+    }
+
+    setSaveMessage(message);
+
+    if (duration >= 0) {
+      saveMessageTimeoutRef.current = window.setTimeout(() => {
+        setSaveMessage('');
+        saveMessageTimeoutRef.current = null;
+      }, duration);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveMessageTimeoutRef.current) {
+        window.clearTimeout(saveMessageTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -196,10 +237,15 @@ function ItineraryPageContent() {
       const response = await fetch(`/api/quotes/${quoteId}`);
       if (!response.ok) {
         console.error(`Failed to load quote ${quoteId}`);
+        setCurrentQuoteId(null);
+        setHasUnsavedChanges(false);
+        displaySaveMessage('Failed to load itinerary for this quote.', 5000);
         return;
       }
 
       const data = (await response.json()) as QuoteResponse;
+      setCurrentQuoteId(data.id);
+      displaySaveMessage('', -1);
 
       const startDate = new Date(data.startDate);
       const endDate = new Date(data.endDate);
@@ -209,199 +255,258 @@ function ItineraryPageContent() {
       );
       const daysCount = nights + 1;
 
-      const cities = [
-        ...new Set(
-          data.days
-            .map(day => day.hotelAccommodation?.[0]?.location)
-            .filter(isNonEmptyString)
-        )
-      ];
-      const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
+      const defaultInclusions = [
+        `- ${nights} nights accommodation in the mentioned hotels`,
+        '- Meals are as per itinerary with code letters (B=Breakfast, L=Lunch, D=Dinner)',
+        '- Return airport transfers on Private basis',
+        '- Professional English-Speaking Guidance on tour days',
+        `- Sightseeings as per itinerary on ${
+          data.tourType === 'SIC' ? 'SIC (Group Tours)' : 'Private'
+        } basis with entrance fees for mentioned places`,
+        '- Local Taxes.'
+      ].join('\n');
 
-      const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
+      const defaultExclusions = [
+        '- Flights',
+        '- Personal expenses',
+        '- Drinks at meals',
+        '- Tips and porterage at hotels',
+        '- Tips to the driver and the guide.'
+      ].join('\n');
 
-          Requirements:
-          - Make it catchy and professional
-          - Maximum 60 characters
-          - Don't use quotes
-          - Focus on the destinations and experience
+      const defaultInformation = [
+        '- Official Holidays and Religious Festivals: Grand Bazaar and Spice Market will be closed.',
+        '- Grand Bazaar is closed on Sundays',
+        '- Please be ready on lobby floor minimum 5 minutes prior to pick up time for the tours and transfers.'
+      ].join('\n');
 
-          Examples of good titles:
-          - "Discovering Turkey: Istanbul to Cappadocia"
-          - "Ancient Wonders of Turkey"
-          - "Turkish Heritage Journey"
+      let computedTourName = data.quoteName;
+      let computedDuration = `${nights} Nights / ${daysCount} Days`;
+      let computedDays: DayItinerary[] = [];
+      let computedInclusions = defaultInclusions;
+      let computedExclusions = defaultExclusions;
+      let computedInformation = defaultInformation;
 
-          Generate only the title, nothing else:`;
+      const savedItinerary = data.itineraryData ?? null;
 
-      try {
-        const titleResponse = await fetch('/api/generate-itinerary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dayData: {
-              dayNumber: 1,
-              location: cities[0] ?? '',
-              activities: [],
-              meals: [],
-              transfers: [],
-              isFirstDay: true
-            },
-            customPrompt: titlePrompt
-          })
+      if (savedItinerary) {
+        computedTourName = savedItinerary.tourName.trim().length
+          ? savedItinerary.tourName
+          : computedTourName;
+        computedDuration = savedItinerary.duration.trim().length
+          ? savedItinerary.duration
+          : computedDuration;
+        computedDays = savedItinerary.days.map(day => ({ ...day }));
+        computedInclusions = savedItinerary.inclusions.trim().length
+          ? savedItinerary.inclusions
+          : defaultInclusions;
+        computedExclusions = savedItinerary.exclusions.trim().length
+          ? savedItinerary.exclusions
+          : defaultExclusions;
+        computedInformation = savedItinerary.information.trim().length
+          ? savedItinerary.information
+          : defaultInformation;
+      } else {
+        const cities = [
+          ...new Set(
+            data.days
+              .map(day => day.hotelAccommodation?.[0]?.location)
+              .filter(isNonEmptyString)
+          )
+        ];
+        const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
+
+        if (cities.length > 0) {
+          const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
+
+        Requirements:
+        - Make it catchy and professional
+        - Maximum 60 characters
+        - Don't use quotes
+        - Focus on the destinations and experience
+
+        Examples of good titles:
+        - "Discovering Turkey: Istanbul to Cappadocia"
+        - "Ancient Wonders of Turkey"
+        - "Turkish Heritage Journey"
+
+        Generate only the title, nothing else:`;
+
+          try {
+            const titleResponse = await fetch('/api/generate-itinerary', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                dayData: {
+                  dayNumber: 1,
+                  location: cities[0] ?? '',
+                  activities: [],
+                  meals: [],
+                  transfers: [],
+                  isFirstDay: true
+                },
+                customPrompt: titlePrompt
+              })
+            });
+
+            if (titleResponse.ok) {
+              const { description } = (await titleResponse.json()) as { description?: string };
+              if (description?.trim()) {
+                computedTourName = description.trim();
+              }
+            }
+          } catch (error) {
+            console.error('Error generating title:', error);
+          }
+        }
+
+        const itineraryDaysPromises = data.days.map(async (day, index) => {
+          const location =
+            day.hotelAccommodation?.[0]?.location && isNonEmptyString(day.hotelAccommodation[0].location)
+              ? day.hotelAccommodation[0].location
+              : 'Location';
+
+          const isSIC = data.tourType === 'SIC';
+          const entrances = day.entranceFees.map(expense => expense.description).filter(isNonEmptyString);
+
+          let dayTourName = '';
+          let activities: string[] = [];
+
+          if (isSIC && day.sicTourCost.length > 0) {
+            const [sicTour] = day.sicTourCost;
+            dayTourName = sicTour?.description ?? '';
+            if (isNonEmptyString(dayTourName)) {
+              activities.push(dayTourName);
+            }
+            activities = [...activities, ...entrances];
+          } else {
+            activities = entrances;
+          }
+
+          const accommodation = day.hotelAccommodation?.[0]?.description ?? '';
+          const meals = day.meals.map(expense => expense.description).filter(isNonEmptyString);
+          const firstTransport = day.transportation[0];
+          const transportation = firstTransport?.description ?? '';
+          const transportLocation = firstTransport?.location ?? '';
+
+          const transfers: TransferInfo[] = day.transportation
+            .map<TransferInfo>(expense => ({
+              description: expense.description ?? '',
+              location: expense.location ?? null
+            }))
+            .filter(transfer => isNonEmptyString(transfer.description));
+
+          const isFirstDay = index === 0;
+          const isLastDay = index === data.days.length - 1;
+
+          const previousLocation =
+            index > 0 && isNonEmptyString(data.days[index - 1].hotelAccommodation?.[0]?.location)
+              ? data.days[index - 1].hotelAccommodation[0].location!
+              : null;
+          const currentLocation = location;
+          const isCityChange = Boolean(previousLocation && previousLocation !== currentLocation);
+
+          let transferMode: TransferMode = '';
+          let hasAirportTransfer = false;
+          let airportTransferCount = 0;
+
+          transfers.forEach(transfer => {
+            const desc = transfer.description.toLowerCase();
+            if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
+              transferMode = 'flight';
+            } else if (desc.includes('airport')) {
+              airportTransferCount += 1;
+              hasAirportTransfer = true;
+              if (!transferMode) {
+                transferMode = 'airport';
+              }
+            } else if (desc.includes('transfer') || desc.includes('drive')) {
+              if (!transferMode) {
+                transferMode = 'road';
+              }
+            }
+          });
+
+          if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
+            transferMode = 'flight';
+          }
+
+          if (isFirstDay) {
+            transferMode = 'airport_arrival';
+            hasAirportTransfer = true;
+          }
+
+          if (isLastDay) {
+            transferMode = 'airport_departure';
+            hasAirportTransfer = true;
+          }
+
+          let mealCode = '(';
+          if (!isFirstDay) {
+            mealCode += 'B';
+          }
+
+          if (isSIC && isNonEmptyString(dayTourName) && dayTourName.toLowerCase().includes('full day')) {
+            mealCode += mealCode.length > 1 ? '/L' : 'L';
+          }
+
+          if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
+            mealCode += mealCode.length > 1 ? '/L' : 'L';
+          }
+          if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
+            mealCode += mealCode.length > 1 ? '/D' : 'D';
+          }
+
+          if (mealCode === '(') {
+            mealCode = '(-)';
+          } else {
+            mealCode += ')';
+            mealCode = mealCode.replace('(/', '(');
+          }
+
+          const aiDescription = await generateAIDescription({
+            dayNumber: day.dayNumber,
+            location,
+            previousLocation,
+            activities,
+            accommodation,
+            meals,
+            transfers,
+            transportation,
+            transportLocation,
+            isFirstDay,
+            isLastDay,
+            isCityChange,
+            transferMode,
+            hasAirportTransfer,
+            tourType: data.tourType,
+            tourName: dayTourName
+          });
+
+          const fallbackActivities =
+            activities.length > 0 ? activities.join(', ') : 'various activities';
+
+          return {
+            dayNumber: day.dayNumber,
+            date: day.date,
+            title: `Day ${day.dayNumber} - ${location}`,
+            mealCode,
+            description:
+              aiDescription ||
+              `After breakfast, your tour includes ${fallbackActivities}. Overnight in ${location}.`
+          };
         });
 
-        if (titleResponse.ok) {
-          const { description } = (await titleResponse.json()) as { description?: string };
-          setTourName(description?.trim() || data.quoteName);
-        } else {
-          setTourName(data.quoteName);
-        }
-      } catch (error) {
-        console.error('Error generating title:', error);
-        setTourName(data.quoteName);
+        computedDays = await Promise.all(itineraryDaysPromises);
       }
 
-      setDuration(`${nights} Nights / ${daysCount} Days`);
-
-      const itineraryDaysPromises = data.days.map(async (day, index) => {
-        const location =
-          day.hotelAccommodation?.[0]?.location && isNonEmptyString(day.hotelAccommodation[0].location)
-            ? day.hotelAccommodation[0].location
-            : 'Location';
-
-        const isSIC = data.tourType === 'SIC';
-        const entrances = day.entranceFees.map(expense => expense.description).filter(isNonEmptyString);
-
-        let dayTourName = '';
-        let activities: string[] = [];
-
-        if (isSIC && day.sicTourCost.length > 0) {
-          const [sicTour] = day.sicTourCost;
-          dayTourName = sicTour?.description ?? '';
-          if (isNonEmptyString(dayTourName)) {
-            activities.push(dayTourName);
-          }
-          activities = [...activities, ...entrances];
-        } else {
-          activities = entrances;
-        }
-
-        const accommodation = day.hotelAccommodation?.[0]?.description ?? '';
-        const meals = day.meals.map(expense => expense.description).filter(isNonEmptyString);
-        const firstTransport = day.transportation[0];
-        const transportation = firstTransport?.description ?? '';
-        const transportLocation = firstTransport?.location ?? '';
-
-      const transfers: TransferInfo[] = day.transportation
-        .map<TransferInfo>(expense => ({
-          description: expense.description ?? '',
-          location: expense.location ?? null
-        }))
-        .filter(transfer => isNonEmptyString(transfer.description));
-
-        const isFirstDay = index === 0;
-        const isLastDay = index === data.days.length - 1;
-
-        const previousLocation =
-          index > 0 && isNonEmptyString(data.days[index - 1].hotelAccommodation?.[0]?.location)
-            ? data.days[index - 1].hotelAccommodation[0].location!
-            : null;
-        const currentLocation = location;
-        const isCityChange = Boolean(previousLocation && previousLocation !== currentLocation);
-
-        let transferMode: TransferMode = '';
-        let hasAirportTransfer = false;
-        let airportTransferCount = 0;
-
-        transfers.forEach(transfer => {
-          const desc = transfer.description.toLowerCase();
-          if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
-            transferMode = 'flight';
-          } else if (desc.includes('airport')) {
-            airportTransferCount += 1;
-            hasAirportTransfer = true;
-            if (!transferMode) {
-              transferMode = 'airport';
-            }
-          } else if (desc.includes('transfer') || desc.includes('drive')) {
-            if (!transferMode) {
-              transferMode = 'road';
-            }
-          }
-        });
-
-        if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
-          transferMode = 'flight';
-        }
-
-        if (isFirstDay) {
-          transferMode = 'airport_arrival';
-          hasAirportTransfer = true;
-        }
-
-        if (isLastDay) {
-          transferMode = 'airport_departure';
-          hasAirportTransfer = true;
-        }
-
-        let mealCode = '(';
-        if (!isFirstDay) {
-          mealCode += 'B';
-        }
-
-        if (isSIC && isNonEmptyString(dayTourName) && dayTourName.toLowerCase().includes('full day')) {
-          mealCode += mealCode.length > 1 ? '/L' : 'L';
-        }
-
-        if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
-          mealCode += mealCode.length > 1 ? '/L' : 'L';
-        }
-        if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
-          mealCode += mealCode.length > 1 ? '/D' : 'D';
-        }
-
-        if (mealCode === '(') {
-          mealCode = '(-)';
-        } else {
-          mealCode += ')';
-          mealCode = mealCode.replace('(/', '(');
-        }
-
-        const aiDescription = await generateAIDescription({
-          dayNumber: day.dayNumber,
-          location,
-          previousLocation,
-          activities,
-          accommodation,
-          meals,
-          transfers,
-          transportation,
-          transportLocation,
-          isFirstDay,
-          isLastDay,
-          isCityChange,
-          transferMode,
-          hasAirportTransfer,
-          tourType: data.tourType,
-          tourName: dayTourName
-        });
-
-        const fallbackActivities =
-          activities.length > 0 ? activities.join(', ') : 'various activities';
-
-        return {
-          dayNumber: day.dayNumber,
-          date: day.date,
-          title: `Day ${day.dayNumber} - ${location}`,
-          mealCode,
-          description:
-            aiDescription ||
-            `After breakfast, your tour includes ${fallbackActivities}. Overnight in ${location}.`
-        };
-      });
-
-      const itineraryDays = await Promise.all(itineraryDaysPromises);
-      setDays(itineraryDays);
+      setTourName(computedTourName);
+      setDuration(computedDuration);
+      setDays(computedDays);
+      setInclusions(computedInclusions);
+      setExclusions(computedExclusions);
+      setInformation(computedInformation);
+      setHasUnsavedChanges(false);
 
       const hotelStays: HotelStay[] = [];
       let currentHotelName = '';
@@ -514,7 +619,7 @@ function ItineraryPageContent() {
 
         const child0to2Total =
           hotels.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
-        day.meals.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
+          day.meals.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
           day.entranceFees.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0) +
           day.sicTourCost.reduce((sum, expense) => sum + toNumber(expense.child0to2), 0);
 
@@ -633,43 +738,64 @@ function ItineraryPageContent() {
       });
 
       setHotelCategoryPricing(categoryPricing);
-
-      setInclusions(
-        [
-          `- ${nights} nights accommodation in the mentioned hotels`,
-          '- Meals are as per itinerary with code letters (B=Breakfast, L=Lunch, D=Dinner)',
-          '- Return airport transfers on Private basis',
-          '- Professional English-Speaking Guidance on tour days',
-          `- Sightseeings as per itinerary on ${
-            data.tourType === 'SIC' ? 'SIC (Group Tours)' : 'Private'
-          } basis with entrance fees for mentioned places`,
-          '- Local Taxes.'
-        ].join('\n')
-      );
-
-      setExclusions(
-        [
-          '- Flights',
-          '- Personal expenses',
-          '- Drinks at meals',
-          '- Tips and porterage at hotels',
-          '- Tips to the driver and the guide.'
-        ].join('\n')
-      );
-
-      setInformation(
-        [
-          '- Official Holidays and Religious Festivals: Grand Bazaar and Spice Market will be closed.',
-          '- Grand Bazaar is closed on Sundays',
-          '- Please be ready on lobby floor minimum 5 minutes prior to pick up time for the tours and transfers.'
-        ].join('\n')
-      );
     } catch (error) {
       console.error('Error loading quote:', error);
+      setCurrentQuoteId(null);
+      setHasUnsavedChanges(false);
+      displaySaveMessage('An unexpected error occurred while loading the itinerary.', 5000);
     } finally {
       setIsLoading(false);
     }
-}, [generateAIDescription]);
+  }, [displaySaveMessage, generateAIDescription]);
+
+
+  const handleSaveItinerary = useCallback(async () => {
+    if (!currentQuoteId) {
+      displaySaveMessage('No quote is loaded to save.', 4000);
+      return;
+    }
+
+    setIsSavingItinerary(true);
+    try {
+      const response = await fetch(`/api/quotes/${currentQuoteId}/itinerary`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tourName,
+          duration,
+          days,
+          inclusions,
+          exclusions,
+          information
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to save itinerary.';
+        try {
+          const errorData = await response.json();
+          if (errorData?.error) {
+            errorMessage = `Failed to save itinerary: ${errorData.error}`;
+          }
+        } catch (parseError) {
+          console.error('Error parsing itinerary save response:', parseError);
+        }
+        displaySaveMessage(errorMessage, 5000);
+        return;
+      }
+
+      displaySaveMessage('Itinerary saved successfully!', 3000);
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      displaySaveMessage(`Failed to save itinerary: ${message}`, 5000);
+      console.error('Error saving itinerary:', error);
+    } finally {
+      setIsSavingItinerary(false);
+    }
+  }, [currentQuoteId, days, displaySaveMessage, duration, exclusions, inclusions, information, tourName]);
 
   // Load quote if quoteId parameter is present
   useEffect(() => {
@@ -689,12 +815,15 @@ function ItineraryPageContent() {
     const newDays = [...days];
     newDays[dayIndex] = { ...newDays[dayIndex], [field]: value };
     setDays(newDays);
+    markUnsavedChanges();
   };
 
   const autoResizeTextarea = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     e.target.style.height = 'auto';
-    e.target.style.height = e.target.scrollHeight + 'px';
+    e.target.style.height = `${e.target.scrollHeight}px`;
   };
+
+  const isSaveDisabled = !currentQuoteId || isSavingItinerary || !hasUnsavedChanges;
 
   if (status === 'loading' || isLoading) {
     return (
@@ -703,6 +832,7 @@ function ItineraryPageContent() {
       </div>
     );
   }
+
 
   if (!session) {
     return null;
@@ -977,7 +1107,10 @@ function ItineraryPageContent() {
                   <input
                     type="text"
                     value={tourName}
-                    onChange={(e) => setTourName(e.target.value)}
+                    onChange={(e) => {
+                      setTourName(e.target.value);
+                      markUnsavedChanges();
+                    }}
                     className="text-input text-4xl font-bold text-indigo-900 w-full text-center mb-2"
                     placeholder="Tour Package Name"
                   />
@@ -985,7 +1118,10 @@ function ItineraryPageContent() {
                 <input
                   type="text"
                   value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
+                  onChange={(e) => {
+                    setDuration(e.target.value);
+                    markUnsavedChanges();
+                  }}
                   className="text-input text-lg text-gray-600 w-full text-center"
                   placeholder="X Nights / X Days"
                 />
@@ -1034,6 +1170,7 @@ function ItineraryPageContent() {
                 value={inclusions}
                 onChange={(e) => {
                   setInclusions(e.target.value);
+                  markUnsavedChanges();
                   autoResizeTextarea(e);
                 }}
                 onInput={autoResizeTextarea}
@@ -1050,6 +1187,7 @@ function ItineraryPageContent() {
                 value={exclusions}
                 onChange={(e) => {
                   setExclusions(e.target.value);
+                  markUnsavedChanges();
                   autoResizeTextarea(e);
                 }}
                 onInput={autoResizeTextarea}
@@ -1066,6 +1204,7 @@ function ItineraryPageContent() {
                 value={information}
                 onChange={(e) => {
                   setInformation(e.target.value);
+                  markUnsavedChanges();
                   autoResizeTextarea(e);
                 }}
                 onInput={autoResizeTextarea}
@@ -1229,18 +1368,25 @@ function ItineraryPageContent() {
 
         {/* Action Buttons */}
         {days.length > 0 && (
-          <div className="mt-6 flex justify-end gap-3 print:hidden">
-            <button
-              onClick={() => window.print()}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm transition-colors"
-            >
-              Print / Save PDF
-            </button>
-            <button
-              className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-md shadow-sm border border-gray-300 transition-colors"
-            >
-              Save Itinerary
-            </button>
+          <div className="mt-6 flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
+            {saveMessage && (
+              <div className="text-sm text-gray-600">{saveMessage}</div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => window.print()}
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm transition-colors"
+              >
+                Print / Save PDF
+              </button>
+              <button
+                onClick={handleSaveItinerary}
+                disabled={isSaveDisabled}
+                className={`px-6 py-3 font-semibold rounded-md shadow-sm border transition-colors ${isSaveDisabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'}`}
+              >
+                {isSavingItinerary ? 'Saving...' : 'Save Itinerary'}
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -1260,3 +1406,8 @@ export default function ItineraryPage() {
     </Suspense>
   );
 }
+
+
+
+
+

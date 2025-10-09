@@ -140,6 +140,18 @@ export async function GET(
       }
     }
 
+    // Parse itinerary_data if it exists
+    let itineraryData = null;
+    if (quote.itinerary_data) {
+      try {
+        itineraryData = typeof quote.itinerary_data === 'string'
+          ? JSON.parse(quote.itinerary_data)
+          : quote.itinerary_data;
+      } catch (e) {
+        console.error('Error parsing itinerary_data:', e);
+      }
+    }
+
     return NextResponse.json({
       id: quote.id,
       quoteName: quote.quote_name,
@@ -151,6 +163,7 @@ export async function GET(
       tax: parseFloat(quote.tax),
       transportPricingMode: quote.transport_pricing_mode,
       pricingTable,
+      itineraryData,
       days,
       createdAt: quote.created_at,
       updatedAt: quote.updated_at

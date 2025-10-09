@@ -1407,32 +1407,58 @@ function PricingPageContent() {
     const tableData = calculatePricingTable();
 
     // Create tab-separated text for easy paste into Word/Excel
-    // Header row with category names
-    let text = 'PAX';
+    // Header row
+    let text = 'PAX / Rate Type';
     selectedHotelCategories.forEach(category => {
-      text += `\t${category}\t\t\t\t`;
+      text += `\t${category}`;
     });
     text += '\n';
 
-    // Sub-header row with price types
-    text += '';
-    selectedHotelCategories.forEach(() => {
-      text += '\tPer Person\tSingle\t0-2\t3-5\t6-11';
-    });
-    text += '\n';
-
-    // Data rows
+    // Per Person rows (each PAX)
     tableData.forEach(row => {
-      text += `${row.pax}`;
+      text += `${row.pax} PAX`;
       selectedHotelCategories.forEach(category => {
         const data = row.categories[category];
-        const child0to2Display = data.child0to2 === 'FOC' ? 'FOC' : `€${data.child0to2}`;
-        const child3to5Display = data.child3to5 === 'FOC' ? 'FOC' : `€${data.child3to5}`;
-        const child6to11Display = data.child6to11 === 'FOC' ? 'FOC' : `€${data.child6to11}`;
-        text += `\t€${data.adultPerPerson}\t€${data.singleSupplement}\t${child0to2Display}\t${child3to5Display}\t${child6to11Display}`;
+        text += `\t€${data.adultPerPerson}`;
       });
       text += '\n';
     });
+
+    // Single Supplement row
+    const firstRow = tableData[0];
+    text += 'Single Supplement';
+    selectedHotelCategories.forEach(category => {
+      const data = firstRow.categories[category];
+      text += `\t€${data.singleSupplement}`;
+    });
+    text += '\n';
+
+    // Child 0-2.99 row
+    text += '0-2.99 yrs';
+    selectedHotelCategories.forEach(category => {
+      const data = firstRow.categories[category];
+      const display = data.child0to2 === 'FOC' ? 'FOC' : `€${data.child0to2}`;
+      text += `\t${display}`;
+    });
+    text += '\n';
+
+    // Child 3-5.99 row
+    text += '3-5.99 yrs';
+    selectedHotelCategories.forEach(category => {
+      const data = firstRow.categories[category];
+      const display = data.child3to5 === 'FOC' ? 'FOC' : `€${data.child3to5}`;
+      text += `\t${display}`;
+    });
+    text += '\n';
+
+    // Child 6-11.99 row
+    text += '6-11.99 yrs';
+    selectedHotelCategories.forEach(category => {
+      const data = firstRow.categories[category];
+      const display = data.child6to11 === 'FOC' ? 'FOC' : `€${data.child6to11}`;
+      text += `\t${display}`;
+    });
+    text += '\n';
 
     navigator.clipboard.writeText(text).then(() => {
       setSaveMessage('✅ Pricing table copied to clipboard!');
@@ -2121,53 +2147,95 @@ function PricingPageContent() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-indigo-600 text-white">
-                      <th rowSpan={2} className="border border-gray-300 px-4 py-2 text-left align-middle">PAX</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / Rate Type</th>
                       {selectedHotelCategories.map(category => (
-                        <th key={category} colSpan={5} className="border border-gray-300 px-4 py-2 text-center">
+                        <th key={category} className="border border-gray-300 px-4 py-2 text-center font-bold">
                           {category}
                         </th>
                       ))}
                     </tr>
-                    <tr className="bg-indigo-600 text-white">
-                      {selectedHotelCategories.map(category => (
-                        <React.Fragment key={category}>
-                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">Per Person</th>
-                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">Single</th>
-                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">0-2</th>
-                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">3-5</th>
-                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">6-11</th>
-                        </React.Fragment>
-                      ))}
-                    </tr>
                   </thead>
                   <tbody>
+                    {/* Per Person Rates for each PAX */}
                     {calculatePricingTable().map((row, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-2 font-semibold">{row.pax}</td>
+                        <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                          {row.pax} PAX
+                        </td>
                         {selectedHotelCategories.map(category => {
                           const categoryData = row.categories[category];
                           return (
-                            <React.Fragment key={category}>
-                              <td className="border border-gray-300 px-2 py-2 text-right font-semibold text-green-700">
-                                €{categoryData.adultPerPerson}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-2 text-right text-orange-700">
-                                €{categoryData.singleSupplement}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
-                                {categoryData.child0to2 === 'FOC' ? 'FOC' : `€${categoryData.child0to2}`}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
-                                {categoryData.child3to5 === 'FOC' ? 'FOC' : `€${categoryData.child3to5}`}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
-                                {categoryData.child6to11 === 'FOC' ? 'FOC' : `€${categoryData.child6to11}`}
-                              </td>
-                            </React.Fragment>
+                            <td key={category} className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                              €{categoryData.adultPerPerson}
+                            </td>
                           );
                         })}
                       </tr>
                     ))}
+
+                    {/* Single Supplement Row */}
+                    <tr className="bg-orange-50 hover:bg-orange-100">
+                      <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                        Single Supplement
+                      </td>
+                      {selectedHotelCategories.map(category => {
+                        const firstRow = calculatePricingTable()[0];
+                        const categoryData = firstRow.categories[category];
+                        return (
+                          <td key={category} className="border border-gray-300 px-4 py-2 text-right font-semibold text-orange-700">
+                            €{categoryData.singleSupplement}
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Child 0-2.99 Row */}
+                    <tr className="bg-purple-50 hover:bg-purple-100">
+                      <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                        0-2.99 yrs
+                      </td>
+                      {selectedHotelCategories.map(category => {
+                        const firstRow = calculatePricingTable()[0];
+                        const categoryData = firstRow.categories[category];
+                        return (
+                          <td key={category} className="border border-gray-300 px-4 py-2 text-right font-semibold text-purple-700">
+                            {categoryData.child0to2 === 'FOC' ? 'FOC' : `€${categoryData.child0to2}`}
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Child 3-5.99 Row */}
+                    <tr className="bg-purple-50 hover:bg-purple-100">
+                      <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                        3-5.99 yrs
+                      </td>
+                      {selectedHotelCategories.map(category => {
+                        const firstRow = calculatePricingTable()[0];
+                        const categoryData = firstRow.categories[category];
+                        return (
+                          <td key={category} className="border border-gray-300 px-4 py-2 text-right font-semibold text-purple-700">
+                            {categoryData.child3to5 === 'FOC' ? 'FOC' : `€${categoryData.child3to5}`}
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Child 6-11.99 Row */}
+                    <tr className="bg-purple-50 hover:bg-purple-100">
+                      <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                        6-11.99 yrs
+                      </td>
+                      {selectedHotelCategories.map(category => {
+                        const firstRow = calculatePricingTable()[0];
+                        const categoryData = firstRow.categories[category];
+                        return (
+                          <td key={category} className="border border-gray-300 px-4 py-2 text-right font-semibold text-purple-700">
+                            {categoryData.child6to11 === 'FOC' ? 'FOC' : `€${categoryData.child6to11}`}
+                          </td>
+                        );
+                      })}
+                    </tr>
                   </tbody>
                 </table>
               </div>

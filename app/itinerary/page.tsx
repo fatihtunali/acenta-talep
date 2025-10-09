@@ -300,7 +300,7 @@ function ItineraryPageContent() {
 
         // Calculate pricing for different PAX slabs and hotel categories
         const paxValues = [2, 4, 6, 8, 10];
-        const hotelCategories = ['3-Star', '4-Star', '5-Star'];
+        const hotelCategories = ['3 stars', '4 stars', '5 stars'];
         const markup = parseFloat(data.markup) || 0;
         const tax = parseFloat(data.tax) || 0;
 
@@ -379,7 +379,7 @@ function ItineraryPageContent() {
           });
 
           return {
-            category: `${category} Hotels`,
+            category: category,
             pricingSlabs
           };
         });

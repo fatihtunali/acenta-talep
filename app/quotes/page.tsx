@@ -85,6 +85,10 @@ export default function QuotesPage() {
     router.push(`/pricing?copy=${id}`);
   };
 
+  const viewQuote = (id: number) => {
+    router.push(`/quotes/${id}`);
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -208,6 +212,13 @@ export default function QuotesPage() {
                         {new Date(quote.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => viewQuote(quote.id)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="View full quote details"
+                        >
+                          View
+                        </button>
                         <button
                           onClick={() => loadQuote(quote.id)}
                           className="text-indigo-600 hover:text-indigo-900"

@@ -349,24 +349,26 @@ function ItineraryPageContent() {
         const hotelsByCity: Record<string, Record<string, string[]>> = {};
 
         data.days.forEach((day: any) => {
-          const hotelInfo = day.hotelAccommodation?.[0];
-          if (hotelInfo && hotelInfo.location && hotelInfo.description && hotelInfo.hotelCategory) {
-            const city = hotelInfo.location;
-            const category = hotelInfo.hotelCategory; // '3 stars', '4 stars', '5 stars'
-            const hotelName = hotelInfo.description;
+          // Loop through ALL hotel accommodations (not just [0])
+          day.hotelAccommodation?.forEach((hotelInfo: any) => {
+            if (hotelInfo && hotelInfo.location && hotelInfo.description && hotelInfo.hotelCategory) {
+              const city = hotelInfo.location;
+              const category = hotelInfo.hotelCategory; // '3 stars', '4 stars', '5 stars'
+              const hotelName = hotelInfo.description;
 
-            if (!hotelsByCity[city]) {
-              hotelsByCity[city] = { '3 stars': [], '4 stars': [], '5 stars': [] };
-            }
-
-            // Add hotel if not already in the list for this city/category
-            if (!hotelsByCity[city][category]?.includes(hotelName)) {
-              if (!hotelsByCity[city][category]) {
-                hotelsByCity[city][category] = [];
+              if (!hotelsByCity[city]) {
+                hotelsByCity[city] = { '3 stars': [], '4 stars': [], '5 stars': [] };
               }
-              hotelsByCity[city][category].push(hotelName);
+
+              // Add hotel if not already in the list for this city/category
+              if (!hotelsByCity[city][category]?.includes(hotelName)) {
+                if (!hotelsByCity[city][category]) {
+                  hotelsByCity[city][category] = [];
+                }
+                hotelsByCity[city][category].push(hotelName);
+              }
             }
-          }
+          });
         });
 
         // Convert to array format for easier rendering

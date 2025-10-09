@@ -1425,7 +1425,8 @@ function PricingPageContent() {
         const data = row.categories[category];
         const child0to2Display = data.child0to2 === 'FOC' ? 'FOC' : `€${data.child0to2}`;
         const child3to5Display = data.child3to5 === 'FOC' ? 'FOC' : `€${data.child3to5}`;
-        text += `\t€${data.adultPerPerson}\t€${data.singleSupplement}\t${child0to2Display}\t${child3to5Display}\t€${data.child6to11}`;
+        const child6to11Display = data.child6to11 === 'FOC' ? 'FOC' : `€${data.child6to11}`;
+        text += `\t€${data.adultPerPerson}\t€${data.singleSupplement}\t${child0to2Display}\t${child3to5Display}\t${child6to11Display}`;
       });
       text += '\n';
     });
@@ -1467,9 +1468,10 @@ function PricingPageContent() {
           totalGeneral += dayTotals.generalTotal;
         });
 
+        // General expenses divided ONLY by adult PAX (not children)
         const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
 
-        // Adult pricing
+        // Adult pricing (per-person costs + general expenses)
         const adultCost = totalPerPerson + generalPerPerson;
         const adultSubtotal = adultCost * currentPax;
         const adultWithMarkup = adultSubtotal * (1 + markup / 100);
@@ -1481,34 +1483,27 @@ function PricingPageContent() {
         const sglFinal = sglWithMarkup * (1 + tax / 100);
 
         // Child 0-2 (Infants - FOC unless specific price in database)
+        // Children pricing: ONLY per-person rate, NO general expenses
         const child0to2IsFOC = totalChild0to2 === 0;
-        const child0to2Cost = child0to2IsFOC ? 0 : totalChild0to2 + generalPerPerson;
-        const child0to2Subtotal = child0to2Cost * currentPax;
-        const child0to2WithMarkup = child0to2Subtotal * (1 + markup / 100);
+        const child0to2WithMarkup = totalChild0to2 * (1 + markup / 100);
         const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
-        const child0to2PerPerson = child0to2Final / currentPax;
 
         // Child 3-5 (Infants - FOC unless specific price in database)
         const child3to5IsFOC = totalChild3to5 === 0;
-        const child3to5Cost = child3to5IsFOC ? 0 : totalChild3to5 + generalPerPerson;
-        const child3to5Subtotal = child3to5Cost * currentPax;
-        const child3to5WithMarkup = child3to5Subtotal * (1 + markup / 100);
+        const child3to5WithMarkup = totalChild3to5 * (1 + markup / 100);
         const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
-        const child3to5PerPerson = child3to5Final / currentPax;
 
-        // Child 6-11 (Not infants - always calculate with general expenses)
-        const child6to11Cost = totalChild6to11 + generalPerPerson;
-        const child6to11Subtotal = child6to11Cost * currentPax;
-        const child6to11WithMarkup = child6to11Subtotal * (1 + markup / 100);
+        // Child 6-11 (Fixed rate - NO general expenses)
+        const child6to11IsFOC = totalChild6to11 === 0;
+        const child6to11WithMarkup = totalChild6to11 * (1 + markup / 100);
         const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
-        const child6to11PerPerson = child6to11Final / currentPax;
 
         categoriesData[category] = {
           adultPerPerson: Math.round(adultPerPerson),
           singleSupplement: Math.round(sglFinal),
-          child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2PerPerson),
-          child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5PerPerson),
-          child6to11: Math.round(child6to11PerPerson)
+          child0to2: child0to2IsFOC ? 'FOC' : Math.round(child0to2Final),
+          child3to5: child3to5IsFOC ? 'FOC' : Math.round(child3to5Final),
+          child6to11: child6to11IsFOC ? 'FOC' : Math.round(child6to11Final)
         };
       });
 
@@ -2163,7 +2158,7 @@ function PricingPageContent() {
                                 {categoryData.child3to5 === 'FOC' ? 'FOC' : `€${categoryData.child3to5}`}
                               </td>
                               <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
-                                €{categoryData.child6to11}
+                                {categoryData.child6to11 === 'FOC' ? 'FOC' : `€${categoryData.child6to11}`}
                               </td>
                             </React.Fragment>
                           );

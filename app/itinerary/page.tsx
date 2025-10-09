@@ -412,11 +412,21 @@ function ItineraryPageContent() {
           });
         };
 
-        const pricingTableData = calculatePricingTable();
+        // Use saved pricing table if available, otherwise calculate it
+        let pricingTableData;
+        if (data.pricingTable) {
+          // Use the saved pricing table from the quote
+          pricingTableData = data.pricingTable;
+          console.log('[ITINERARY] Using saved pricing table from quote');
+        } else {
+          // Calculate pricing table (fallback for older quotes without saved pricing)
+          pricingTableData = calculatePricingTable();
+          console.log('[ITINERARY] Calculated pricing table (no saved data)');
+        }
 
         // Convert to the format used by the itinerary display
         const categoryPricing: HotelCategoryPricing[] = selectedHotelCategories.map(category => {
-          const pricingSlabs = pricingTableData.map(row => ({
+          const pricingSlabs = pricingTableData.map((row: any) => ({
             pax: row.pax,
             pricePerPerson: row.categories[category].adultPerPerson,
             totalPrice: row.categories[category].adultPerPerson * row.pax

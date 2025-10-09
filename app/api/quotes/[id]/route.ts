@@ -113,6 +113,18 @@ export async function GET(
       days.push(dayExpenses);
     }
 
+    // Parse pricing_table if it exists
+    let pricingTable = null;
+    if (quote.pricing_table) {
+      try {
+        pricingTable = typeof quote.pricing_table === 'string'
+          ? JSON.parse(quote.pricing_table)
+          : quote.pricing_table;
+      } catch (e) {
+        console.error('Error parsing pricing_table:', e);
+      }
+    }
+
     return NextResponse.json({
       id: quote.id,
       quoteName: quote.quote_name,
@@ -123,6 +135,7 @@ export async function GET(
       markup: parseFloat(quote.markup),
       tax: parseFloat(quote.tax),
       transportPricingMode: quote.transport_pricing_mode,
+      pricingTable,
       days,
       createdAt: quote.created_at,
       updatedAt: quote.updated_at

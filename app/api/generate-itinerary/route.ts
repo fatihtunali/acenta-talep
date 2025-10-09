@@ -8,7 +8,29 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { dayData } = await request.json();
+    const { dayData, customPrompt } = await request.json();
+
+    // If custom prompt is provided, use it directly
+    if (customPrompt) {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional tour package copywriter. Generate concise, attractive titles and descriptions for tour packages."
+          },
+          {
+            role: "user",
+            content: customPrompt
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 100,
+      });
+
+      const description = completion.choices[0]?.message?.content?.trim() || '';
+      return NextResponse.json({ description });
+    }
 
     const {
       dayNumber,

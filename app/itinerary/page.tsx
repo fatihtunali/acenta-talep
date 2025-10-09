@@ -105,7 +105,53 @@ function ItineraryPageContent() {
         const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
         const daysCount = nights + 1;
 
-        setTourName(data.quoteName);
+        // Generate AI title for the itinerary
+        const cities = [...new Set(data.days.map((d: any) => d.hotelAccommodation?.[0]?.location).filter(Boolean))];
+        const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
+
+        const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
+
+        Requirements:
+        - Make it catchy and professional
+        - Maximum 60 characters
+        - Don't use quotes
+        - Focus on the destinations and experience
+
+        Examples of good titles:
+        - "Discovering Turkey: Istanbul to Cappadocia"
+        - "Ancient Wonders of Turkey"
+        - "Turkish Heritage Journey"
+
+        Generate only the title, nothing else:`;
+
+        try {
+          const titleResponse = await fetch('/api/generate-itinerary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dayData: {
+                dayNumber: 1,
+                location: cities[0],
+                activities: [],
+                meals: [],
+                transfers: [],
+                isFirstDay: true
+              },
+              customPrompt: titlePrompt
+            })
+          });
+
+          if (titleResponse.ok) {
+            const { description } = await titleResponse.json();
+            setTourName(description.trim() || data.quoteName);
+          } else {
+            setTourName(data.quoteName);
+          }
+        } catch (error) {
+          console.error('Error generating title:', error);
+          setTourName(data.quoteName);
+        }
+
         setDuration(`${nights} Nights / ${daysCount} Days`);
 
         // Initialize itinerary days with AI-generated descriptions

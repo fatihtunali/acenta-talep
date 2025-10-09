@@ -29,6 +29,7 @@ interface ExpenseItem {
   child6to11?: number;
   vehicleCount?: number;
   pricePerVehicle?: number;
+  hotelCategory?: string;
 }
 
 // GET - Load specific quote
@@ -99,7 +100,8 @@ export async function GET(
           child3to5: expense.child_3to5 ? parseFloat(expense.child_3to5) : undefined,
           child6to11: expense.child_6to11 ? parseFloat(expense.child_6to11) : undefined,
           vehicleCount: expense.vehicle_count,
-          pricePerVehicle: expense.price_per_vehicle ? parseFloat(expense.price_per_vehicle) : undefined
+          pricePerVehicle: expense.price_per_vehicle ? parseFloat(expense.price_per_vehicle) : undefined,
+          hotelCategory: expense.hotel_category || undefined
         };
 
         const category = expense.category as keyof DayExpenses;
@@ -209,11 +211,12 @@ export async function PUT(
           for (const expense of expenses) {
             if (expense.location || expense.description || expense.price > 0) {
               await connection.execute(
-                `INSERT INTO quote_expenses (quote_day_id, category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO quote_expenses (quote_day_id, category, hotel_category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                   quoteDayId,
                   category,
+                  expense.hotelCategory || null,
                   expense.location,
                   expense.description,
                   expense.price,

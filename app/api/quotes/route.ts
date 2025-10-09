@@ -29,6 +29,7 @@ interface ExpenseItem {
   child6to11?: number;
   vehicleCount?: number;
   pricePerVehicle?: number;
+  hotelCategory?: string;
 }
 
 interface SaveQuoteRequest {
@@ -144,11 +145,12 @@ export async function POST(request: NextRequest) {
             // Only save expenses with actual data
             if (expense.location || expense.description || expense.price > 0) {
               await connection.execute(
-                `INSERT INTO quote_expenses (quote_day_id, category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO quote_expenses (quote_day_id, category, hotel_category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                   quoteDayId,
                   category,
+                  expense.hotelCategory || null,
                   expense.location,
                   expense.description,
                   expense.price,

@@ -160,7 +160,7 @@ const ExpenseTable = ({
   }>;
   onAddRow: (dayIndex: number, category: keyof DayExpenses) => void;
   onDeleteRow: (dayIndex: number, category: keyof DayExpenses, itemId: string) => void;
-  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => void;
+  onUpdateItem: (dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11' | 'hotelCategory', value: string | number) => void;
   onUpdateVehicleCount: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
   onUpdatePricePerVehicle: (dayIndex: number, category: keyof DayExpenses, itemId: string, value: number) => void;
   onSelectHotel?: (dayIndex: number, category: keyof DayExpenses, itemId: string, hotel: {
@@ -597,6 +597,25 @@ const ExpenseTable = ({
                     </div>
                   )}
                 </td>
+
+                {/* Hotel Category Dropdown - only for hotels */}
+                {showChildRates && (
+                  <td className="border border-gray-300 p-0 w-28">
+                    <select
+                      value={item.hotelCategory || ''}
+                      onChange={(e) => onUpdateItem(dayIndex, category, item.id, 'hotelCategory', e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="">Select Category</option>
+                      <option value="3 stars">3 stars</option>
+                      <option value="4 stars">4 stars</option>
+                      <option value="5 stars">5 stars</option>
+                      <option value="Boutique Hotel">Boutique Hotel</option>
+                      <option value="Special Hotel">Special Hotel</option>
+                    </select>
+                  </td>
+                )}
+
                 {isVehicleMode ? (
                   <>
                     <td className="border border-gray-300 p-0 w-16">
@@ -746,7 +765,10 @@ function PricingPageContent() {
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
   const [showPricingTable, setShowPricingTable] = useState<boolean>(false);
-  const [selectedHotelCategories, setSelectedHotelCategories] = useState<string[]>(['3-star', '4-star', '5-star']); // Categories to show in pricing table
+  const [selectedHotelCategories, setSelectedHotelCategories] = useState<string[]>(['3 stars', '4 stars', '5 stars', 'Boutique Hotel', 'Special Hotel']); // Categories to show in pricing table
+
+  // Available hotel categories
+  const HOTEL_CATEGORIES = ['3 stars', '4 stars', '5 stars', 'Boutique Hotel', 'Special Hotel'] as const;
   const [hotels, setHotels] = useState<Array<{
     id: string; // Composite ID: hotelId-pricingId
     hotel_id: number;
@@ -1052,13 +1074,13 @@ function PricingPageContent() {
     });
   }, []);
 
-  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11', value: string | number) => {
+  const updateItem = useCallback((dayIndex: number, category: keyof DayExpenses, itemId: string, field: 'location' | 'description' | 'price' | 'singleSupplement' | 'child0to2' | 'child3to5' | 'child6to11' | 'hotelCategory', value: string | number) => {
     setDays(prevDays => {
       const newDays = [...prevDays];
       const categoryArray = newDays[dayIndex][category] as ExpenseItem[];
       const item = categoryArray.find(e => e.id === itemId);
       if (item) {
-        if (field === 'location' || field === 'description') {
+        if (field === 'location' || field === 'description' || field === 'hotelCategory') {
           item[field] = value as string;
         } else {
           item[field] = value as number;
@@ -1090,6 +1112,7 @@ function PricingPageContent() {
         item.child0to2 = hotel.child_0to2 || undefined;
         item.child3to5 = hotel.child_3to5 || undefined;
         item.child6to11 = hotel.child_6to11 || undefined;
+        item.hotelCategory = hotel.category;
       }
       return newDays;
     });
@@ -1205,31 +1228,36 @@ function PricingPageContent() {
     });
   }, []);
 
-  const calculateDayTotals = (day: DayExpenses) => {
+  const calculateDayTotals = (day: DayExpenses, hotelCategory?: string) => {
+    // Filter hotels by category if specified, otherwise include all
+    const hotels = hotelCategory
+      ? day.hotelAccommodation.filter(e => e.hotelCategory === hotelCategory)
+      : day.hotelAccommodation;
+
     const perPersonTotal =
-      day.hotelAccommodation.reduce((sum, e) => sum + (e.price || 0), 0) +
+      hotels.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.entranceFees.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.sicTourCost.reduce((sum, e) => sum + (e.price || 0), 0) +
       day.tips.reduce((sum, e) => sum + (e.price || 0), 0);
 
     const singleSupplementTotal =
-      day.hotelAccommodation.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
+      hotels.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.singleSupplement || 0), 0) +
       day.entranceFees.reduce((sum, e) => sum + (e.singleSupplement || 0), 0);
 
     const child0to2Total =
-      day.hotelAccommodation.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
+      hotels.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.child0to2 || 0), 0) +
       day.entranceFees.reduce((sum, e) => sum + (e.child0to2 || 0), 0);
 
     const child3to5Total =
-      day.hotelAccommodation.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
+      hotels.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.child3to5 || 0), 0) +
       day.entranceFees.reduce((sum, e) => sum + (e.child3to5 || 0), 0);
 
     const child6to11Total =
-      day.hotelAccommodation.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
+      hotels.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
       day.meals.reduce((sum, e) => sum + (e.child6to11 || 0), 0) +
       day.entranceFees.reduce((sum, e) => sum + (e.child6to11 || 0), 0);
 
@@ -1375,10 +1403,28 @@ function PricingPageContent() {
     const tableData = calculatePricingTable();
 
     // Create tab-separated text for easy paste into Word/Excel
-    let text = 'PAX\tPer Person (DBL)\tSingle Suppl.\tChild 0-2 yrs\tChild 3-5 yrs\tChild 6-11 yrs\n';
+    // Header row with category names
+    let text = 'PAX';
+    selectedHotelCategories.forEach(category => {
+      text += `\t${category}\t\t\t\t`;
+    });
+    text += '\n';
 
+    // Sub-header row with price types
+    text += '';
+    selectedHotelCategories.forEach(() => {
+      text += '\tPer Person\tSingle\t0-2\t3-5\t6-11';
+    });
+    text += '\n';
+
+    // Data rows
     tableData.forEach(row => {
-      text += `${row.pax}\t€${row.adultPerPerson}\t€${row.singleSupplement}\t€${row.child0to2}\t€${row.child3to5}\t€${row.child6to11}\n`;
+      text += `${row.pax}`;
+      selectedHotelCategories.forEach(category => {
+        const data = row.categories[category];
+        text += `\t€${data.adultPerPerson}\t€${data.singleSupplement}\t€${data.child0to2}\t€${data.child3to5}\t€${data.child6to11}`;
+      });
+      text += '\n';
     });
 
     navigator.clipboard.writeText(text).then(() => {
@@ -1390,69 +1436,80 @@ function PricingPageContent() {
     });
   };
 
-  // Calculate pricing for different PAX slabs
+  // Calculate pricing for different PAX slabs and hotel categories
   const calculatePricingTable = () => {
     const paxSlabs = tourType === 'SIC' ? [2, 4, 6, 8] : [pax];
 
-    let totalPerPerson = 0;
-    let totalSingleSupplement = 0;
-    let totalChild0to2 = 0;
-    let totalChild3to5 = 0;
-    let totalChild6to11 = 0;
-    let totalGeneral = 0;
-
-    days.forEach(day => {
-      const dayTotals = calculateDayTotals(day);
-      totalPerPerson += dayTotals.perPersonTotal;
-      totalSingleSupplement += dayTotals.singleSupplementTotal;
-      totalChild0to2 += dayTotals.child0to2Total;
-      totalChild3to5 += dayTotals.child3to5Total;
-      totalChild6to11 += dayTotals.child6to11Total;
-      totalGeneral += dayTotals.generalTotal;
-    });
+    // If no categories selected, use a default empty category
+    const categories = selectedHotelCategories.length > 0 ? selectedHotelCategories : [''];
 
     return paxSlabs.map(currentPax => {
-      const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
+      const categoriesData: Record<string, any> = {};
 
-      // Adult pricing
-      const adultCost = totalPerPerson + generalPerPerson;
-      const adultSubtotal = adultCost * currentPax;
-      const adultWithMarkup = adultSubtotal * (1 + markup / 100);
-      const adultFinal = adultWithMarkup * (1 + tax / 100);
-      const adultPerPerson = adultFinal / currentPax;
+      categories.forEach(category => {
+        let totalPerPerson = 0;
+        let totalSingleSupplement = 0;
+        let totalChild0to2 = 0;
+        let totalChild3to5 = 0;
+        let totalChild6to11 = 0;
+        let totalGeneral = 0;
 
-      // Single supplement (total for trip, with markup and tax)
-      const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
-      const sglFinal = sglWithMarkup * (1 + tax / 100);
+        days.forEach(day => {
+          const dayTotals = calculateDayTotals(day, category || undefined);
+          totalPerPerson += dayTotals.perPersonTotal;
+          totalSingleSupplement += dayTotals.singleSupplementTotal;
+          totalChild0to2 += dayTotals.child0to2Total;
+          totalChild3to5 += dayTotals.child3to5Total;
+          totalChild6to11 += dayTotals.child6to11Total;
+          totalGeneral += dayTotals.generalTotal;
+        });
 
-      // Child 0-2
-      const child0to2Cost = totalChild0to2 + generalPerPerson;
-      const child0to2Subtotal = child0to2Cost * currentPax;
-      const child0to2WithMarkup = child0to2Subtotal * (1 + markup / 100);
-      const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
-      const child0to2PerPerson = child0to2Final / currentPax;
+        const generalPerPerson = currentPax > 0 ? totalGeneral / currentPax : 0;
 
-      // Child 3-5
-      const child3to5Cost = totalChild3to5 + generalPerPerson;
-      const child3to5Subtotal = child3to5Cost * currentPax;
-      const child3to5WithMarkup = child3to5Subtotal * (1 + markup / 100);
-      const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
-      const child3to5PerPerson = child3to5Final / currentPax;
+        // Adult pricing
+        const adultCost = totalPerPerson + generalPerPerson;
+        const adultSubtotal = adultCost * currentPax;
+        const adultWithMarkup = adultSubtotal * (1 + markup / 100);
+        const adultFinal = adultWithMarkup * (1 + tax / 100);
+        const adultPerPerson = adultFinal / currentPax;
 
-      // Child 6-11
-      const child6to11Cost = totalChild6to11 + generalPerPerson;
-      const child6to11Subtotal = child6to11Cost * currentPax;
-      const child6to11WithMarkup = child6to11Subtotal * (1 + markup / 100);
-      const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
-      const child6to11PerPerson = child6to11Final / currentPax;
+        // Single supplement (total for trip, with markup and tax)
+        const sglWithMarkup = totalSingleSupplement * (1 + markup / 100);
+        const sglFinal = sglWithMarkup * (1 + tax / 100);
+
+        // Child 0-2
+        const child0to2Cost = totalChild0to2 + generalPerPerson;
+        const child0to2Subtotal = child0to2Cost * currentPax;
+        const child0to2WithMarkup = child0to2Subtotal * (1 + markup / 100);
+        const child0to2Final = child0to2WithMarkup * (1 + tax / 100);
+        const child0to2PerPerson = child0to2Final / currentPax;
+
+        // Child 3-5
+        const child3to5Cost = totalChild3to5 + generalPerPerson;
+        const child3to5Subtotal = child3to5Cost * currentPax;
+        const child3to5WithMarkup = child3to5Subtotal * (1 + markup / 100);
+        const child3to5Final = child3to5WithMarkup * (1 + tax / 100);
+        const child3to5PerPerson = child3to5Final / currentPax;
+
+        // Child 6-11
+        const child6to11Cost = totalChild6to11 + generalPerPerson;
+        const child6to11Subtotal = child6to11Cost * currentPax;
+        const child6to11WithMarkup = child6to11Subtotal * (1 + markup / 100);
+        const child6to11Final = child6to11WithMarkup * (1 + tax / 100);
+        const child6to11PerPerson = child6to11Final / currentPax;
+
+        categoriesData[category] = {
+          adultPerPerson: Math.round(adultPerPerson),
+          singleSupplement: Math.round(sglFinal),
+          child0to2: Math.round(child0to2PerPerson),
+          child3to5: Math.round(child3to5PerPerson),
+          child6to11: Math.round(child6to11PerPerson)
+        };
+      });
 
       return {
         pax: currentPax,
-        adultPerPerson: Math.round(adultPerPerson),
-        singleSupplement: Math.round(sglFinal),
-        child0to2: Math.round(child0to2PerPerson),
-        child3to5: Math.round(child3to5PerPerson),
-        child6to11: Math.round(child6to11PerPerson)
+        categories: categoriesData
       };
     });
   };
@@ -2033,37 +2090,79 @@ function PricingPageContent() {
                 </p>
               </div>
 
+              {/* Hotel Category Selector */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Select Hotel Categories to Compare:</p>
+                <div className="flex flex-wrap gap-3">
+                  {HOTEL_CATEGORIES.map(category => (
+                    <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedHotelCategories.includes(category)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedHotelCategories([...selectedHotelCategories, category]);
+                          } else {
+                            setSelectedHotelCategories(selectedHotelCategories.filter(c => c !== category));
+                          }
+                        }}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-700">{category}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-indigo-600 text-white">
-                      <th className="border border-gray-300 px-4 py-2 text-left">PAX</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Per Person (DBL)</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Single Suppl.</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Child 0-2 yrs</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Child 3-5 yrs</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Child 6-11 yrs</th>
+                      <th rowSpan={2} className="border border-gray-300 px-4 py-2 text-left align-middle">PAX</th>
+                      {selectedHotelCategories.map(category => (
+                        <th key={category} colSpan={5} className="border border-gray-300 px-4 py-2 text-center">
+                          {category}
+                        </th>
+                      ))}
+                    </tr>
+                    <tr className="bg-indigo-600 text-white">
+                      {selectedHotelCategories.map(category => (
+                        <React.Fragment key={category}>
+                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">Per Person</th>
+                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">Single</th>
+                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">0-2</th>
+                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">3-5</th>
+                          <th className="border border-gray-300 px-2 py-1 text-xs text-right">6-11</th>
+                        </React.Fragment>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {calculatePricingTable().map((row, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
                         <td className="border border-gray-300 px-4 py-2 font-semibold">{row.pax}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
-                          €{row.adultPerPerson}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right text-orange-700">
-                          €{row.singleSupplement}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          €{row.child0to2}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          €{row.child3to5}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right text-purple-700">
-                          €{row.child6to11}
-                        </td>
+                        {selectedHotelCategories.map(category => {
+                          const categoryData = row.categories[category];
+                          return (
+                            <React.Fragment key={category}>
+                              <td className="border border-gray-300 px-2 py-2 text-right font-semibold text-green-700">
+                                €{categoryData.adultPerPerson}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-2 text-right text-orange-700">
+                                €{categoryData.singleSupplement}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
+                                €{categoryData.child0to2}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
+                                €{categoryData.child3to5}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-2 text-right text-purple-700">
+                                €{categoryData.child6to11}
+                              </td>
+                            </React.Fragment>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>

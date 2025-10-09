@@ -290,9 +290,9 @@ export default function ViewQuotePage() {
                           items.filter(item => item.price > 0 || item.location || item.description).map((item, idx) => (
                             <tr key={`${category}-${idx}`}>
                               <td className="border border-gray-300 px-2 py-1 font-semibold text-blue-700">{category}</td>
-                              <td className="border border-gray-300 px-2 py-1">{item.location}</td>
-                              <td className="border border-gray-300 px-2 py-1">{item.description}</td>
-                              <td className="border border-gray-300 px-2 py-1 text-right font-bold">€{item.price.toFixed(2)}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-gray-900">{item.location}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-gray-900">{item.description}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-right font-bold text-gray-900">€{item.price.toFixed(2)}</td>
                             </tr>
                           ))
                         )}
@@ -328,14 +328,14 @@ export default function ViewQuotePage() {
                             return (
                               <tr key={`${category}-${idx}`}>
                                 <td className="border border-gray-300 px-2 py-1 font-semibold text-red-700">{category}</td>
-                                <td className="border border-gray-300 px-2 py-1">{item.location}</td>
-                                <td className="border border-gray-300 px-2 py-1">
+                                <td className="border border-gray-300 px-2 py-1 text-gray-900">{item.location}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-gray-900">
                                   {item.description}
                                   {quote.transportPricingMode === 'vehicle' && item.vehicleCount && (
                                     <span className="text-blue-600 ml-1">({item.vehicleCount} vehicles)</span>
                                   )}
                                 </td>
-                                <td className="border border-gray-300 px-2 py-1 text-right font-bold">€{totalPrice.toFixed(2)}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-right font-bold text-gray-900">€{totalPrice.toFixed(2)}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-right font-semibold text-red-700">
                                   €{(totalPrice / quote.pax).toFixed(2)}
                                 </td>

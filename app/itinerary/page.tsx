@@ -511,7 +511,7 @@ function ItineraryPageContent() {
 
           @page {
             size: A4;
-            margin: 1.5cm;
+            margin: 1.2cm 1.5cm;
           }
 
           /* Hide all non-printable elements */
@@ -577,6 +577,91 @@ function ItineraryPageContent() {
           .min-h-screen {
             min-height: auto !important;
             background: white !important;
+          }
+
+          /* Optimize spacing for PDF */
+          .px-12 {
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+          }
+
+          .pt-10 {
+            padding-top: 1.5rem !important;
+          }
+
+          .pb-6 {
+            padding-bottom: 0.75rem !important;
+          }
+
+          .py-8 {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+          }
+
+          .mb-8 {
+            margin-bottom: 1rem !important;
+          }
+
+          .mb-6 {
+            margin-bottom: 0.75rem !important;
+          }
+
+          .space-y-6 > * + * {
+            margin-top: 0.75rem !important;
+          }
+
+          /* Compact day descriptions */
+          .mb-3 {
+            margin-bottom: 0.5rem !important;
+          }
+
+          /* Reduce section spacing */
+          .border-t {
+            margin-top: 1rem !important;
+          }
+
+          .pt-6 {
+            padding-top: 1rem !important;
+          }
+
+          /* Make text slightly smaller for better fit */
+          body {
+            font-size: 11pt !important;
+          }
+
+          h3 {
+            font-size: 13pt !important;
+            margin-bottom: 0.5rem !important;
+          }
+
+          .text-4xl {
+            font-size: 20pt !important;
+          }
+
+          .text-xl {
+            font-size: 12pt !important;
+          }
+
+          .text-lg {
+            font-size: 11pt !important;
+          }
+
+          .text-xs {
+            font-size: 8pt !important;
+          }
+
+          /* Logo sizing */
+          .h-20 {
+            height: 3.5rem !important;
+          }
+
+          .h-14 {
+            height: 3rem !important;
+          }
+
+          /* Footer spacing */
+          .mt-8 {
+            margin-top: 1.5rem !important;
           }
         }
       `}</style>

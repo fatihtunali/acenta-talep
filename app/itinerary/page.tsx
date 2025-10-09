@@ -742,19 +742,8 @@ function ItineraryPageContent() {
                             <td className="px-6 py-3 text-center text-sm font-medium text-gray-900">
                               {slab.pax} {slab.pax === 1 ? 'Person' : 'People'}
                             </td>
-                            <td className="px-6 py-3 text-center text-sm text-gray-800">
-                              <input
-                                type="number"
-                                value={slab.pricePerPerson || ''}
-                                onChange={(e) => {
-                                  const newPricing = [...hotelCategoryPricing];
-                                  newPricing[catIndex].pricingSlabs[slabIndex].pricePerPerson = parseFloat(e.target.value) || 0;
-                                  setHotelCategoryPricing(newPricing);
-                                }}
-                                className="text-input w-32 text-center font-medium"
-                                placeholder="0.00"
-                                readOnly
-                              />
+                            <td className="px-6 py-3 text-center text-sm text-gray-800 font-semibold">
+                              ${slab.pricePerPerson.toLocaleString()}
                             </td>
                           </tr>
                         ))}

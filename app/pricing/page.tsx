@@ -766,6 +766,7 @@ function PricingPageContent() {
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
   const [showPricingTable, setShowPricingTable] = useState<boolean>(false);
+  const [showExpenseReport, setShowExpenseReport] = useState<boolean>(false);
   const [selectedHotelCategories, setSelectedHotelCategories] = useState<string[]>(['3 stars', '4 stars', '5 stars', 'Boutique Hotel', 'Special Hotel']); // Categories to show in pricing table
 
   // Available hotel categories
@@ -1400,6 +1401,121 @@ function PricingPageContent() {
       grandTotal,
       finalPerPerson
     };
+  };
+
+  // Generate vendor expense report
+  const generateVendorExpenseReport = () => {
+    interface VendorExpense {
+      category: string;
+      location: string;
+      description: string;
+      days: number[];
+      occurrences: number;
+      pricePerOccurrence: number;
+      totalPrice: number;
+    }
+
+    const vendorMap = new Map<string, VendorExpense>();
+
+    const categoryNames: Record<string, string> = {
+      hotelAccommodation: 'Hotels',
+      meals: 'Meals',
+      entranceFees: 'Entrance Fees',
+      sicTourCost: 'SIC Tours',
+      tips: 'Tips',
+      transportation: 'Transportation',
+      guide: 'Guide Services',
+      guideDriverAccommodation: 'Guide/Driver Accommodation',
+      parking: 'Parking'
+    };
+
+    // Iterate through all days and all categories
+    days.forEach((day, dayIdx) => {
+      const categories: (keyof DayExpenses)[] = [
+        'hotelAccommodation', 'meals', 'entranceFees', 'sicTourCost', 'tips',
+        'transportation', 'guide', 'guideDriverAccommodation', 'parking'
+      ];
+
+      categories.forEach(category => {
+        const items = day[category] as ExpenseItem[];
+        items.forEach(item => {
+          if (item.location || item.description || item.price > 0) {
+            // Create unique key for vendor
+            const key = `${category}|||${item.location}|||${item.description}`;
+
+            if (vendorMap.has(key)) {
+              const existing = vendorMap.get(key)!;
+              existing.occurrences++;
+              existing.days.push(day.dayNumber);
+              existing.totalPrice = existing.pricePerOccurrence * existing.occurrences;
+            } else {
+              vendorMap.set(key, {
+                category: categoryNames[category] || category,
+                location: item.location,
+                description: item.description,
+                days: [day.dayNumber],
+                occurrences: 1,
+                pricePerOccurrence: item.price,
+                totalPrice: item.price
+              });
+            }
+          }
+        });
+      });
+    });
+
+    // Group by category
+    const groupedByCategory: Record<string, VendorExpense[]> = {};
+    vendorMap.forEach(vendor => {
+      if (!groupedByCategory[vendor.category]) {
+        groupedByCategory[vendor.category] = [];
+      }
+      groupedByCategory[vendor.category].push(vendor);
+    });
+
+    return groupedByCategory;
+  };
+
+  // Copy vendor expense report to clipboard
+  const copyVendorExpenseReportToClipboard = () => {
+    const report = generateVendorExpenseReport();
+
+    let text = 'VENDOR EXPENSE REPORT\n';
+    text += `Quote: ${quoteName}\n`;
+    text += `Period: ${startDate || 'N/A'} to ${endDate || 'N/A'}\n`;
+    text += '='.repeat(80) + '\n\n';
+
+    let grandTotal = 0;
+
+    Object.keys(report).sort().forEach(category => {
+      text += `${category.toUpperCase()}\n`;
+      text += '-'.repeat(80) + '\n';
+
+      let categoryTotal = 0;
+      report[category].forEach(vendor => {
+        const daysStr = vendor.days.length > 1
+          ? `Days ${Math.min(...vendor.days)}-${Math.max(...vendor.days)}`
+          : `Day ${vendor.days[0]}`;
+
+        text += `${vendor.location || 'N/A'} - ${vendor.description}\n`;
+        text += `  ${vendor.occurrences} × €${vendor.pricePerOccurrence.toFixed(2)} = €${vendor.totalPrice.toFixed(2)} (${daysStr})\n`;
+        categoryTotal += vendor.totalPrice;
+      });
+
+      text += `\nSubtotal ${category}: €${categoryTotal.toFixed(2)}\n\n`;
+      grandTotal += categoryTotal;
+    });
+
+    text += '='.repeat(80) + '\n';
+    text += `GRAND TOTAL: €${grandTotal.toFixed(2)}\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      setSaveMessage('✅ Expense report copied to clipboard!');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }).catch(() => {
+      setSaveMessage('❌ Failed to copy report');
+      setTimeout(() => setSaveMessage(''), 3000);
+    });
   };
 
   // Copy pricing table to clipboard
@@ -2078,6 +2194,12 @@ function PricingPageContent() {
 
         <div className="flex justify-end gap-3">
           <button
+            onClick={() => setShowExpenseReport(true)}
+            className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded shadow"
+          >
+            📋 Vendor Expense Report
+          </button>
+          <button
             onClick={() => setShowPricingTable(true)}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow"
           >
@@ -2249,6 +2371,114 @@ function PricingPageContent() {
                 </button>
                 <button
                   onClick={() => setShowPricingTable(false)}
+                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded shadow"
+                >
+                  Close
+                </button>
+              </div>
+
+              {saveMessage && (
+                <div className={`mt-4 px-4 py-2 rounded text-center ${
+                  saveMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {saveMessage}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Vendor Expense Report Modal */}
+        {showExpenseReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Vendor Expense Report</h2>
+                <button
+                  onClick={() => setShowExpenseReport(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-gray-700">Quote: {quoteName}</p>
+                <p className="text-xs text-gray-500">
+                  Period: {startDate || 'N/A'} to {endDate || 'N/A'}
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {(() => {
+                  const report = generateVendorExpenseReport();
+                  let grandTotal = 0;
+
+                  return (
+                    <>
+                      {Object.keys(report).sort().map(category => {
+                        let categoryTotal = 0;
+
+                        return (
+                          <div key={category} className="border border-gray-200 rounded-lg p-4">
+                            <h3 className="text-lg font-bold text-indigo-700 mb-3 uppercase">
+                              {category}
+                            </h3>
+                            <div className="space-y-2">
+                              {report[category].map((vendor, idx) => {
+                                const daysStr = vendor.days.length > 1
+                                  ? `Days ${Math.min(...vendor.days)}-${Math.max(...vendor.days)}`
+                                  : `Day ${vendor.days[0]}`;
+
+                                categoryTotal += vendor.totalPrice;
+                                grandTotal += vendor.totalPrice;
+
+                                return (
+                                  <div key={idx} className="border-b border-gray-100 pb-2 last:border-b-0">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">
+                                        <p className="font-semibold text-gray-800">
+                                          {vendor.location || 'N/A'} - {vendor.description}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          {vendor.occurrences} × €{vendor.pricePerOccurrence.toFixed(2)} =
+                                          <span className="font-semibold text-green-700"> €{vendor.totalPrice.toFixed(2)}</span>
+                                          <span className="text-gray-500 ml-2">({daysStr})</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-3 pt-3 border-t-2 border-indigo-200">
+                              <p className="text-right font-bold text-indigo-700">
+                                Subtotal {category}: €{categoryTotal.toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="border-t-4 border-indigo-600 pt-4">
+                        <p className="text-xl font-bold text-right text-indigo-900">
+                          GRAND TOTAL: €{grandTotal.toFixed(2)}
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="mt-6 flex gap-3 justify-end">
+                <button
+                  onClick={copyVendorExpenseReportToClipboard}
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow"
+                >
+                  📋 Copy to Clipboard
+                </button>
+                <button
+                  onClick={() => setShowExpenseReport(false)}
                   className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded shadow"
                 >
                   Close

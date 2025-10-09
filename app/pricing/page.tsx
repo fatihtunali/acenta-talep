@@ -1500,13 +1500,14 @@ function PricingPageContent() {
             <div className="flex-1">
               <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Quote Name / Reference (e.g., Company Code + Date)
+                {loadedQuoteId && <span className="ml-2 text-blue-600 font-normal">(Editing - you can change the name)</span>}
               </label>
               <input
                 type="text"
                 value={quoteName}
                 onChange={(e) => setQuoteName(e.target.value)}
                 placeholder="e.g., ABC123-2025-03-15"
-                className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm"
+                className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm focus:border-indigo-700 focus:ring-2 focus:ring-indigo-200"
               />
             </div>
             <button

@@ -721,44 +721,44 @@ function ItineraryPageContent() {
             <div className="px-12 pb-8">
               <h3 className="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Package Rates</h3>
 
-              {hotelCategoryPricing.map((categoryPricing, catIndex) => (
-                <div key={catIndex} className="mb-8">
-                  <h4 className="text-lg font-semibold text-indigo-900 mb-3">{categoryPricing.category}</h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse max-w-2xl">
-                      <thead>
-                        <tr className="border-b-2 border-gray-800">
-                          <th className="px-6 py-3 text-center text-sm font-bold text-gray-900 uppercase tracking-wide">
-                            Number of Pax
-                          </th>
-                          <th className="px-6 py-3 text-center text-sm font-bold text-gray-900 uppercase tracking-wide">
-                            Price Per Person (USD)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {categoryPricing.pricingSlabs.map((slab, slabIndex) => (
-                          <tr key={slabIndex} className="border-b border-gray-200">
-                            <td className="px-6 py-3 text-center text-sm font-medium text-gray-900">
-                              {slab.pax} {slab.pax === 1 ? 'Person' : 'People'}
-                            </td>
-                            <td className="px-6 py-3 text-center text-sm text-gray-800 font-semibold">
-                              ${slab.pricePerPerson.toLocaleString()}
-                            </td>
-                          </tr>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-indigo-600 text-white">
+                      <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / PP in DBL</th>
+                      {hotelCategoryPricing.map((categoryPricing, catIndex) => (
+                        <th key={catIndex} className="border border-gray-300 px-4 py-2 text-center font-bold">
+                          {categoryPricing.category}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Per Person Rates for each PAX */}
+                    {hotelCategoryPricing[0]?.pricingSlabs.map((slab, slabIndex) => (
+                      <tr key={slabIndex} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                          {slab.pax} PAX
+                        </td>
+                        {hotelCategoryPricing.map((categoryPricing, catIndex) => (
+                          <td key={catIndex} className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                            €{categoryPricing.pricingSlabs[slabIndex].pricePerPerson}
+                          </td>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-              <p className="text-xs text-gray-500 mt-2 italic">
-                * Prices are per person in USD and may vary based on season and availability
-              </p>
-              <p className="text-xs text-gray-500 mt-1 italic">
-                * Hotel category will be confirmed at time of booking
-              </p>
+              <div className="mt-4">
+                <p className="text-xs text-gray-500 italic">
+                  * Prices are per person in Euro and may vary based on season and availability
+                </p>
+                <p className="text-xs text-gray-500 mt-1 italic">
+                  * Hotel category will be confirmed at time of booking
+                </p>
+              </div>
             </div>
 
             {/* Footer */}

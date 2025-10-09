@@ -1168,6 +1168,9 @@ function PricingPageContent() {
         item.location = transfer.city;
         item.description = transfer.transfer_type;
         item.price = transfer.price;
+        // Also set vehicle pricing fields for vehicle mode
+        item.pricePerVehicle = transfer.price;
+        item.vehicleCount = item.vehicleCount || 1; // Default to 1 if not set
       }
       return newDays;
     });

@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward request to Funny AI service
-    const response = await fetch('http://localhost:8000/funny-ai/generate-itinerary', {
+    const funnyAiUrl = process.env.FUNNY_AI_URL || 'http://localhost:8000';
+    const response = await fetch(`${funnyAiUrl}/funny-ai/generate-itinerary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

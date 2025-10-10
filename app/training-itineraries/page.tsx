@@ -32,6 +32,7 @@ export default function TrainingItinerariesPage() {
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -56,6 +57,35 @@ export default function TrainingItinerariesPage() {
       console.error('Error loading training itineraries:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedFile(file);
+    setMessage('Reading file...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/training-itineraries/parse', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const { text } = await response.json();
+        setContent(text);
+        setMessage('File loaded successfully! Review and save below.');
+      } else {
+        setMessage('Failed to read file. Please copy and paste content instead.');
+      }
+    } catch (error) {
+      console.error('Error reading file:', error);
+      setMessage('Error reading file. Please copy and paste content instead.');
     }
   };
 
@@ -84,6 +114,7 @@ export default function TrainingItinerariesPage() {
         setDays(7);
         setCities('');
         setContent('');
+        setUploadedFile(null);
         setShowForm(false);
         loadItineraries();
       } else {
@@ -221,7 +252,22 @@ export default function TrainingItinerariesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Itinerary Content (paste full itinerary text)
+                  Upload Word Document (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept=".doc,.docx,.txt"
+                  onChange={handleFileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload a Word document or text file. Content will be extracted automatically.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Itinerary Content (or paste manually)
                 </label>
                 <textarea
                   value={content}

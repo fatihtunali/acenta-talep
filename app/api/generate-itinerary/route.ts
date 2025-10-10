@@ -77,9 +77,9 @@ IMPORTANT: Start with "Upon arrival at ${location} Airport" and mention "met and
       }
     } else if (isLastDay) {
       if (hasActivities) {
-        contextInstructions = `This is the LAST DAY (DEPARTURE DAY). Describe any morning ${tourTypeText} activities if scheduled, then MUST end with "private transfer to the airport for your departure flight."`;
+        contextInstructions = `This is the LAST DAY (DEPARTURE DAY). Do NOT start with "Departure Day from [city]" as this is already in the title. Simply describe any morning ${tourTypeText} activities if scheduled, then MUST end with "private transfer to the airport for your departure flight."`;
       } else {
-        contextInstructions = `This is the LAST DAY (DEPARTURE DAY). Mention guests can enjoy a leisurely morning, then MUST mention "private transfer to the airport for your departure flight."`;
+        contextInstructions = `This is the LAST DAY (DEPARTURE DAY). Do NOT start with "Departure Day from [city]" as this is already in the title. Simply start with "After breakfast" and mention check-out, then MUST end with "private transfer to the airport for your departure flight."`;
       }
     } else if (isCityChange) {
       if (transferMode === 'flight') {

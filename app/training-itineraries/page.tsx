@@ -198,7 +198,7 @@ export default function TrainingItinerariesPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
                   placeholder="e.g., Highlights of Turkey: Istanbul to Cappadocia"
                   required
                 />
@@ -212,7 +212,7 @@ export default function TrainingItinerariesPage() {
                   <select
                     value={tourType}
                     onChange={(e) => setTourType(e.target.value as 'Private' | 'SIC')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
                   >
                     <option value="Private">Private</option>
                     <option value="SIC">SIC</option>
@@ -227,7 +227,7 @@ export default function TrainingItinerariesPage() {
                     type="number"
                     value={days}
                     onChange={(e) => setDays(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
                     min="1"
                     required
                   />
@@ -241,7 +241,7 @@ export default function TrainingItinerariesPage() {
                     type="text"
                     value={cities}
                     onChange={(e) => setCities(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
                     placeholder="Istanbul, Cappadocia"
                   />
                 </div>
@@ -255,7 +255,7 @@ export default function TrainingItinerariesPage() {
                   type="file"
                   accept=".doc,.docx,.txt"
                   onChange={handleFileChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Upload a Word document or text file. Content will be extracted automatically.

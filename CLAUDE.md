@@ -20,13 +20,16 @@ A Next.js 15 tour operator pricing calculator application for creating and manag
 - **Auth**: NextAuth.js v4 with credentials provider
 - **Database**: MySQL via mysql2 with connection pooling
 - **Password Hashing**: bcryptjs
+- **AI Integration**: Custom AI API (https://itinerary-ai.ruzgargucu.com) for itinerary generation
 
 ## Architecture
 
 ### Database Layer
 
 - Connection pool configured in `lib/db.ts`
-- Environment variables required: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
+- Environment variables required:
+  - Database: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
+  - Auth: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`
 - Main tables: `users`, `quotes`, `quote_days`, `quote_expenses`, `cities`, `hotels`, `hotel_pricing`, `restaurants`, `restaurant_menu_pricing`, `sic_tours`, `sic_tour_pricing`, `transfers`, `sightseeing_fees`
 - Transactions used for multi-table operations (quote saves)
 - All master data tables use user-scoped cities from `cities` table via `lib/cities.ts`
@@ -66,6 +69,10 @@ A Next.js 15 tour operator pricing calculator application for creating and manag
 - Sightseeing: CRUD at `/api/sightseeing`
 - Cities: GET/POST at `/api/cities` (returns user-specific cities)
 
+**Itinerary Management:**
+- `POST /api/generate-itinerary` - Generate AI descriptions for itinerary days using custom AI API
+- `PUT /api/quotes/[id]/itinerary` - Save itinerary data (tour name, days, inclusions, exclusions, information)
+
 All routes use `getServerSession(authOptions)` for authentication.
 
 ### Core Pricing Logic
@@ -104,6 +111,41 @@ Client-side pages at `/hotels`, `/meals`, `/sic-tours`, `/transfers`, `/sightsee
 - City integration uses autocomplete with create-on-type functionality via `lib/cities.ts`
 - All data is user-scoped - users only see their own master data
 
+### Itinerary Builder
+
+Located at `/itinerary?quote=<id>` (~1400 lines):
+
+**Core Features:**
+- AI-powered itinerary generation using custom AI API
+- Professional PDF-ready layout with print optimization
+- Editable tour name, duration, and day descriptions
+- Auto-generated meal codes (B/L/D format)
+- Hotel accommodation table by city with check-in/out dates
+- Hotel options table showing all categories (3/4/5 star)
+- Package rates table by PAX and hotel category
+- Inclusions, exclusions, and important information sections
+
+**AI Description Generation:**
+- Context-aware descriptions for arrival, departure, city change, and regular days
+- Differentiates between Private and SIC tour types
+- Handles transfer modes (flight, airport, road)
+- Mentions activities, meals, and transfers appropriately
+- Uses custom AI endpoint (https://itinerary-ai.ruzgargucu.com) via `/api/generate-itinerary`
+
+**Data Flow:**
+1. Load quote via URL parameter → Extract hotel stays, pricing, and days
+2. Generate AI descriptions for each day (if not previously saved)
+3. Generate AI-powered tour title based on cities visited
+4. Display editable itinerary with professional formatting
+5. Save itinerary data back to quote via `PUT /api/quotes/[id]/itinerary`
+6. Print/save as PDF using browser print functionality
+
+**Print Optimization:**
+- Custom CSS for A4 page size with optimized margins
+- Page break handling to avoid splitting sections
+- Hides navigation and action buttons when printing
+- Professional layout with company logo and contact info
+
 ### Data Flow
 
 **Quote Creation/Editing:**
@@ -126,3 +168,23 @@ Client-side pages at `/hotels`, `/meals`, `/sic-tours`, `/transfers`, `/sightsee
 - Date format: ISO strings for database, locale-formatted for display
 - Private tours show guide/parking/accommodation expenses; SIC tours show only transfers
 - City autocomplete creates new cities automatically if name doesn't exist (uses normalized matching)
+
+## Workflow
+
+**Typical quote-to-itinerary workflow:**
+1. Create quote at `/pricing` → Fill in dates, expenses, pricing
+2. Save quote → Redirects to `/quotes` (saved quotes list)
+3. View/Edit/Copy quote options available on quotes list
+4. Click "Itinerary" button → Opens `/itinerary?quote=<id>`
+5. AI generates professional descriptions for each day
+6. Edit itinerary content as needed
+7. Save itinerary (stored with quote)
+8. Print/save as PDF for client delivery
+
+**Pages Overview:**
+- `/dashboard` - Main dashboard with navigation to all sections
+- `/pricing` - Quote creation and editing
+- `/quotes` - List all saved quotes with actions (View, Edit, Copy, Itinerary, Delete)
+- `/quotes/[id]` - View detailed quote breakdown
+- `/itinerary?quote=<id>` - Generate and edit professional itinerary from quote
+- `/hotels`, `/meals`, `/sic-tours`, `/transfers`, `/sightseeing` - Master data management

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Custom AI API endpoint
+const AI_API_URL = 'https://itinerary-ai.ruzgargucu.com/v1/generate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,23 +9,23 @@ export async function POST(request: NextRequest) {
 
     // If custom prompt is provided, use it directly
     if (customPrompt) {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional tour package copywriter. Generate concise, attractive titles and descriptions for tour packages."
-          },
-          {
-            role: "user",
-            content: customPrompt
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 100,
+      const systemMessage = "You are a professional tour package copywriter. Generate concise, attractive titles and descriptions for tour packages.";
+      const fullPrompt = `${systemMessage}\n\n${customPrompt}`;
+
+      const response = await fetch(AI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: fullPrompt }),
       });
 
-      const description = completion.choices[0]?.message?.content?.trim() || '';
+      if (!response.ok) {
+        throw new Error('AI API request failed');
+      }
+
+      const data = await response.json();
+      const description = data.result?.trim() || '';
       return NextResponse.json({ description });
     }
 
@@ -135,12 +132,7 @@ CRITICAL WRITING GUIDELINES:
 
 Write the description now:`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert tour itinerary writer for a professional tour operator. Your writing style is:
+    const systemMessage = `You are an expert tour itinerary writer for a professional tour operator. Your writing style is:
 - Clear and specific about transfers (airport pickups, flights between cities, road journeys)
 - ALL airport transfers (arrival and departure) are PRIVATE transfers, not shared - always mention "privately transferred"
 - For SIC (group) tours, mention they are shared/group tour experiences for sightseeing activities
@@ -152,18 +144,24 @@ Write the description now:`;
 - Highlights key experiences without being overly promotional
 - Differentiates between scheduled tour activities and free time
 
-Write as if you're creating a premium tour package itinerary for clients.`
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 250,
+Write as if you're creating a premium tour package itinerary for clients.`;
+
+    const fullPrompt = `${systemMessage}\n\n${prompt}`;
+
+    const response = await fetch(AI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: fullPrompt }),
     });
 
-    const description = completion.choices[0]?.message?.content?.trim() || '';
+    if (!response.ok) {
+      throw new Error('AI API request failed');
+    }
+
+    const data = await response.json();
+    const description = data.result?.trim() || '';
 
     return NextResponse.json({ description });
   } catch (error) {

@@ -333,7 +333,15 @@ function ItineraryPageContent() {
       // Map Funny AI response to DayItinerary format
       const mappedDays: DayItinerary[] = data.days.map((quoteDay, index) => {
         const aiDay = aiResult.itinerary[index];
-        const location = quoteDay.hotelAccommodation?.[0]?.location || 'Location';
+        let location = quoteDay.hotelAccommodation?.[0]?.location || '';
+
+        // For last day, use previous day's location if current location is empty
+        const isLastDay = index === data.days.length - 1;
+        if (isLastDay && (!location || location === 'Location')) {
+          location = index > 0 ? (data.days[index - 1].hotelAccommodation?.[0]?.location || 'Location') : 'Location';
+        }
+
+        if (!location) location = 'Location';
 
         // Generate meal code
         let mealCode = '(';
@@ -366,7 +374,7 @@ function ItineraryPageContent() {
         return {
           dayNumber: quoteDay.dayNumber,
           date: quoteDay.date,
-          title: `Day ${quoteDay.dayNumber} - ${location}`,
+          title: isLastDay ? `Day ${quoteDay.dayNumber} - ${location} - Departure` : `Day ${quoteDay.dayNumber} - ${location}`,
           mealCode,
           description: aiDay?.description || `Day ${quoteDay.dayNumber} in ${location}. Overnight in ${location}.`
         };
@@ -657,7 +665,7 @@ function ItineraryPageContent() {
             return {
               dayNumber: day.dayNumber,
               date: day.date,
-              title: `Day ${day.dayNumber} - ${location}`,
+              title: isLastDay ? `Day ${day.dayNumber} - ${location} - Departure` : `Day ${day.dayNumber} - ${location}`,
               mealCode,
               description:
                 aiDescription ||

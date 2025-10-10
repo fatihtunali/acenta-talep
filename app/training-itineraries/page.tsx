@@ -269,7 +269,7 @@ export default function TrainingItinerariesPage() {
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm bg-white text-gray-900"
                   rows={15}
                   placeholder="Day 1 - Istanbul&#10;Upon arrival at Istanbul Airport...&#10;&#10;Day 2 - Istanbul&#10;After breakfast..."
                   required

@@ -21,25 +21,45 @@ export async function POST(request: NextRequest) {
       first_day_sample: body.day_details?.[0] || 'N/A'
     });
 
-    // Forward request to Funny AI service
+    // Forward request to Funny AI service with LONG timeout
     const funnyAiUrl = process.env.FUNNY_AI_URL || 'http://localhost:8000';
-    const response = await fetch(`${funnyAiUrl}/funny-ai/generate-itinerary`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Funny AI error:', errorText);
-      return NextResponse.json(
-        { error: `Funny AI request failed: ${response.status}` },
-        { status: response.status }
-      );
+    // Create AbortController with 5-minute timeout for slow AI processing
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
+
+    try {
+      const response = await fetch(`${funnyAiUrl}/funny-ai/generate-itinerary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Funny AI error:', errorText);
+        return NextResponse.json(
+          { error: `Funny AI request failed: ${response.status}` },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (fetchError: unknown) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        console.error('Funny AI request timed out after 5 minutes');
+        return NextResponse.json(
+          { error: 'AI generation timed out. Please try again.' },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
     }
-
-    const data = await response.json();
-    return NextResponse.json(data);
   } catch (error) {
     console.error('Error calling Funny AI:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';

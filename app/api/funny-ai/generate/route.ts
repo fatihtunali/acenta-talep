@@ -12,6 +12,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Log request for debugging
+    console.log('Funny AI request:', {
+      days: body.days,
+      cities: body.cities,
+      tour_type: body.tour_type,
+      day_details_count: body.day_details?.length || 0
+    });
+
     // Forward request to Funny AI service
     const funnyAiUrl = process.env.FUNNY_AI_URL || 'http://localhost:8000';
     const response = await fetch(`${funnyAiUrl}/funny-ai/generate-itinerary`, {

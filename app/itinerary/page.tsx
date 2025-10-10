@@ -264,12 +264,39 @@ function ItineraryPageContent() {
       if (allActivities.some(a => a.toLowerCase().includes('cruise') || a.toLowerCase().includes('boat'))) interests.push('nature');
       if (allActivities.some(a => a.toLowerCase().includes('balloon'))) interests.push('photography');
 
-      console.log('Calling Funny AI API with:', {
+      // Extract detailed day-by-day services from quote
+      const dayDetails = data.days.map((day, index) => {
+        const isSIC = data.tourType === 'SIC';
+
+        // Extract actual booked services
+        const sicTours = day.sicTourCost.map(e => e.description).filter(isNonEmptyString);
+        const entrances = day.entranceFees.map(e => e.description).filter(isNonEmptyString);
+        const meals = day.meals.map(e => e.description).filter(isNonEmptyString);
+        const transportation = day.transportation.map(e => e.description).filter(isNonEmptyString);
+        const hotel = day.hotelAccommodation?.[0]?.description || '';
+        const city = day.hotelAccommodation?.[0]?.location || '';
+
+        return {
+          day_number: index + 1,
+          date: day.date,
+          city: city,
+          hotel: hotel,
+          sic_tours: sicTours,
+          entrance_fees: entrances,
+          meals: meals,
+          transportation: transportation,
+          is_first_day: index === 0,
+          is_last_day: index === data.days.length - 1
+        };
+      });
+
+      console.log('Calling Funny AI API with detailed quote data:', {
         days: data.days.length,
         cities,
         tour_type: data.tourType,
         pax: data.pax,
-        interests: [...new Set(interests)]
+        interests: [...new Set(interests)],
+        day_details: dayDetails
       });
 
       // Extract just the date part (YYYY-MM-DD) from ISO datetime string
@@ -287,7 +314,8 @@ function ItineraryPageContent() {
           tour_type: data.tourType,
           pax: data.pax,
           interests: [...new Set(interests)],
-          start_date: startDateOnly
+          start_date: startDateOnly,
+          day_details: dayDetails  // Send actual booked services
         })
       });
 

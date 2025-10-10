@@ -626,7 +626,8 @@ function ItineraryPageContent() {
       setInclusions(computedInclusions);
       setExclusions(computedExclusions);
       setInformation(computedInformation);
-      setHasUnsavedChanges(false);
+      // Only mark as saved if we loaded a saved itinerary, otherwise mark as unsaved for fresh generation
+      setHasUnsavedChanges(!savedItinerary);
 
       const hotelStays: HotelStay[] = [];
       let currentHotelName = '';

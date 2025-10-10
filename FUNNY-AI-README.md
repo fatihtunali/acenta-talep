@@ -4,6 +4,14 @@
 
 **Funny AI** is a custom AI assistant built specifically for your tour operator business. It learns from your pricing database and generates professional, detailed tour itineraries using real data from your hotels, SIC tours, and sightseeing attractions.
 
+## Recent Updates
+
+### October 10, 2025 - Prompt Optimization
+- ✅ **Fixed redundant day numbering**: Descriptions no longer include "Day X -" prefixes since titles already show the day number
+- ✅ **Improved prompt engineering**: AI now generates cleaner, more professional descriptions
+- ✅ **Context refinement**: Updated context generation to avoid repetitive day references
+- ✅ **Service restarted**: Changes applied and tested successfully
+
 ## What Funny AI Does
 
 - **Generates Professional Itineraries**: Creates detailed day-by-day tour descriptions with context-aware content
@@ -208,10 +216,14 @@ Funny AI automatically allocates days among cities based on typical visit durati
 - 7-day tour of Istanbul (3 days) + Cappadocia (2 days) + Ephesus (1 day) + Pamukkale (1 day)
 
 ### Context-Aware Descriptions
+The AI generates clean, professional descriptions without redundant day numbering:
+
 - **Arrival Day**: "Upon arrival at Istanbul Airport, met and privately transferred to your hotel..."
 - **Full Days**: "After breakfast, full day exploring [city]..."
-- **City Change**: "After breakfast, fly/drive from [City A] to [City B]..."
-- **Departure Day**: "...private transfer to airport for your departure flight"
+- **City Change**: "After breakfast, fly from Istanbul to Cappadocia. Upon arrival..."
+- **Departure Day**: "After breakfast, private transfer to airport for your departure flight"
+
+**Note**: Descriptions do NOT include day numbers or titles (like "Day 4 -") since these are already in the title field. This ensures clean, professional formatting without duplication.
 
 ### Tour Type Support
 - **Private Tours**: Emphasizes private transfers and personalized experience

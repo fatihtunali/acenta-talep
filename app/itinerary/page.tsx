@@ -118,27 +118,6 @@ interface HotelsByCategoryEntry {
   categories: Record<HotelCategoryLabel, string[]>;
 }
 
-type TransferMode = 'flight' | 'airport' | 'road' | 'airport_arrival' | 'airport_departure' | '';
-
-interface GenerateAIDescriptionPayload {
-  dayNumber: number;
-  location: string;
-  previousLocation: string | null;
-  activities: string[];
-  accommodation: string;
-  meals: string[];
-  transfers: TransferInfo[];
-  transportation: string;
-  transportLocation: string;
-  isFirstDay: boolean;
-  isLastDay: boolean;
-  isCityChange: boolean;
-  transferMode: TransferMode;
-  hasAirportTransfer: boolean;
-  tourType: 'SIC' | 'Private';
-  tourName: string;
-}
-
 const isNonEmptyString = (value: string | null | undefined): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
@@ -214,24 +193,6 @@ function ItineraryPageContent() {
       textarea.style.height = `${textarea.scrollHeight}px`;
     });
   }, [days, inclusions, exclusions, information, hotelCategoryPricing, hotelsByCategory]);
-
-  const generateAIDescription = useCallback(async (dayData: GenerateAIDescriptionPayload) => {
-    try {
-      const response = await fetch('/api/generate-itinerary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dayData })
-      });
-
-      if (response.ok) {
-        const { description } = (await response.json()) as { description?: string };
-        return description ?? '';
-      }
-    } catch (error) {
-      console.error('Error generating AI description:', error);
-    }
-    return '';
-  }, []);
 
   const generateWithFunnyAI = useCallback(async (data: QuoteResponse) => {
     try {
@@ -481,201 +442,8 @@ function ItineraryPageContent() {
           setHasSavedItinerary(false);
           displaySaveMessage('Itinerary generated successfully!', 3000);
         } else {
-          // Fallback to old method if Funny AI fails
-          displaySaveMessage('Using fallback generation method...', -1);
-          const cities = [
-            ...new Set(
-              data.days
-                .map(day => day.hotelAccommodation?.[0]?.location)
-                .filter(isNonEmptyString)
-            )
-          ];
-          const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
-
-          if (cities.length > 0) {
-            const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
-
-        Requirements:
-        - Make it catchy and professional
-        - Maximum 60 characters
-        - Don't use quotes
-        - Focus on the destinations and experience
-
-        Examples of good titles:
-        - "Discovering Turkey: Istanbul to Cappadocia"
-        - "Ancient Wonders of Turkey"
-        - "Turkish Heritage Journey"
-
-        Generate only the title, nothing else:`;
-
-            try {
-              const titleResponse = await fetch('/api/generate-itinerary', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  dayData: {
-                    dayNumber: 1,
-                    location: cities[0] ?? '',
-                    activities: [],
-                    meals: [],
-                    transfers: [],
-                    isFirstDay: true
-                  },
-                  customPrompt: titlePrompt
-                })
-              });
-
-              if (titleResponse.ok) {
-                const { description } = (await titleResponse.json()) as { description?: string };
-                if (description?.trim()) {
-                  computedTourName = description.trim();
-                }
-              }
-            } catch (error) {
-              console.error('Error generating title:', error);
-            }
-          }
-
-          const itineraryDaysPromises = data.days.map(async (day, index) => {
-            const location =
-              day.hotelAccommodation?.[0]?.location && isNonEmptyString(day.hotelAccommodation[0].location)
-                ? day.hotelAccommodation[0].location
-                : 'Location';
-
-            const isSIC = data.tourType === 'SIC';
-            const entrances = day.entranceFees.map(expense => expense.description).filter(isNonEmptyString);
-
-            let dayTourName = '';
-            let activities: string[] = [];
-
-            if (isSIC && day.sicTourCost.length > 0) {
-              const [sicTour] = day.sicTourCost;
-              dayTourName = sicTour?.description ?? '';
-              if (isNonEmptyString(dayTourName)) {
-                activities.push(dayTourName);
-              }
-              activities = [...activities, ...entrances];
-            } else {
-              activities = entrances;
-            }
-
-            const accommodation = day.hotelAccommodation?.[0]?.description ?? '';
-            const meals = day.meals.map(expense => expense.description).filter(isNonEmptyString);
-            const firstTransport = day.transportation[0];
-            const transportation = firstTransport?.description ?? '';
-            const transportLocation = firstTransport?.location ?? '';
-
-            const transfers: TransferInfo[] = day.transportation
-              .map<TransferInfo>(expense => ({
-                description: expense.description ?? '',
-                location: expense.location ?? null
-              }))
-              .filter(transfer => isNonEmptyString(transfer.description));
-
-            const isFirstDay = index === 0;
-            const isLastDay = index === data.days.length - 1;
-
-            const previousLocation =
-              index > 0 && isNonEmptyString(data.days[index - 1].hotelAccommodation?.[0]?.location)
-                ? data.days[index - 1].hotelAccommodation[0].location!
-                : null;
-            const currentLocation = location;
-            const isCityChange = Boolean(previousLocation && previousLocation !== currentLocation);
-
-            let transferMode: TransferMode = '';
-            let hasAirportTransfer = false;
-            let airportTransferCount = 0;
-
-            transfers.forEach(transfer => {
-              const desc = transfer.description.toLowerCase();
-              if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
-                transferMode = 'flight';
-              } else if (desc.includes('airport')) {
-                airportTransferCount += 1;
-                hasAirportTransfer = true;
-                if (!transferMode) {
-                  transferMode = 'airport';
-                }
-              } else if (desc.includes('transfer') || desc.includes('drive')) {
-                if (!transferMode) {
-                  transferMode = 'road';
-                }
-              }
-            });
-
-            if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
-              transferMode = 'flight';
-            }
-
-            if (isFirstDay) {
-              transferMode = 'airport_arrival';
-              hasAirportTransfer = true;
-            }
-
-            if (isLastDay) {
-              transferMode = 'airport_departure';
-              hasAirportTransfer = true;
-            }
-
-            let mealCode = '(';
-            if (!isFirstDay) {
-              mealCode += 'B';
-            }
-
-            if (isSIC && isNonEmptyString(dayTourName) && dayTourName.toLowerCase().includes('full day')) {
-              mealCode += mealCode.length > 1 ? '/L' : 'L';
-            }
-
-            if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
-              mealCode += mealCode.length > 1 ? '/L' : 'L';
-            }
-            if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
-              mealCode += mealCode.length > 1 ? '/D' : 'D';
-            }
-
-            if (mealCode === '(') {
-              mealCode = '(-)';
-            } else {
-              mealCode += ')';
-              mealCode = mealCode.replace('(/', '(');
-            }
-
-            const aiDescription = await generateAIDescription({
-              dayNumber: day.dayNumber,
-              location,
-              previousLocation,
-              activities,
-              accommodation,
-              meals,
-              transfers,
-              transportation,
-              transportLocation,
-              isFirstDay,
-              isLastDay,
-              isCityChange,
-              transferMode,
-              hasAirportTransfer,
-              tourType: data.tourType,
-              tourName: dayTourName
-            });
-
-            const fallbackActivities =
-              activities.length > 0 ? activities.join(', ') : 'various activities';
-
-            return {
-              dayNumber: day.dayNumber,
-              date: day.date,
-              title: isLastDay ? `Day ${day.dayNumber} - ${location} - Departure` : `Day ${day.dayNumber} - ${location}`,
-              mealCode,
-              description:
-                aiDescription ||
-                `After breakfast, your tour includes ${fallbackActivities}. Overnight in ${location}.`
-            };
-          });
-
-          computedDays = await Promise.all(itineraryDaysPromises);
-          setHasSavedItinerary(false);
-          displaySaveMessage('Itinerary generated with fallback method.', 3000);
+          // Funny AI failed - show error
+          displaySaveMessage('Failed to generate itinerary. Please try again.', 5000);
         }
       }
 
@@ -926,7 +694,7 @@ function ItineraryPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [displaySaveMessage, generateAIDescription, generateWithFunnyAI]);
+  }, [displaySaveMessage, generateWithFunnyAI]);
 
   const handleRegenerateItinerary = useCallback(async () => {
     if (!currentQuoteId) {

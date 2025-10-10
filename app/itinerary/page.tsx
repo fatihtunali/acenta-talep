@@ -1597,7 +1597,7 @@ function ItineraryPageContent() {
               <div className="text-sm text-gray-600">{saveMessage}</div>
             )}
             <div className="flex justify-end gap-3">
-              {hasSavedItinerary && (
+              {currentQuoteId && (
                 <button
                   onClick={handleRegenerateItinerary}
                   disabled={isRegenerating}

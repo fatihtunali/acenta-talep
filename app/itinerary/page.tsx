@@ -231,6 +231,106 @@ function ItineraryPageContent() {
     return '';
   }, []);
 
+  const generateWithFunnyAI = useCallback(async (data: QuoteResponse) => {
+    try {
+      // Extract cities from quote data
+      const cities = [
+        ...new Set(
+          data.days
+            .map(day => day.hotelAccommodation?.[0]?.location)
+            .filter(isNonEmptyString)
+        )
+      ];
+
+      if (cities.length === 0) {
+        throw new Error('No cities found in quote data');
+      }
+
+      // Extract interests from activities
+      const allActivities = data.days.flatMap(day => [
+        ...day.entranceFees.map(e => e.description).filter(isNonEmptyString),
+        ...(data.tourType === 'SIC' ? day.sicTourCost.map(e => e.description).filter(isNonEmptyString) : [])
+      ]);
+
+      const interests: string[] = ['history', 'culture'];
+      if (allActivities.some(a => a.toLowerCase().includes('museum'))) interests.push('art');
+      if (allActivities.some(a => a.toLowerCase().includes('cruise') || a.toLowerCase().includes('boat'))) interests.push('nature');
+      if (allActivities.some(a => a.toLowerCase().includes('balloon'))) interests.push('photography');
+
+      // Call Funny AI
+      const response = await fetch('http://188.132.230.193:8000/funny-ai/generate-itinerary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          days: data.days.length,
+          cities: cities,
+          tour_type: data.tourType,
+          pax: data.pax,
+          interests: [...new Set(interests)],
+          start_date: data.startDate
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Funny AI request failed: ${response.status}`);
+      }
+
+      const aiResult = await response.json();
+
+      // Map Funny AI response to DayItinerary format
+      const mappedDays: DayItinerary[] = data.days.map((quoteDay, index) => {
+        const aiDay = aiResult.itinerary[index];
+        const location = quoteDay.hotelAccommodation?.[0]?.location || 'Location';
+
+        // Generate meal code
+        let mealCode = '(';
+        if (index > 0) mealCode += 'B';
+
+        const isSIC = data.tourType === 'SIC';
+        const dayTourName = isSIC && quoteDay.sicTourCost.length > 0
+          ? quoteDay.sicTourCost[0]?.description ?? ''
+          : '';
+
+        if (isSIC && dayTourName && dayTourName.toLowerCase().includes('full day')) {
+          mealCode += mealCode.length > 1 ? '/L' : 'L';
+        }
+
+        const meals = quoteDay.meals.map(expense => expense.description).filter(isNonEmptyString);
+        if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
+          mealCode += mealCode.length > 1 ? '/L' : 'L';
+        }
+        if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
+          mealCode += mealCode.length > 1 ? '/D' : 'D';
+        }
+
+        if (mealCode === '(') {
+          mealCode = '(-)';
+        } else {
+          mealCode += ')';
+          mealCode = mealCode.replace('(/', '(');
+        }
+
+        return {
+          dayNumber: quoteDay.dayNumber,
+          date: quoteDay.date,
+          title: `Day ${quoteDay.dayNumber} - ${location}`,
+          mealCode,
+          description: aiDay?.description || `Day ${quoteDay.dayNumber} in ${location}. Overnight in ${location}.`
+        };
+      });
+
+      // Return title and days
+      return {
+        title: aiResult.title || data.quoteName,
+        days: mappedDays
+      };
+
+    } catch (error) {
+      console.error('Error generating with Funny AI:', error);
+      return null;
+    }
+  }, []);
+
   const loadQuoteForItinerary = useCallback(async (quoteId: string) => {
     setIsLoading(true);
     try {
@@ -307,17 +407,28 @@ function ItineraryPageContent() {
           ? savedItinerary.information
           : defaultInformation;
       } else {
-        const cities = [
-          ...new Set(
-            data.days
-              .map(day => day.hotelAccommodation?.[0]?.location)
-              .filter(isNonEmptyString)
-          )
-        ];
-        const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
+        // Use Funny AI to generate complete itinerary
+        displaySaveMessage('Generating itinerary with Funny AI...', -1);
+        const funnyAIResult = await generateWithFunnyAI(data);
 
-        if (cities.length > 0) {
-          const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
+        if (funnyAIResult) {
+          computedTourName = funnyAIResult.title;
+          computedDays = funnyAIResult.days;
+          displaySaveMessage('Itinerary generated successfully!', 3000);
+        } else {
+          // Fallback to old method if Funny AI fails
+          displaySaveMessage('Using fallback generation method...', -1);
+          const cities = [
+            ...new Set(
+              data.days
+                .map(day => day.hotelAccommodation?.[0]?.location)
+                .filter(isNonEmptyString)
+            )
+          ];
+          const tourTypeText = data.tourType === 'SIC' ? 'Group Tour' : 'Private Tour';
+
+          if (cities.length > 0) {
+            const titlePrompt = `Generate a professional, attractive tour package title for a ${nights}-night/${daysCount}-day ${tourTypeText} visiting: ${cities.join(', ')}.
 
         Requirements:
         - Make it catchy and professional
@@ -332,172 +443,174 @@ function ItineraryPageContent() {
 
         Generate only the title, nothing else:`;
 
-          try {
-            const titleResponse = await fetch('/api/generate-itinerary', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                dayData: {
-                  dayNumber: 1,
-                  location: cities[0] ?? '',
-                  activities: [],
-                  meals: [],
-                  transfers: [],
-                  isFirstDay: true
-                },
-                customPrompt: titlePrompt
-              })
+            try {
+              const titleResponse = await fetch('/api/generate-itinerary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  dayData: {
+                    dayNumber: 1,
+                    location: cities[0] ?? '',
+                    activities: [],
+                    meals: [],
+                    transfers: [],
+                    isFirstDay: true
+                  },
+                  customPrompt: titlePrompt
+                })
+              });
+
+              if (titleResponse.ok) {
+                const { description } = (await titleResponse.json()) as { description?: string };
+                if (description?.trim()) {
+                  computedTourName = description.trim();
+                }
+              }
+            } catch (error) {
+              console.error('Error generating title:', error);
+            }
+          }
+
+          const itineraryDaysPromises = data.days.map(async (day, index) => {
+            const location =
+              day.hotelAccommodation?.[0]?.location && isNonEmptyString(day.hotelAccommodation[0].location)
+                ? day.hotelAccommodation[0].location
+                : 'Location';
+
+            const isSIC = data.tourType === 'SIC';
+            const entrances = day.entranceFees.map(expense => expense.description).filter(isNonEmptyString);
+
+            let dayTourName = '';
+            let activities: string[] = [];
+
+            if (isSIC && day.sicTourCost.length > 0) {
+              const [sicTour] = day.sicTourCost;
+              dayTourName = sicTour?.description ?? '';
+              if (isNonEmptyString(dayTourName)) {
+                activities.push(dayTourName);
+              }
+              activities = [...activities, ...entrances];
+            } else {
+              activities = entrances;
+            }
+
+            const accommodation = day.hotelAccommodation?.[0]?.description ?? '';
+            const meals = day.meals.map(expense => expense.description).filter(isNonEmptyString);
+            const firstTransport = day.transportation[0];
+            const transportation = firstTransport?.description ?? '';
+            const transportLocation = firstTransport?.location ?? '';
+
+            const transfers: TransferInfo[] = day.transportation
+              .map<TransferInfo>(expense => ({
+                description: expense.description ?? '',
+                location: expense.location ?? null
+              }))
+              .filter(transfer => isNonEmptyString(transfer.description));
+
+            const isFirstDay = index === 0;
+            const isLastDay = index === data.days.length - 1;
+
+            const previousLocation =
+              index > 0 && isNonEmptyString(data.days[index - 1].hotelAccommodation?.[0]?.location)
+                ? data.days[index - 1].hotelAccommodation[0].location!
+                : null;
+            const currentLocation = location;
+            const isCityChange = Boolean(previousLocation && previousLocation !== currentLocation);
+
+            let transferMode: TransferMode = '';
+            let hasAirportTransfer = false;
+            let airportTransferCount = 0;
+
+            transfers.forEach(transfer => {
+              const desc = transfer.description.toLowerCase();
+              if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
+                transferMode = 'flight';
+              } else if (desc.includes('airport')) {
+                airportTransferCount += 1;
+                hasAirportTransfer = true;
+                if (!transferMode) {
+                  transferMode = 'airport';
+                }
+              } else if (desc.includes('transfer') || desc.includes('drive')) {
+                if (!transferMode) {
+                  transferMode = 'road';
+                }
+              }
             });
 
-            if (titleResponse.ok) {
-              const { description } = (await titleResponse.json()) as { description?: string };
-              if (description?.trim()) {
-                computedTourName = description.trim();
-              }
-            }
-          } catch (error) {
-            console.error('Error generating title:', error);
-          }
-        }
-
-        const itineraryDaysPromises = data.days.map(async (day, index) => {
-          const location =
-            day.hotelAccommodation?.[0]?.location && isNonEmptyString(day.hotelAccommodation[0].location)
-              ? day.hotelAccommodation[0].location
-              : 'Location';
-
-          const isSIC = data.tourType === 'SIC';
-          const entrances = day.entranceFees.map(expense => expense.description).filter(isNonEmptyString);
-
-          let dayTourName = '';
-          let activities: string[] = [];
-
-          if (isSIC && day.sicTourCost.length > 0) {
-            const [sicTour] = day.sicTourCost;
-            dayTourName = sicTour?.description ?? '';
-            if (isNonEmptyString(dayTourName)) {
-              activities.push(dayTourName);
-            }
-            activities = [...activities, ...entrances];
-          } else {
-            activities = entrances;
-          }
-
-          const accommodation = day.hotelAccommodation?.[0]?.description ?? '';
-          const meals = day.meals.map(expense => expense.description).filter(isNonEmptyString);
-          const firstTransport = day.transportation[0];
-          const transportation = firstTransport?.description ?? '';
-          const transportLocation = firstTransport?.location ?? '';
-
-          const transfers: TransferInfo[] = day.transportation
-            .map<TransferInfo>(expense => ({
-              description: expense.description ?? '',
-              location: expense.location ?? null
-            }))
-            .filter(transfer => isNonEmptyString(transfer.description));
-
-          const isFirstDay = index === 0;
-          const isLastDay = index === data.days.length - 1;
-
-          const previousLocation =
-            index > 0 && isNonEmptyString(data.days[index - 1].hotelAccommodation?.[0]?.location)
-              ? data.days[index - 1].hotelAccommodation[0].location!
-              : null;
-          const currentLocation = location;
-          const isCityChange = Boolean(previousLocation && previousLocation !== currentLocation);
-
-          let transferMode: TransferMode = '';
-          let hasAirportTransfer = false;
-          let airportTransferCount = 0;
-
-          transfers.forEach(transfer => {
-            const desc = transfer.description.toLowerCase();
-            if (desc.includes('flight') || desc.includes('fly') || desc.includes('domestic')) {
+            if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
               transferMode = 'flight';
-            } else if (desc.includes('airport')) {
-              airportTransferCount += 1;
-              hasAirportTransfer = true;
-              if (!transferMode) {
-                transferMode = 'airport';
-              }
-            } else if (desc.includes('transfer') || desc.includes('drive')) {
-              if (!transferMode) {
-                transferMode = 'road';
-              }
             }
+
+            if (isFirstDay) {
+              transferMode = 'airport_arrival';
+              hasAirportTransfer = true;
+            }
+
+            if (isLastDay) {
+              transferMode = 'airport_departure';
+              hasAirportTransfer = true;
+            }
+
+            let mealCode = '(';
+            if (!isFirstDay) {
+              mealCode += 'B';
+            }
+
+            if (isSIC && isNonEmptyString(dayTourName) && dayTourName.toLowerCase().includes('full day')) {
+              mealCode += mealCode.length > 1 ? '/L' : 'L';
+            }
+
+            if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
+              mealCode += mealCode.length > 1 ? '/L' : 'L';
+            }
+            if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
+              mealCode += mealCode.length > 1 ? '/D' : 'D';
+            }
+
+            if (mealCode === '(') {
+              mealCode = '(-)';
+            } else {
+              mealCode += ')';
+              mealCode = mealCode.replace('(/', '(');
+            }
+
+            const aiDescription = await generateAIDescription({
+              dayNumber: day.dayNumber,
+              location,
+              previousLocation,
+              activities,
+              accommodation,
+              meals,
+              transfers,
+              transportation,
+              transportLocation,
+              isFirstDay,
+              isLastDay,
+              isCityChange,
+              transferMode,
+              hasAirportTransfer,
+              tourType: data.tourType,
+              tourName: dayTourName
+            });
+
+            const fallbackActivities =
+              activities.length > 0 ? activities.join(', ') : 'various activities';
+
+            return {
+              dayNumber: day.dayNumber,
+              date: day.date,
+              title: `Day ${day.dayNumber} - ${location}`,
+              mealCode,
+              description:
+                aiDescription ||
+                `After breakfast, your tour includes ${fallbackActivities}. Overnight in ${location}.`
+            };
           });
 
-          if (isCityChange && airportTransferCount >= 2 && !isFirstDay && !isLastDay) {
-            transferMode = 'flight';
-          }
-
-          if (isFirstDay) {
-            transferMode = 'airport_arrival';
-            hasAirportTransfer = true;
-          }
-
-          if (isLastDay) {
-            transferMode = 'airport_departure';
-            hasAirportTransfer = true;
-          }
-
-          let mealCode = '(';
-          if (!isFirstDay) {
-            mealCode += 'B';
-          }
-
-          if (isSIC && isNonEmptyString(dayTourName) && dayTourName.toLowerCase().includes('full day')) {
-            mealCode += mealCode.length > 1 ? '/L' : 'L';
-          }
-
-          if (meals.some(meal => meal.toLowerCase().includes('lunch')) && !mealCode.includes('L')) {
-            mealCode += mealCode.length > 1 ? '/L' : 'L';
-          }
-          if (meals.some(meal => meal.toLowerCase().includes('dinner'))) {
-            mealCode += mealCode.length > 1 ? '/D' : 'D';
-          }
-
-          if (mealCode === '(') {
-            mealCode = '(-)';
-          } else {
-            mealCode += ')';
-            mealCode = mealCode.replace('(/', '(');
-          }
-
-          const aiDescription = await generateAIDescription({
-            dayNumber: day.dayNumber,
-            location,
-            previousLocation,
-            activities,
-            accommodation,
-            meals,
-            transfers,
-            transportation,
-            transportLocation,
-            isFirstDay,
-            isLastDay,
-            isCityChange,
-            transferMode,
-            hasAirportTransfer,
-            tourType: data.tourType,
-            tourName: dayTourName
-          });
-
-          const fallbackActivities =
-            activities.length > 0 ? activities.join(', ') : 'various activities';
-
-          return {
-            dayNumber: day.dayNumber,
-            date: day.date,
-            title: `Day ${day.dayNumber} - ${location}`,
-            mealCode,
-            description:
-              aiDescription ||
-              `After breakfast, your tour includes ${fallbackActivities}. Overnight in ${location}.`
-          };
-        });
-
-        computedDays = await Promise.all(itineraryDaysPromises);
+          computedDays = await Promise.all(itineraryDaysPromises);
+          displaySaveMessage('Itinerary generated with fallback method.', 3000);
+        }
       }
 
       setTourName(computedTourName);
@@ -746,7 +859,7 @@ function ItineraryPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [displaySaveMessage, generateAIDescription]);
+  }, [displaySaveMessage, generateAIDescription, generateWithFunnyAI]);
 
 
   const handleSaveItinerary = useCallback(async () => {

@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         )
       : [];
 
-    // Create a context-aware prompt for OpenAI
+    // Create a context-aware prompt for AI generation
     let contextInstructions = '';
     const isSIC = tourType === 'SIC';
     const hasActivities = activities && activities.length > 0;

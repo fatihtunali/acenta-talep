@@ -1007,6 +1007,18 @@ function ItineraryPageContent() {
             font-size: 8pt !important;
           }
 
+          /* Day description styling - smaller font and limited to 3-4 lines max */
+          .space-y-6 .text-area {
+            font-size: 9pt !important;
+            line-height: 1.35 !important;
+            max-height: 5.4rem !important; /* ~4 lines at 1.35 line-height = 4 * 1.35rem */
+            overflow: hidden !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 4 !important;
+            -webkit-box-orient: vertical !important;
+            text-overflow: ellipsis !important;
+          }
+
           /* Logo sizing */
           .h-20 {
             height: 3.5rem !important;

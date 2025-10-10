@@ -84,6 +84,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* AI Training Section */}
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            🤖 AI Training
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Upload your ready-made itineraries for Funny AI to learn from
+          </p>
+          <div className="flex gap-4">
+            <Link
+              href="/training-itineraries"
+              className="inline-flex items-center px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md text-lg"
+            >
+              📚 Training Itineraries
+            </Link>
+          </div>
+        </div>
+
         {/* Database Management Section */}
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">

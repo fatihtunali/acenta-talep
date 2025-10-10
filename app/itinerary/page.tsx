@@ -259,8 +259,8 @@ function ItineraryPageContent() {
       if (allActivities.some(a => a.toLowerCase().includes('cruise') || a.toLowerCase().includes('boat'))) interests.push('nature');
       if (allActivities.some(a => a.toLowerCase().includes('balloon'))) interests.push('photography');
 
-      // Call Funny AI
-      const response = await fetch('http://188.132.230.193:8000/funny-ai/generate-itinerary', {
+      // Call Funny AI via proxy API to avoid CORS issues
+      const response = await fetch('/api/funny-ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

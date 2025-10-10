@@ -4,18 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-interface TrainingItinerary {
-  id: number;
-  title: string;
-  tour_type: 'Private' | 'SIC';
-  days: number;
-  cities: string;
-  content: string;
-  created_at: string;
-}
-
 // GET - List all training itineraries
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 

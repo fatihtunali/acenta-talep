@@ -253,7 +253,7 @@ export default function TrainingItinerariesPage() {
 
           {itineraries.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              No training itineraries uploaded yet. Click "+ Add Training Itinerary" to get started.
+              No training itineraries uploaded yet. Click &quot;+ Add Training Itinerary&quot; to get started.
             </div>
           ) : (
             <div className="divide-y divide-gray-200">

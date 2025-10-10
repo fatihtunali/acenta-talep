@@ -6,7 +6,13 @@
 
 ## Recent Updates
 
-### October 10, 2025 - Prompt Optimization
+### October 10, 2025 - Prompt Optimization v2
+- ✅ **Fixed arrival day breakfast**: No longer mentions breakfast on arrival days (correctly shows no meals)
+- ✅ **Fixed "After breakfast" usage**: Full days now properly start with "After breakfast" instead of "Upon arrival"
+- ✅ **Better context awareness**: "Upon arrival" only used for actual arrivals (first day or city changes)
+- ✅ **Improved prompt rules**: Added explicit rules for meal mentions and day transitions
+
+### October 10, 2025 - Prompt Optimization v1
 - ✅ **Fixed redundant day numbering**: Descriptions no longer include "Day X -" prefixes since titles already show the day number
 - ✅ **Improved prompt engineering**: AI now generates cleaner, more professional descriptions
 - ✅ **Context refinement**: Updated context generation to avoid repetitive day references

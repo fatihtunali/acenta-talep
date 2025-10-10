@@ -170,6 +170,8 @@ function ItineraryPageContent() {
   const [isSavingItinerary, setIsSavingItinerary] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
+  const [hasSavedItinerary, setHasSavedItinerary] = useState<boolean>(false);
 
   const markUnsavedChanges = useCallback(() => setHasUnsavedChanges(true), []);
   const saveMessageTimeoutRef = useRef<number | null>(null);
@@ -390,6 +392,7 @@ function ItineraryPageContent() {
       const savedItinerary = data.itineraryData ?? null;
 
       if (savedItinerary) {
+        // Load saved itinerary
         computedTourName = savedItinerary.tourName.trim().length
           ? savedItinerary.tourName
           : computedTourName;
@@ -406,6 +409,8 @@ function ItineraryPageContent() {
         computedInformation = savedItinerary.information.trim().length
           ? savedItinerary.information
           : defaultInformation;
+        setHasSavedItinerary(true);
+        displaySaveMessage('Loaded saved itinerary', 3000);
       } else {
         // Use Funny AI to generate complete itinerary
         displaySaveMessage('Generating itinerary with Funny AI...', -1);
@@ -414,6 +419,7 @@ function ItineraryPageContent() {
         if (funnyAIResult) {
           computedTourName = funnyAIResult.title;
           computedDays = funnyAIResult.days;
+          setHasSavedItinerary(false);
           displaySaveMessage('Itinerary generated successfully!', 3000);
         } else {
           // Fallback to old method if Funny AI fails
@@ -609,6 +615,7 @@ function ItineraryPageContent() {
           });
 
           computedDays = await Promise.all(itineraryDaysPromises);
+          setHasSavedItinerary(false);
           displaySaveMessage('Itinerary generated with fallback method.', 3000);
         }
       }
@@ -861,6 +868,43 @@ function ItineraryPageContent() {
     }
   }, [displaySaveMessage, generateAIDescription, generateWithFunnyAI]);
 
+  const handleRegenerateItinerary = useCallback(async () => {
+    if (!currentQuoteId) {
+      displaySaveMessage('No quote loaded to regenerate.', 4000);
+      return;
+    }
+
+    setIsRegenerating(true);
+    try {
+      displaySaveMessage('Regenerating itinerary with Funny AI...', -1);
+
+      // Fetch quote data again
+      const response = await fetch(`/api/quotes/${currentQuoteId}`);
+      if (!response.ok) {
+        throw new Error('Failed to load quote data');
+      }
+
+      const data = await response.json();
+
+      // Generate with Funny AI
+      const funnyAIResult = await generateWithFunnyAI(data);
+
+      if (funnyAIResult) {
+        setTourName(funnyAIResult.title);
+        setDays(funnyAIResult.days);
+        setHasSavedItinerary(false);
+        setHasUnsavedChanges(true);
+        displaySaveMessage('Itinerary regenerated! Remember to save your changes.', 5000);
+      } else {
+        displaySaveMessage('Failed to regenerate itinerary. Please try again.', 5000);
+      }
+    } catch (error) {
+      console.error('Error regenerating itinerary:', error);
+      displaySaveMessage('Error regenerating itinerary.', 5000);
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [currentQuoteId, generateWithFunnyAI, displaySaveMessage]);
 
   const handleSaveItinerary = useCallback(async () => {
     if (!currentQuoteId) {
@@ -901,6 +945,7 @@ function ItineraryPageContent() {
 
       displaySaveMessage('Itinerary saved successfully!', 3000);
       setHasUnsavedChanges(false);
+      setHasSavedItinerary(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       displaySaveMessage(`Failed to save itinerary: ${message}`, 5000);
@@ -1486,6 +1531,15 @@ function ItineraryPageContent() {
               <div className="text-sm text-gray-600">{saveMessage}</div>
             )}
             <div className="flex justify-end gap-3">
+              {hasSavedItinerary && (
+                <button
+                  onClick={handleRegenerateItinerary}
+                  disabled={isRegenerating}
+                  className={`px-6 py-3 font-semibold rounded-md shadow-sm border transition-colors ${isRegenerating ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-300'}`}
+                >
+                  {isRegenerating ? 'Regenerating...' : 'Regenerate with AI'}
+                </button>
+              )}
               <button
                 onClick={() => window.print()}
                 className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm transition-colors"

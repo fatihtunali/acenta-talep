@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
       days: body.days,
       cities: body.cities,
       tour_type: body.tour_type,
-      day_details_count: body.day_details?.length || 0
+      day_details_count: body.day_details?.length || 0,
+      first_day_sample: body.day_details?.[0] || 'N/A'
     });
 
     // Forward request to Funny AI service

@@ -32,7 +32,6 @@ export default function TrainingItinerariesPage() {
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -64,7 +63,6 @@ export default function TrainingItinerariesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadedFile(file);
     setMessage('Reading file...');
 
     try {
@@ -114,7 +112,6 @@ export default function TrainingItinerariesPage() {
         setDays(7);
         setCities('');
         setContent('');
-        setUploadedFile(null);
         setShowForm(false);
         loadItineraries();
       } else {

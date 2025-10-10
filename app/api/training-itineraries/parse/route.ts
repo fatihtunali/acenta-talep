@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import mammoth from 'mammoth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +31,6 @@ export async function POST(request: NextRequest) {
 
       try {
         // Use mammoth to extract text from .docx
-        const mammoth = require('mammoth');
         const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
         text = result.value;
       } catch (error) {

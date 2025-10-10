@@ -235,6 +235,8 @@ function ItineraryPageContent() {
 
   const generateWithFunnyAI = useCallback(async (data: QuoteResponse) => {
     try {
+      console.log('Starting Funny AI generation...');
+
       // Extract cities from quote data
       const cities = [
         ...new Set(
@@ -244,7 +246,10 @@ function ItineraryPageContent() {
         )
       ];
 
+      console.log('Extracted cities:', cities);
+
       if (cities.length === 0) {
+        console.error('No cities found in quote data');
         throw new Error('No cities found in quote data');
       }
 
@@ -259,6 +264,19 @@ function ItineraryPageContent() {
       if (allActivities.some(a => a.toLowerCase().includes('cruise') || a.toLowerCase().includes('boat'))) interests.push('nature');
       if (allActivities.some(a => a.toLowerCase().includes('balloon'))) interests.push('photography');
 
+      console.log('Calling Funny AI API with:', {
+        days: data.days.length,
+        cities,
+        tour_type: data.tourType,
+        pax: data.pax,
+        interests: [...new Set(interests)]
+      });
+
+      // Extract just the date part (YYYY-MM-DD) from ISO datetime string
+      const startDateOnly = data.startDate.split('T')[0];
+
+      console.log('Start date formatted:', startDateOnly);
+
       // Call Funny AI via proxy API to avoid CORS issues
       const response = await fetch('/api/funny-ai/generate', {
         method: 'POST',
@@ -269,15 +287,20 @@ function ItineraryPageContent() {
           tour_type: data.tourType,
           pax: data.pax,
           interests: [...new Set(interests)],
-          start_date: data.startDate
+          start_date: startDateOnly
         })
       });
 
+      console.log('Funny AI API response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`Funny AI request failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Funny AI error response:', errorText);
+        throw new Error(`Funny AI request failed: ${response.status} - ${errorText}`);
       }
 
       const aiResult = await response.json();
+      console.log('Funny AI result received:', aiResult);
 
       // Map Funny AI response to DayItinerary format
       const mappedDays: DayItinerary[] = data.days.map((quoteDay, index) => {
@@ -882,26 +905,32 @@ function ItineraryPageContent() {
       // Fetch quote data again
       const response = await fetch(`/api/quotes/${currentQuoteId}`);
       if (!response.ok) {
-        throw new Error('Failed to load quote data');
+        const errorText = await response.text();
+        console.error('Failed to load quote:', response.status, errorText);
+        throw new Error(`Failed to load quote data: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Quote data loaded, generating with Funny AI...');
 
       // Generate with Funny AI
       const funnyAIResult = await generateWithFunnyAI(data);
 
       if (funnyAIResult) {
+        console.log('Funny AI generation successful');
         setTourName(funnyAIResult.title);
         setDays(funnyAIResult.days);
         setHasSavedItinerary(false);
         setHasUnsavedChanges(true);
         displaySaveMessage('Itinerary regenerated! Remember to save your changes.', 5000);
       } else {
-        displaySaveMessage('Failed to regenerate itinerary. Please try again.', 5000);
+        console.error('Funny AI returned null result');
+        displaySaveMessage('Failed to regenerate itinerary. Check console for details.', 5000);
       }
     } catch (error) {
       console.error('Error regenerating itinerary:', error);
-      displaySaveMessage('Error regenerating itinerary.', 5000);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      displaySaveMessage(`Error: ${errorMessage}`, 5000);
     } finally {
       setIsRegenerating(false);
     }

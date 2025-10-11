@@ -1277,34 +1277,34 @@ function ItineraryPageContent() {
               <div className="px-12 pb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Hotel Options</h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300" style={{tableLayout: 'fixed'}}>
+                  <table className="w-full border-collapse border border-gray-300" style={{minWidth: '800px'}}>
                     <colgroup>
-                      <col style={{width: '20%'}} />
-                      <col style={{width: '26.67%'}} />
-                      <col style={{width: '26.67%'}} />
-                      <col style={{width: '26.67%'}} />
+                      <col style={{width: '15%'}} />
+                      <col style={{width: '28.33%'}} />
+                      <col style={{width: '28.33%'}} />
+                      <col style={{width: '28.33%'}} />
                     </colgroup>
                     <thead>
                       <tr className="bg-indigo-600 text-white">
-                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">City</th>
-                        <th className="border border-gray-300 px-4 py-2 text-center font-bold">3-Star Hotels</th>
-                        <th className="border border-gray-300 px-4 py-2 text-center font-bold">4-Star Hotels</th>
-                        <th className="border border-gray-300 px-4 py-2 text-center font-bold">5-Star Hotels</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-bold text-sm">City</th>
+                        <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">3-Star Hotels</th>
+                        <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">4-Star Hotels</th>
+                        <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">5-Star Hotels</th>
                       </tr>
                     </thead>
                     <tbody>
                       {hotelsByCategory.map((cityData, index) => (
                         <tr key={index} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-900 text-sm align-top">
                             {cityData.city}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 text-center" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
                             {cityData.categories['3 stars']?.join(', ') || '-'}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 text-center" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
                             {cityData.categories['4 stars']?.join(', ') || '-'}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 text-center" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
                             {cityData.categories['5 stars']?.join(', ') || '-'}
                           </td>
                         </tr>
@@ -1323,19 +1323,19 @@ function ItineraryPageContent() {
               <h3 className="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Package Rates</h3>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300" style={{tableLayout: 'fixed'}}>
+                <table className="w-full border-collapse border border-gray-300" style={{minWidth: '800px'}}>
                   <colgroup>
-                    <col style={{width: '20%'}} />
-                    <col style={{width: '26.67%'}} />
-                    <col style={{width: '26.67%'}} />
-                    <col style={{width: '26.67%'}} />
+                    <col style={{width: '15%'}} />
+                    <col style={{width: '28.33%'}} />
+                    <col style={{width: '28.33%'}} />
+                    <col style={{width: '28.33%'}} />
                   </colgroup>
                   <thead>
                     <tr className="bg-indigo-600 text-white">
-                      <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / PP in DBL</th>
-                      <th className="border border-gray-300 px-4 py-2 text-center font-bold">3-Star Hotels</th>
-                      <th className="border border-gray-300 px-4 py-2 text-center font-bold">4-Star Hotels</th>
-                      <th className="border border-gray-300 px-4 py-2 text-center font-bold">5-Star Hotels</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-bold text-sm">PAX / PP in DBL</th>
+                      <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">3-Star Hotels</th>
+                      <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">4-Star Hotels</th>
+                      <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">5-Star Hotels</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1348,16 +1348,16 @@ function ItineraryPageContent() {
 
                       return (
                         <tr key={slabIndex} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-900 text-sm">
                             {slab.pax} PAX
                           </td>
-                          <td className="border border-gray-300 px-4 py-2 text-center font-semibold text-green-700">
+                          <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
                             €{threeStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
                           </td>
-                          <td className="border border-gray-300 px-4 py-2 text-center font-semibold text-green-700">
+                          <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
                             €{fourStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
                           </td>
-                          <td className="border border-gray-300 px-4 py-2 text-center font-semibold text-green-700">
+                          <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
                             €{fiveStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
                           </td>
                         </tr>

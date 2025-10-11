@@ -1277,7 +1277,13 @@ function ItineraryPageContent() {
               <div className="px-12 pb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Hotel Options</h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300">
+                  <table className="w-full border-collapse border border-gray-300" style={{tableLayout: 'fixed'}}>
+                    <colgroup>
+                      <col style={{width: '20%'}} />
+                      <col style={{width: '26.67%'}} />
+                      <col style={{width: '26.67%'}} />
+                      <col style={{width: '26.67%'}} />
+                    </colgroup>
                     <thead>
                       <tr className="bg-indigo-600 text-white">
                         <th className="border border-gray-300 px-4 py-2 text-left font-bold">City</th>
@@ -1317,7 +1323,13 @@ function ItineraryPageContent() {
               <h3 className="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Package Rates</h3>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
+                <table className="w-full border-collapse border border-gray-300" style={{tableLayout: 'fixed'}}>
+                  <colgroup>
+                    <col style={{width: '20%'}} />
+                    <col style={{width: '26.67%'}} />
+                    <col style={{width: '26.67%'}} />
+                    <col style={{width: '26.67%'}} />
+                  </colgroup>
                   <thead>
                     <tr className="bg-indigo-600 text-white">
                       <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / PP in DBL</th>

@@ -1295,16 +1295,16 @@ function ItineraryPageContent() {
                     <tbody>
                       {hotelsByCategory.map((cityData, index) => (
                         <tr key={index} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                          <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900" style={{wordBreak: 'break-word'}}>
                             {cityData.city}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700" style={{wordBreak: 'break-word'}}>
                             {cityData.categories['3 stars']?.join(', ') || '-'}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700" style={{wordBreak: 'break-word'}}>
                             {cityData.categories['4 stars']?.join(', ') || '-'}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700" style={{wordBreak: 'break-word'}}>
                             {cityData.categories['5 stars']?.join(', ') || '-'}
                           </td>
                         </tr>

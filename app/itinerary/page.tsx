@@ -817,6 +817,11 @@ function ItineraryPageContent() {
 
   const isSaveDisabled = !currentQuoteId || isSavingItinerary || !hasUnsavedChanges;
 
+  useEffect(() => {
+    console.log("hasUnsavedChanges", hasUnsavedChanges);
+    console.log("isSaveDisabled", isSaveDisabled);
+  }, [hasUnsavedChanges, isSaveDisabled]);
+
   if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

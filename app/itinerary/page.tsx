@@ -1054,10 +1054,16 @@ function ItineraryPageContent() {
             line-height: 1.35 !important;
           }
 
-          /* Keep each day together - don't split day title and description */
+          /* Try to keep day title with its description start - but allow breaks if needed */
           .space-y-6 > div {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+          }
+
+          /* Avoid breaking right after day title */
+          .day-title {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
           }
 
           /* Keep section headings with their content - prevent orphaned headings */
@@ -1204,8 +1210,8 @@ function ItineraryPageContent() {
             {/* Day by Day Itinerary */}
             <div className="px-12 py-8 space-y-6">
               {days.map((day, index) => (
-                <div key={index} className="mb-6 print:break-inside-avoid">
-                  <div className="flex items-baseline justify-between mb-3">
+                <div key={index} className="mb-6">
+                  <div className="day-title flex items-baseline justify-between mb-3">
                     <input
                       type="text"
                       value={day.title}

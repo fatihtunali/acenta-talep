@@ -869,7 +869,7 @@ function ItineraryPageContent() {
 
           @page {
             size: A4;
-            margin: 2.5cm 1.5cm 2cm 1.5cm; /* top right bottom left - space for header and footer */
+            margin: 2.5cm 1.5cm 2.5cm 1.5cm; /* top right bottom left - increased bottom margin for footer */
           }
 
           /* Print header that repeats on every page */
@@ -913,9 +913,10 @@ function ItineraryPageContent() {
             }
           }
 
-          /* Push content down to avoid header overlap */
+          /* Push content down to avoid header overlap and reserve space for footer */
           .print-content {
             margin-top: 2cm;
+            margin-bottom: 2cm;
           }
 
           /* Hide all non-printable elements */

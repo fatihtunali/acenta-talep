@@ -440,7 +440,7 @@ function ItineraryPageContent() {
           computedTourName = funnyAIResult.title;
           computedDays = funnyAIResult.days;
           setHasSavedItinerary(false);
-          displaySaveMessage('Itinerary generated successfully!', 3000);
+          displaySaveMessage('✓ Itinerary generated successfully! Review the content and save when ready.', 5000);
         } else {
           // Funny AI failed - show error
           displaySaveMessage('Failed to generate itinerary. Please try again.', 5000);
@@ -726,7 +726,7 @@ function ItineraryPageContent() {
         setDays(funnyAIResult.days);
         setHasSavedItinerary(false);
         setHasUnsavedChanges(true);
-        displaySaveMessage('Itinerary regenerated! Remember to save your changes.', 5000);
+        displaySaveMessage('✓ Itinerary regenerated successfully! You can now review and save your changes.', 8000);
       } else {
         console.error('Funny AI returned null result');
         displaySaveMessage('Failed to regenerate itinerary. Check console for details.', 5000);
@@ -777,7 +777,7 @@ function ItineraryPageContent() {
         return;
       }
 
-      displaySaveMessage('Itinerary saved successfully!', 3000);
+      displaySaveMessage('✓ Itinerary saved successfully!', 3000);
       setHasUnsavedChanges(false);
       setHasSavedItinerary(true);
     } catch (error) {
@@ -1399,9 +1399,19 @@ function ItineraryPageContent() {
 
         {/* Action Buttons */}
         {days.length > 0 && (
-          <div className="mt-6 flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-6 flex flex-col gap-3 print:hidden">
             {saveMessage && (
-              <div className="text-sm text-gray-600">{saveMessage}</div>
+              <div className={`px-4 py-3 rounded-md text-sm font-medium ${
+                saveMessage.includes('successfully') || saveMessage.includes('regenerated')
+                  ? 'bg-green-50 text-green-800 border border-green-200'
+                  : saveMessage.includes('Failed') || saveMessage.includes('Error')
+                  ? 'bg-red-50 text-red-800 border border-red-200'
+                  : saveMessage.includes('Generating') || saveMessage.includes('Regenerating')
+                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                  : 'bg-gray-50 text-gray-600 border border-gray-200'
+              }`}>
+                {saveMessage}
+              </div>
             )}
             <div className="flex justify-end gap-3">
               {currentQuoteId && (

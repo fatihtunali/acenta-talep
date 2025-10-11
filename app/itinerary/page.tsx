@@ -1287,9 +1287,9 @@ function ItineraryPageContent() {
                     <thead>
                       <tr className="bg-indigo-600 text-white">
                         <th className="border border-gray-300 px-4 py-2 text-left font-bold">City</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">3-Star Hotels</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">4-Star Hotels</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left font-bold">5-Star Hotels</th>
+                        <th className="border border-gray-300 px-4 py-2 text-center font-bold">3-Star Hotels</th>
+                        <th className="border border-gray-300 px-4 py-2 text-center font-bold">4-Star Hotels</th>
+                        <th className="border border-gray-300 px-4 py-2 text-center font-bold">5-Star Hotels</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1298,13 +1298,13 @@ function ItineraryPageContent() {
                           <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900" style={{wordBreak: 'break-word'}}>
                             {cityData.city}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 text-center" style={{wordBreak: 'break-word'}}>
                             {cityData.categories['3 stars']?.join(', ') || '-'}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 text-center" style={{wordBreak: 'break-word'}}>
                             {cityData.categories['4 stars']?.join(', ') || '-'}
                           </td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700" style={{wordBreak: 'break-word'}}>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 text-center" style={{wordBreak: 'break-word'}}>
                             {cityData.categories['5 stars']?.join(', ') || '-'}
                           </td>
                         </tr>
@@ -1351,13 +1351,13 @@ function ItineraryPageContent() {
                           <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
                             {slab.pax} PAX
                           </td>
-                          <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                          <td className="border border-gray-300 px-4 py-2 text-center font-semibold text-green-700">
                             €{threeStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
                           </td>
-                          <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                          <td className="border border-gray-300 px-4 py-2 text-center font-semibold text-green-700">
                             €{fourStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
                           </td>
-                          <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                          <td className="border border-gray-300 px-4 py-2 text-center font-semibold text-green-700">
                             €{fiveStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
                           </td>
                         </tr>

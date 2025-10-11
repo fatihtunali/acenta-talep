@@ -1155,45 +1155,45 @@ function ItineraryPageContent() {
                   priority
                 />
               </div>
-
-              {/* Tour Title and Duration */}
-              <div className="text-center border-b-2 border-indigo-600 pb-6">
-                {tourName.includes(':') ? (
-                  <div>
-                    <div className="text-4xl font-bold text-indigo-900 mb-1">
-                      {tourName.split(':')[0].trim()}
-                    </div>
-                    <div className="text-2xl font-semibold text-indigo-700 mb-2">
-                      {tourName.split(':')[1].trim()}
-                    </div>
-                  </div>
-                ) : (
-                  <input
-                    type="text"
-                    value={tourName}
-                    onChange={(e) => {
-                      setTourName(e.target.value);
-                      markUnsavedChanges();
-                    }}
-                    className="text-input text-4xl font-bold text-indigo-900 w-full text-center mb-2"
-                    placeholder="Tour Package Name"
-                  />
-                )}
-                <input
-                  type="text"
-                  value={duration}
-                  onChange={(e) => {
-                    setDuration(e.target.value);
-                    markUnsavedChanges();
-                  }}
-                  className="text-input text-lg text-gray-600 w-full text-center"
-                  placeholder="X Nights / X Days"
-                />
-              </div>
             </div>
 
             {/* Main content wrapper - adds top margin when printing to avoid header overlap */}
             <div className="print-content">
+
+            {/* Tour Title and Duration - shows on both screen and print */}
+            <div className="px-12 text-center border-b-2 border-indigo-600 pb-6 mb-0 print:mb-6">
+              {tourName.includes(':') ? (
+                <div>
+                  <div className="text-4xl font-bold text-indigo-900 mb-1">
+                    {tourName.split(':')[0].trim()}
+                  </div>
+                  <div className="text-2xl font-semibold text-indigo-700 mb-2">
+                    {tourName.split(':')[1].trim()}
+                  </div>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={tourName}
+                  onChange={(e) => {
+                    setTourName(e.target.value);
+                    markUnsavedChanges();
+                  }}
+                  className="text-input text-4xl font-bold text-indigo-900 w-full text-center mb-2"
+                  placeholder="Tour Package Name"
+                />
+              )}
+              <input
+                type="text"
+                value={duration}
+                onChange={(e) => {
+                  setDuration(e.target.value);
+                  markUnsavedChanges();
+                }}
+                className="text-input text-lg text-gray-600 w-full text-center"
+                placeholder="X Nights / X Days"
+              />
+            </div>
 
             {/* Day by Day Itinerary */}
             <div className="px-12 py-8 space-y-6">

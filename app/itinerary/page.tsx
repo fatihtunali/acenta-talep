@@ -1273,99 +1273,153 @@ function ItineraryPageContent() {
             )}
 
             {/* Hotel Options by Category */}
-            {hotelsByCategory.length > 0 && (
-              <div className="px-12 pb-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Hotel Options</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300" style={{minWidth: '800px'}}>
-                    <colgroup>
-                      <col style={{width: '15%'}} />
-                      <col style={{width: '28.33%'}} />
-                      <col style={{width: '28.33%'}} />
-                      <col style={{width: '28.33%'}} />
-                    </colgroup>
-                    <thead>
-                      <tr className="bg-indigo-600 text-white">
-                        <th className="border border-gray-300 px-3 py-2 text-left font-bold text-sm">City</th>
-                        <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">3-Star Hotels</th>
-                        <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">4-Star Hotels</th>
-                        <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">5-Star Hotels</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {hotelsByCategory.map((cityData, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-900 text-sm align-top">
-                            {cityData.city}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
-                            {cityData.categories['3 stars']?.join(', ') || '-'}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
-                            {cityData.categories['4 stars']?.join(', ') || '-'}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
-                            {cityData.categories['5 stars']?.join(', ') || '-'}
-                          </td>
+            {hotelsByCategory.length > 0 && (() => {
+              // Detect which categories have hotels
+              const availableCategories: HotelCategoryLabel[] = [];
+              (['3 stars', '4 stars', '5 stars'] as HotelCategoryLabel[]).forEach(category => {
+                const hasHotels = hotelsByCategory.some(cityData =>
+                  cityData.categories[category]?.length > 0
+                );
+                if (hasHotels) {
+                  availableCategories.push(category);
+                }
+              });
+
+              const numColumns = availableCategories.length + 1; // +1 for City column
+              const dataColumnWidth = `${(100 - 15) / availableCategories.length}%`;
+
+              return (
+                <div className="px-12 pb-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Hotel Options</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300" style={{minWidth: '600px'}}>
+                      <colgroup>
+                        <col style={{width: '15%'}} />
+                        {availableCategories.map(cat => (
+                          <col key={cat} style={{width: dataColumnWidth}} />
+                        ))}
+                      </colgroup>
+                      <thead>
+                        <tr className="bg-indigo-600 text-white">
+                          <th className="border border-gray-300 px-3 py-2 text-left font-bold text-sm">City</th>
+                          {availableCategories.includes('3 stars') && (
+                            <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">3-Star Hotels</th>
+                          )}
+                          {availableCategories.includes('4 stars') && (
+                            <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">4-Star Hotels</th>
+                          )}
+                          {availableCategories.includes('5 stars') && (
+                            <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">5-Star Hotels</th>
+                          )}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {hotelsByCategory.map((cityData, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-900 text-sm align-top">
+                              {cityData.city}
+                            </td>
+                            {availableCategories.includes('3 stars') && (
+                              <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
+                                {cityData.categories['3 stars']?.join(', ') || '-'}
+                              </td>
+                            )}
+                            {availableCategories.includes('4 stars') && (
+                              <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
+                                {cityData.categories['4 stars']?.join(', ') || '-'}
+                              </td>
+                            )}
+                            {availableCategories.includes('5 stars') && (
+                              <td className="border border-gray-300 px-3 py-2 text-xs text-gray-700 text-center align-top">
+                                {cityData.categories['5 stars']?.join(', ') || '-'}
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3 italic">
+                    * Final hotel selection will be based on your chosen category and availability
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-3 italic">
-                  * Final hotel selection will be based on your chosen category and availability
-                </p>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Pricing */}
-            <div className="px-12 pb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Package Rates</h3>
+            {hotelCategoryPricing.length > 0 && (() => {
+              // Detect which categories have hotels (same as Hotel Options table)
+              const availableCategories: HotelCategoryLabel[] = [];
+              (['3 stars', '4 stars', '5 stars'] as HotelCategoryLabel[]).forEach(category => {
+                const hasHotels = hotelsByCategory.some(cityData =>
+                  cityData.categories[category]?.length > 0
+                );
+                if (hasHotels) {
+                  availableCategories.push(category);
+                }
+              });
 
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300" style={{minWidth: '800px'}}>
-                  <colgroup>
-                    <col style={{width: '15%'}} />
-                    <col style={{width: '28.33%'}} />
-                    <col style={{width: '28.33%'}} />
-                    <col style={{width: '28.33%'}} />
-                  </colgroup>
-                  <thead>
-                    <tr className="bg-indigo-600 text-white">
-                      <th className="border border-gray-300 px-3 py-2 text-left font-bold text-sm">PAX / PP in DBL</th>
-                      <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">3-Star Hotels</th>
-                      <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">4-Star Hotels</th>
-                      <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">5-Star Hotels</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Per Person Rates for each PAX */}
-                    {hotelCategoryPricing[0]?.pricingSlabs.map((slab, slabIndex) => {
-                      // Find pricing for each category in fixed order
-                      const threeStar = hotelCategoryPricing.find(cp => cp.category === '3 stars');
-                      const fourStar = hotelCategoryPricing.find(cp => cp.category === '4 stars');
-                      const fiveStar = hotelCategoryPricing.find(cp => cp.category === '5 stars');
+              const dataColumnWidth = `${(100 - 15) / availableCategories.length}%`;
 
-                      return (
-                        <tr key={slabIndex} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-900 text-sm">
-                            {slab.pax} PAX
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
-                            €{threeStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
-                            €{fourStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
-                          </td>
-                          <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
-                            €{fiveStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
-                          </td>
+              return (
+                <div className="px-12 pb-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Package Rates</h3>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300" style={{minWidth: '600px'}}>
+                      <colgroup>
+                        <col style={{width: '15%'}} />
+                        {availableCategories.map(cat => (
+                          <col key={cat} style={{width: dataColumnWidth}} />
+                        ))}
+                      </colgroup>
+                      <thead>
+                        <tr className="bg-indigo-600 text-white">
+                          <th className="border border-gray-300 px-3 py-2 text-left font-bold text-sm">PAX / PP in DBL</th>
+                          {availableCategories.includes('3 stars') && (
+                            <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">3-Star Hotels</th>
+                          )}
+                          {availableCategories.includes('4 stars') && (
+                            <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">4-Star Hotels</th>
+                          )}
+                          {availableCategories.includes('5 stars') && (
+                            <th className="border border-gray-300 px-3 py-2 text-center font-bold text-sm">5-Star Hotels</th>
+                          )}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody>
+                        {hotelCategoryPricing[0]?.pricingSlabs.map((slab, slabIndex) => {
+                          // Find pricing for each category
+                          const threeStar = hotelCategoryPricing.find(cp => cp.category === '3 stars');
+                          const fourStar = hotelCategoryPricing.find(cp => cp.category === '4 stars');
+                          const fiveStar = hotelCategoryPricing.find(cp => cp.category === '5 stars');
+
+                          return (
+                            <tr key={slabIndex} className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-900 text-sm">
+                                {slab.pax} PAX
+                              </td>
+                              {availableCategories.includes('3 stars') && (
+                                <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
+                                  €{threeStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
+                                </td>
+                              )}
+                              {availableCategories.includes('4 stars') && (
+                                <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
+                                  €{fourStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
+                                </td>
+                              )}
+                              {availableCategories.includes('5 stars') && (
+                                <td className="border border-gray-300 px-3 py-2 text-center font-semibold text-green-700 text-sm">
+                                  €{fiveStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
 
               <div className="mt-4">
                 <p className="text-xs text-gray-500 italic">

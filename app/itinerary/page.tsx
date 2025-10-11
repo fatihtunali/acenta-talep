@@ -869,7 +869,43 @@ function ItineraryPageContent() {
 
           @page {
             size: A4;
-            margin: 1.2cm 1.5cm;
+            margin: 2.5cm 1.5cm 2cm 1.5cm; /* top right bottom left - space for header and footer */
+          }
+
+          /* Print header that repeats on every page */
+          .print-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2cm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            z-index: 9999;
+          }
+
+          /* Print footer that repeats on every page */
+          .print-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1.5cm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border-top: 2px solid #4F46E5;
+            padding: 0 1.5cm;
+            font-size: 8pt;
+            z-index: 9999;
+          }
+
+          /* Push content down to avoid header overlap */
+          .print-content {
+            margin-top: 2cm;
           }
 
           /* Hide all non-printable elements */
@@ -1080,8 +1116,35 @@ function ItineraryPageContent() {
           </div>
         ) : (
           <div className="bg-white shadow-md print:shadow-none">
-            {/* Header with Logo Only */}
-            <div className="px-12 pt-10 pb-6">
+            {/* Print-only header that repeats on every page */}
+            <div className="hidden print:block print-header">
+              <Image
+                src="/images/Funny_Logo.png"
+                alt="Funny Tourism"
+                width={180}
+                height={60}
+                className="h-12 w-auto object-contain"
+              />
+            </div>
+
+            {/* Print-only footer that repeats on every page */}
+            <div className="hidden print:flex print-footer">
+              <Image
+                src="/images/Funny_Logo.png"
+                alt="Funny Tourism"
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain opacity-70"
+              />
+              <div className="text-right text-gray-600 leading-tight">
+                <p className="font-semibold">Funny Tourism</p>
+                <p>Mehmet Akif Ersoy Mah. Hanımeli Sok No 5/B, Uskudar - Istanbul</p>
+                <p>www.funnytourism.com | info@funnytourism.com</p>
+              </div>
+            </div>
+
+            {/* Screen-only header with Logo */}
+            <div className="px-12 pt-10 pb-6 print:hidden">
               <div className="flex justify-center mb-8">
                 <Image
                   src="/images/Funny_Logo.png"
@@ -1128,6 +1191,9 @@ function ItineraryPageContent() {
                 />
               </div>
             </div>
+
+            {/* Main content wrapper - adds top margin when printing to avoid header overlap */}
+            <div className="print-content">
 
             {/* Day by Day Itinerary */}
             <div className="px-12 py-8 space-y-6">
@@ -1425,8 +1491,10 @@ function ItineraryPageContent() {
               );
             })()}
 
-            {/* Footer with Contact Details */}
-            <div className="px-12 py-6 border-t-2 border-indigo-600 mt-8">
+            </div>{/* End of print-content wrapper */}
+
+            {/* Screen-only Footer with Contact Details */}
+            <div className="px-12 py-6 border-t-2 border-indigo-600 mt-8 print:hidden">
               <div className="flex items-start justify-between">
                 <Image
                   src="/images/Funny_Logo.png"

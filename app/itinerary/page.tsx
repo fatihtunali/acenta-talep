@@ -1080,9 +1080,9 @@ function ItineraryPageContent() {
           </div>
         ) : (
           <div className="bg-white shadow-md print:shadow-none">
-            {/* Header with Logo */}
+            {/* Header with Logo Only */}
             <div className="px-12 pt-10 pb-6">
-              <div className="flex items-start justify-between mb-8">
+              <div className="flex justify-center mb-8">
                 <Image
                   src="/images/Funny_Logo.png"
                   alt="Funny Tourism"
@@ -1091,14 +1091,6 @@ function ItineraryPageContent() {
                   className="h-20 w-auto object-contain"
                   priority
                 />
-                <div className="text-right text-xs text-gray-600 leading-relaxed">
-                  <p className="font-semibold text-sm text-gray-800">Funny Tourism</p>
-                  <p className="mt-1">Mehmet Akif Ersoy Mah.</p>
-                  <p>Hanımeli Sok No 5/B</p>
-                  <p>Uskudar - Istanbul</p>
-                  <p className="mt-2">www.funnytourism.com</p>
-                  <p>info@funnytourism.com</p>
-                </div>
               </div>
 
               {/* Tour Title and Duration */}
@@ -1433,20 +1425,23 @@ function ItineraryPageContent() {
               );
             })()}
 
-            {/* Footer */}
+            {/* Footer with Contact Details */}
             <div className="px-12 py-6 border-t-2 border-indigo-600 mt-8">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
                 <Image
                   src="/images/Funny_Logo.png"
                   alt="Funny Tourism"
-                  width={200}
-                  height={70}
-                  className="h-14 w-auto object-contain opacity-80"
+                  width={240}
+                  height={80}
+                  className="h-16 w-auto object-contain"
                 />
                 <div className="text-right text-xs text-gray-600 leading-relaxed">
-                  <p className="font-semibold text-sm text-gray-800">Funny Tourism</p>
-                  <p className="mt-1">Mehmet Akif Ersoy Mah. Hanımeli Sok No 5/B, Uskudar - Istanbul</p>
-                  <p className="mt-1">www.funnytourism.com | info@funnytourism.com</p>
+                  <p className="font-semibold text-sm text-gray-800 mb-2">Funny Tourism</p>
+                  <p>Mehmet Akif Ersoy Mah.</p>
+                  <p>Hanımeli Sok No 5/B</p>
+                  <p>Uskudar - Istanbul, Turkey</p>
+                  <p className="mt-2">www.funnytourism.com</p>
+                  <p>info@funnytourism.com</p>
                 </div>
               </div>
             </div>

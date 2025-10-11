@@ -2,6 +2,7 @@
 
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   Footer,
   Header,
@@ -14,6 +15,7 @@ import {
   TableRow,
   TableCell,
   WidthType,
+  VerticalAlign,
 } from "docx";
 
 export interface DayItineraryDoc {
@@ -78,6 +80,15 @@ function linesToBullets(text: string): Paragraph[] {
     );
 }
 
+const tableBorders = {
+  top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+  bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+  left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+  right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+  insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+  insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+};
+
 export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Blob> {
   const {
     logoPath,
@@ -105,11 +116,11 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
               new ImageRun({
                 type: "png",
                 data: logoData,
-                transformation: { width: 340, height: 80 },
+                transformation: { width: 480, height: 112 },
               }),
             ]
           : [new TextRun({ text: "", size: 1 })],
-        spacing: { after: 80 },
+        spacing: { after: 120 },
       }),
     ],
   });
@@ -165,7 +176,7 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     body.push(...linesToParagraphs(d.description));
   });
 
-  // Sections: Inclusions, Exclusions, Information
+  // Sections: Inclusions, Exclusions
   if (inclusions) {
     body.push(
       new Paragraph({
@@ -188,17 +199,6 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     body.push(...linesToBullets(exclusions));
   }
 
-  if (information) {
-    body.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 80 },
-        children: [new TextRun({ text: "Important Information", bold: true })],
-      })
-    );
-    body.push(...linesToBullets(information));
-  }
-
   // Accommodation table
   if (hotels && hotels.length > 0) {
     body.push(
@@ -214,8 +214,12 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         (h) =>
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
+            shading: { fill: "F3F4F6" },
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
             children: [
               new Paragraph({
+                alignment: AlignmentType.CENTER,
                 children: [new TextRun({ text: h, bold: true })],
               }),
             ],
@@ -231,10 +235,17 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
             new Date(h.checkIn).toLocaleDateString("en-GB"),
             new Date(h.checkOut).toLocaleDateString("en-GB"),
             `${h.nights}`,
-          ].map((v) =>
+          ].map((v, idx) =>
             new TableCell({
               width: { size: 25, type: WidthType.PERCENTAGE },
-              children: [new Paragraph(String(v))],
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 80, bottom: 80, left: 100, right: 100 },
+              children: [
+                new Paragraph({
+                  alignment: idx === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
+                  children: [new TextRun(String(v))],
+                })
+              ],
             })
           ),
         })
@@ -243,6 +254,7 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     body.push(
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: tableBorders,
         rows: [headerRow, ...rows],
       })
     );
@@ -264,8 +276,14 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         (h, i) =>
           new TableCell({
             width: { size: i === 0 ? 25 : 25, type: WidthType.PERCENTAGE },
+            shading: { fill: "F3F4F6" },
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
             children: [
-              new Paragraph({ children: [new TextRun({ text: h, bold: true })] }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: h, bold: true })]
+              }),
             ],
           })
       ),
@@ -282,14 +300,25 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         children: cellTexts.map((t, i) =>
           new TableCell({
             width: { size: i === 0 ? 25 : 25, type: WidthType.PERCENTAGE },
-            children: [new Paragraph({ children: [new TextRun({ text: t })] })],
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 80, bottom: 80, left: 100, right: 100 },
+            children: [
+              new Paragraph({
+                alignment: i === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
+                children: [new TextRun({ text: t })]
+              })
+            ],
           })
         ),
       });
     });
 
     body.push(
-      new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...rows] })
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: tableBorders,
+        rows: [headerRow, ...rows]
+      })
     );
   }
 
@@ -314,7 +343,15 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         children: ["PAX", "3-Star Hotels", "4-Star Hotels", "5-Star Hotels"].map((h, i) =>
           new TableCell({
             width: { size: i === 0 ? 20 : 26.666, type: WidthType.PERCENTAGE },
-            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })] })],
+            shading: { fill: "F3F4F6" },
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: h, bold: true })]
+              })
+            ],
           })
         ),
       });
@@ -335,7 +372,14 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
             ].map((txt, col) =>
               new TableCell({
                 width: { size: col === 0 ? 20 : 26.666, type: WidthType.PERCENTAGE },
-                children: [new Paragraph(txt)],
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 80, bottom: 80, left: 100, right: 100 },
+                children: [
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new TextRun(txt)]
+                  })
+                ],
               })
             ),
           })
@@ -343,9 +387,25 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
       }
 
       body.push(
-        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...rows] })
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: tableBorders,
+          rows: [headerRow, ...rows]
+        })
       );
     }
+  }
+
+  // Important Information (after tables)
+  if (information) {
+    body.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 80 },
+        children: [new TextRun({ text: "Important Information", bold: true })],
+      })
+    );
+    body.push(...linesToBullets(information));
   }
 
   const doc = new Document({

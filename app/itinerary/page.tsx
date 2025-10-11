@@ -1266,7 +1266,8 @@ function ItineraryPageContent() {
                   </table>
                 </div>
                 <p className="text-xs text-gray-500 mt-3 italic">
-                  * Accommodation will be provided in selected hotel category
+                  * Accommodation will be provided in selected hotel category<br />
+                  * Standard hotel check-in time: 14:00 | Standard check-out time: 12:00
                 </p>
               </div>
             )}

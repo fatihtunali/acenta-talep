@@ -116,7 +116,7 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
               new ImageRun({
                 type: "png",
                 data: logoData,
-                transformation: { width: 564, height: 190 },
+                transformation: { width: 282, height: 95 },
               }),
             ]
           : [new TextRun({ text: "", size: 1 })],

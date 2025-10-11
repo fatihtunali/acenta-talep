@@ -892,8 +892,9 @@ function ItineraryPageContent() {
             bottom: 0;
             left: 0;
             right: 0;
+            width: 100%;
             height: 1.5cm;
-            display: flex;
+            display: flex !important;
             justify-content: space-between;
             align-items: center;
             background: white;
@@ -901,6 +902,15 @@ function ItineraryPageContent() {
             padding: 0 1.5cm;
             font-size: 8pt;
             z-index: 9999;
+            visibility: visible !important;
+          }
+
+          /* Ensure footer is visible when printing */
+          @media print {
+            .print-footer {
+              display: flex !important;
+              visibility: visible !important;
+            }
           }
 
           /* Push content down to avoid header overlap */
@@ -1140,7 +1150,7 @@ function ItineraryPageContent() {
             </div>
 
             {/* Print-only footer that repeats on every page */}
-            <div className="hidden print:flex print-footer">
+            <div className="print-footer" style={{ display: 'none' }}>
               <Image
                 src="/images/Funny_Logo.png"
                 alt="Funny Tourism"

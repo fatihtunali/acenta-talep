@@ -601,7 +601,21 @@ function ItineraryPageContent() {
       };
 
       const calculatePricingTable = (): PricingTableRow[] => {
-        const paxSlabs = [2, 4, 6, 8, 10];
+        // Generate PAX slabs based on quote's PAX number
+        const quotePax = data.pax;
+        let paxSlabs: number[];
+
+        if (quotePax <= 10) {
+          // For small groups, use standard slabs: 2, 4, 6, 8, 10
+          paxSlabs = [2, 4, 6, 8, 10];
+        } else {
+          // For large groups (>10), generate slabs in increments of 2
+          // Start from quote PAX and show 5 slabs (e.g., 30, 32, 34, 36, 38 for PAX=30)
+          paxSlabs = [];
+          for (let i = 0; i < 5; i++) {
+            paxSlabs.push(quotePax + (i * 2));
+          }
+        }
 
         return paxSlabs.map(currentPax => {
           const categoriesData: Partial<Record<HotelCategoryLabel, PricingCategoryTotals>> = {};

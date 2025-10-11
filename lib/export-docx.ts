@@ -103,6 +103,7 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         children: logoData
           ? [
               new ImageRun({
+                type: "png",
                 data: logoData,
                 transformation: { width: 340, height: 80 },
               }),
@@ -126,7 +127,7 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     ],
   });
 
-  const body: Paragraph[] = [];
+  const body: (Paragraph | Table)[] = [];
 
   // Title
   body.push(

@@ -821,7 +821,7 @@ function ItineraryPageContent() {
   const handleDownloadDocx = useCallback(async () => {
     try {
       const blob = await exportItineraryToDocx({
-        logoPath: '/images/Funny_Logo.png',
+        logoPath: '/images/Funny_Logo_HiRes.png',
         website: 'www.funnytourism.com',
         email: 'info@funnytourism.com',
         tourName,

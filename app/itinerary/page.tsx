@@ -869,7 +869,7 @@ function ItineraryPageContent() {
 
           @page {
             size: A4;
-            margin: 2.5cm 1.5cm 2.5cm 1.5cm; /* top right bottom left - increased bottom margin for footer */
+            margin: 2.5cm 1.5cm 2cm 1.5cm; /* top right bottom left - space for header and footer */
           }
 
           /* Print header that repeats on every page */
@@ -893,14 +893,11 @@ function ItineraryPageContent() {
             left: 0;
             right: 0;
             width: 100%;
-            height: 1.5cm;
-            display: flex !important;
-            justify-content: space-between;
-            align-items: center;
+            height: 1.2cm;
+            display: block !important;
             background: white;
-            border-top: 2px solid #4F46E5;
-            padding: 0 1.5cm;
-            font-size: 8pt;
+            border-top: 1px solid #999;
+            padding: 0.3cm 1.5cm;
             z-index: 9999;
             visibility: visible !important;
           }
@@ -908,7 +905,7 @@ function ItineraryPageContent() {
           /* Ensure footer is visible when printing */
           @media print {
             .print-footer {
-              display: flex !important;
+              display: block !important;
               visibility: visible !important;
             }
           }
@@ -916,7 +913,7 @@ function ItineraryPageContent() {
           /* Push content down to avoid header overlap and reserve space for footer */
           .print-content {
             margin-top: 2cm;
-            margin-bottom: 2cm;
+            margin-bottom: 1.5cm;
           }
 
           /* Hide all non-printable elements */
@@ -1152,17 +1149,13 @@ function ItineraryPageContent() {
 
             {/* Print-only footer that repeats on every page */}
             <div className="print-footer" style={{ display: 'none' }}>
-              <Image
-                src="/images/Funny_Logo.png"
-                alt="Funny Tourism"
-                width={120}
-                height={40}
-                className="h-8 w-auto object-contain opacity-70"
-              />
-              <div className="text-right text-gray-600 leading-tight">
-                <p className="font-semibold">Funny Tourism</p>
-                <p>Mehmet Akif Ersoy Mah. Hanımeli Sok No 5/B, Uskudar - Istanbul</p>
-                <p>www.funnytourism.com | info@funnytourism.com</p>
+              <div style={{ textAlign: 'center', width: '100%', fontSize: '8pt', color: '#666' }}>
+                <div style={{ marginBottom: '2px' }}>
+                  <strong>Funny Tourism</strong> - Mehmet Akif Ersoy Mah. Hanımeli Sok No 5/B, Uskudar - Istanbul
+                </div>
+                <div>
+                  www.funnytourism.com | info@funnytourism.com
+                </div>
               </div>
             </div>
 

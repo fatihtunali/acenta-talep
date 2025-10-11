@@ -1321,27 +1321,36 @@ function ItineraryPageContent() {
                   <thead>
                     <tr className="bg-indigo-600 text-white">
                       <th className="border border-gray-300 px-4 py-2 text-left font-bold">PAX / PP in DBL</th>
-                      {hotelCategoryPricing.map((categoryPricing, catIndex) => (
-                        <th key={catIndex} className="border border-gray-300 px-4 py-2 text-center font-bold">
-                          {categoryPricing.category}
-                        </th>
-                      ))}
+                      <th className="border border-gray-300 px-4 py-2 text-center font-bold">3-Star Hotels</th>
+                      <th className="border border-gray-300 px-4 py-2 text-center font-bold">4-Star Hotels</th>
+                      <th className="border border-gray-300 px-4 py-2 text-center font-bold">5-Star Hotels</th>
                     </tr>
                   </thead>
                   <tbody>
                     {/* Per Person Rates for each PAX */}
-                    {hotelCategoryPricing[0]?.pricingSlabs.map((slab, slabIndex) => (
-                      <tr key={slabIndex} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
-                          {slab.pax} PAX
-                        </td>
-                        {hotelCategoryPricing.map((categoryPricing, catIndex) => (
-                          <td key={catIndex} className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
-                            €{categoryPricing.pricingSlabs[slabIndex].pricePerPerson}
+                    {hotelCategoryPricing[0]?.pricingSlabs.map((slab, slabIndex) => {
+                      // Find pricing for each category in fixed order
+                      const threeStar = hotelCategoryPricing.find(cp => cp.category === '3 stars');
+                      const fourStar = hotelCategoryPricing.find(cp => cp.category === '4 stars');
+                      const fiveStar = hotelCategoryPricing.find(cp => cp.category === '5 stars');
+
+                      return (
+                        <tr key={slabIndex} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-2 font-semibold text-gray-900">
+                            {slab.pax} PAX
                           </td>
-                        ))}
-                      </tr>
-                    ))}
+                          <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                            €{threeStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                            €{fourStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-green-700">
+                            €{fiveStar?.pricingSlabs[slabIndex].pricePerPerson || 0}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

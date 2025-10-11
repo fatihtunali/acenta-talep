@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { exportItineraryToDocx } from '../../lib/export-docx';
 
 interface DayItinerary {
   dayNumber: number;
@@ -817,6 +818,42 @@ function ItineraryPageContent() {
 
   const isSaveDisabled = !currentQuoteId || isSavingItinerary || !hasUnsavedChanges;
 
+  const handleDownloadDocx = useCallback(async () => {
+    try {
+      const blob = await exportItineraryToDocx({
+        logoPath: '/images/Funny_Logo.png',
+        website: 'www.funnytourism.com',
+        email: 'info@funnytourism.com',
+        tourName,
+        duration,
+        days: days.map(d => ({
+          dayNumber: d.dayNumber,
+          title: d.title,
+          mealCode: d.mealCode,
+          description: d.description,
+        })),
+        inclusions,
+        exclusions,
+        information,
+        hotels: hotels.map(h => ({ city: h.city, checkIn: h.checkIn, checkOut: h.checkOut, nights: h.nights })),
+        hotelsByCategory: hotelsByCategory.map(h => ({ city: h.city, categories: h.categories })),
+        hotelCategoryPricing: hotelCategoryPricing.map(c => ({ category: c.category as any, pricingSlabs: c.pricingSlabs })),
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tourName || 'Itinerary'}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('DOCX export failed', err);
+      displaySaveMessage('Failed to generate Word document.', 5000);
+    }
+  }, [displaySaveMessage, duration, exclusions, inclusions, information, tourName, days]);
+
   useEffect(() => {
     console.log("hasUnsavedChanges", hasUnsavedChanges);
     console.log("isSaveDisabled", isSaveDisabled);
@@ -1563,6 +1600,12 @@ function ItineraryPageContent() {
                 className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-sm transition-colors"
               >
                 Print / Save PDF
+              </button>
+              <button
+                onClick={handleDownloadDocx}
+                className="px-6 py-3 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 font-semibold rounded-md shadow-sm transition-colors"
+              >
+                Download Word (DOCX)
               </button>
               <button
                 onClick={handleSaveItinerary}

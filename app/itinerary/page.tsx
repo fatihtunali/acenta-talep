@@ -1421,15 +1421,17 @@ function ItineraryPageContent() {
                     </table>
                   </div>
 
-              <div className="mt-4">
-                <p className="text-xs text-gray-500 italic">
-                  * Prices are per person in Euro and may vary based on season and availability
-                </p>
-                <p className="text-xs text-gray-500 mt-1 italic">
-                  * Hotel category will be confirmed at time of booking
-                </p>
-              </div>
-            </div>
+                  <div className="mt-4">
+                    <p className="text-xs text-gray-500 italic">
+                      * Prices are per person in Euro and may vary based on season and availability
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 italic">
+                      * Hotel category will be confirmed at time of booking
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Footer */}
             <div className="px-12 py-6 border-t-2 border-indigo-600 mt-8">

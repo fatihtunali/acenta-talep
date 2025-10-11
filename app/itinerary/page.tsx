@@ -1048,16 +1048,22 @@ function ItineraryPageContent() {
             font-size: 8pt !important;
           }
 
-          /* Day description styling - smaller font and limited to 3-4 lines max */
+          /* Day description styling - smaller font, no truncation */
           .space-y-6 .text-area {
             font-size: 9pt !important;
             line-height: 1.35 !important;
-            max-height: 5.4rem !important; /* ~4 lines at 1.35 line-height = 4 * 1.35rem */
-            overflow: hidden !important;
-            display: -webkit-box !important;
-            -webkit-line-clamp: 4 !important;
-            -webkit-box-orient: vertical !important;
-            text-overflow: ellipsis !important;
+          }
+
+          /* Keep each day together - don't split day title and description */
+          .space-y-6 > div {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          /* Keep section headings with their content - prevent orphaned headings */
+          .section-with-table {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
 
           /* Logo sizing */
@@ -1231,7 +1237,7 @@ function ItineraryPageContent() {
             </div>
 
             {/* Inclusions */}
-            <div className="px-12 pb-6 border-t border-gray-200 pt-6">
+            <div className="px-12 pb-6 border-t border-gray-200 pt-6 section-with-table">
               <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Inclusions</h3>
               <textarea
                 value={inclusions}
@@ -1248,7 +1254,7 @@ function ItineraryPageContent() {
             </div>
 
             {/* Exclusions */}
-            <div className="px-12 pb-6">
+            <div className="px-12 pb-6 section-with-table">
               <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Exclusions</h3>
               <textarea
                 value={exclusions}
@@ -1265,7 +1271,7 @@ function ItineraryPageContent() {
             </div>
 
             {/* Information */}
-            <div className="px-12 pb-6">
+            <div className="px-12 pb-6 section-with-table">
               <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Important Information</h3>
               <textarea
                 value={information}
@@ -1283,7 +1289,7 @@ function ItineraryPageContent() {
 
             {/* Hotels and Rates */}
             {hotels.length > 0 && (
-              <div className="px-12 pb-8">
+              <div className="px-12 pb-8 section-with-table">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Accommodation</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
@@ -1347,7 +1353,7 @@ function ItineraryPageContent() {
               const dataColumnWidth = `${(100 - 15) / availableCategories.length}%`;
 
               return (
-                <div className="px-12 pb-8">
+                <div className="px-12 pb-8 section-with-table">
                   <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Hotel Options</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300" style={{minWidth: '600px'}}>
@@ -1420,7 +1426,7 @@ function ItineraryPageContent() {
               const dataColumnWidth = `${(100 - 15) / availableCategories.length}%`;
 
               return (
-                <div className="px-12 pb-8">
+                <div className="px-12 pb-8 section-with-table">
                   <h3 className="text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Package Rates</h3>
 
                   <div className="overflow-x-auto">

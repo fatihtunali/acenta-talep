@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify(body),
         signal: controller.signal,
-        // @ts-ignore - agent option exists in Node.js fetch
+        // @ts-expect-error - agent option exists in Node.js fetch
         agent: httpAgent
       });
 

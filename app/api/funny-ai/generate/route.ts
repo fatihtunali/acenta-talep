@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Forward request to Funny AI service with LONG timeout
     const funnyAiUrl = process.env.FUNNY_AI_URL || 'http://localhost:8000';
+    console.log('Using Funny AI URL:', funnyAiUrl);
 
     // Create AbortController with 5-minute timeout for slow AI processing
     const controller = new AbortController();

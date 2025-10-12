@@ -315,6 +315,7 @@ function ItineraryPageContent() {
           const transportation = quoteDay.transportation.map(t => t.description?.toLowerCase() || '');
           const hasAirportTransfer = transportation.some(t => t.includes('airport'));
           transportMode = hasAirportTransfer ? 'Fly' : 'Drive';
+          console.log(`Day ${index + 1}: City change detected - ${previousCity} -> ${location}, Mode: ${transportMode}`, transportation);
         }
 
         // Generate meal code

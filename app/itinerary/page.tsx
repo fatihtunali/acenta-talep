@@ -305,6 +305,18 @@ function ItineraryPageContent() {
 
         if (!location) location = 'Location';
 
+        // Detect city change for title formatting
+        const previousCity = index > 0 ? (data.days[index - 1].hotelAccommodation?.[0]?.location || '') : '';
+        const isCityChange = previousCity && previousCity !== location && index > 0 && !isLastDay;
+
+        // Detect transport mode
+        let transportMode = '';
+        if (isCityChange) {
+          const transportation = quoteDay.transportation.map(t => t.description?.toLowerCase() || '');
+          const hasAirportTransfer = transportation.some(t => t.includes('airport'));
+          transportMode = hasAirportTransfer ? 'Fly' : 'Drive';
+        }
+
         // Generate meal code
         let mealCode = '(';
         if (index > 0) mealCode += 'B';
@@ -333,10 +345,20 @@ function ItineraryPageContent() {
           mealCode = mealCode.replace('(/', '(');
         }
 
+        // Generate title with city change indication
+        let dayTitle = '';
+        if (isLastDay) {
+          dayTitle = `Day ${quoteDay.dayNumber} - ${location} - Departure`;
+        } else if (isCityChange) {
+          dayTitle = `Day ${quoteDay.dayNumber} - ${previousCity} - ${transportMode} - ${location}`;
+        } else {
+          dayTitle = `Day ${quoteDay.dayNumber} - ${location}`;
+        }
+
         return {
           dayNumber: quoteDay.dayNumber,
           date: quoteDay.date,
-          title: isLastDay ? `Day ${quoteDay.dayNumber} - ${location} - Departure` : `Day ${quoteDay.dayNumber} - ${location}`,
+          title: dayTitle,
           mealCode,
           description: aiDay?.description || `Day ${quoteDay.dayNumber} in ${location}. Overnight in ${location}.`
         };

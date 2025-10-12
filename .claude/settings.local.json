@@ -5,8 +5,10 @@
       "Bash(ssh fatih@31.141.246.227 \"cd /opt/itinerary-ai && ollama create turkey-expert -f Modelfile\")",
       "Bash(ssh fatih@31.141.246.227 \"ollama list | grep turkey\")",
       "Bash(ssh fatih@31.141.246.227 \"source ~/.nvm/nvm.sh && bash ~/manage-funny-ai.sh restart\")",
-      "Bash(ssh fatih@31.141.246.227 \"sleep 8 && curl -s http://localhost:8000/health | python3 -m json.tool\")"
-    
+      "Bash(ssh fatih@31.141.246.227 \"sleep 8 && curl -s http://localhost:8000/health | python3 -m json.tool\")",
+      "Bash(ssh fatih@31.141.246.227 \"bash ~/manage-funny-ai.sh status\")",
+      "Bash(ssh fatih@31.141.246.227 \"cat ~/funny-ai-monitor.log\")",
+      "Bash(ssh root@188.132.230.193 \"bash /home/ruzgargucu/deploy.sh\")"
     ],
     "deny": [],
     "ask": []

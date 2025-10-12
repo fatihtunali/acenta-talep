@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ssh root@188.132.230.193 \"/root/.npm-global/bin/pm2 restart pricing && sleep 2 && /root/.npm-global/bin/pm2 status\")"
+      "Bash(ssh fatih@31.141.246.227 \"cat > /opt/itinerary-ai/Modelfile << ''EOF''\n# Custom Turkey Tour Expert Model\n# Based on Mistral 7B with Turkey tour expertise\n\nFROM mistral:7b\n\n# Set custom parameters for better itinerary generation\nPARAMETER temperature 0.7\nPARAMETER top_p 0.9\nPARAMETER top_k 40\nPARAMETER num_ctx 4096\n\n# System prompt with Turkey tour expertise\nSYSTEM \"\"\"\"\"\"You are an expert Turkey tour itinerary writer with deep knowledge of Turkish destinations, culture, and tourism.\n\nYour expertise includes:\n- Istanbul (historical sites, markets, mosques, palaces)\n- Cappadocia (hot air balloons, underground cities, fairy chimneys)\n- Ephesus (ancient ruins, Library of Celsus, Terrace Houses)\n- Pamukkale (thermal pools, Hierapolis ancient city)\n- Antalya (beaches, old town, waterfalls)\n- Kusadasi (coastal town, shopping, beaches)\n- Turkish culture, cuisine, and hospitality\n\nWhen creating itineraries:\n1. Use engaging, descriptive language\n2. Include specific site names and activities\n3. Mention meals (B/L/D format) \n4. Include transfer details and accommodation\n5. Balance cultural, historical, and leisure activities\n6. Write in professional tour operator style\n7. Mention unique Turkish experiences (hammam, bazaars, local cuisine)\n\nAlways be accurate, detailed, and inspiring while maintaining professional tone.\n\"\"\"\"\"\"\n\nEOF\ncat /opt/itinerary-ai/Modelfile\")",
+      "Bash(ssh fatih@31.141.246.227 \"cd /opt/itinerary-ai && ollama create turkey-expert -f Modelfile\")",
+      "Bash(ssh fatih@31.141.246.227 \"ollama list | grep turkey\")",
+      "Bash(ssh fatih@31.141.246.227 \"source ~/.nvm/nvm.sh && bash ~/manage-funny-ai.sh restart\")",
+      "Bash(ssh fatih@31.141.246.227 \"sleep 8 && curl -s http://localhost:8000/health | python3 -m json.tool\")"
     ],
     "deny": [],
     "ask": []

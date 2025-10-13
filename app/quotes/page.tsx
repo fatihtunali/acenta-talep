@@ -231,10 +231,10 @@ export default function QuotesPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-600">
+                <tbody className="bg-white divide-y divide-blue-400">
                   {filteredQuotes.map((quote) => (
-                    <tr key={quote.id} className="hover:bg-gray-50 border-b border-gray-600">
-                      <td className="px-2 py-2 border-r border-gray-500">
+                    <tr key={quote.id} className="hover:bg-gray-50 border-b border-blue-400">
+                      <td className="px-2 py-2 border-r border-blue-300">
                         <div className="text-xs font-medium text-gray-900 truncate">{quote.quote_name}</div>
                         {quote.category === 'Fixed Departures' && quote.season_name && (
                           <div className="text-xs font-semibold text-blue-700 mt-0.5 truncate">
@@ -242,7 +242,7 @@ export default function QuotesPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-2 border-r border-gray-500">
+                      <td className="px-2 py-2 border-r border-blue-300">
                         <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                           quote.category === 'Fixed Departures'
                             ? 'bg-blue-100 text-blue-800'
@@ -255,7 +255,7 @@ export default function QuotesPage() {
                           {quote.category === 'Fixed Departures' ? 'FD' : quote.category}
                         </span>
                       </td>
-                      <td className="px-2 py-2 border-r border-gray-500">
+                      <td className="px-2 py-2 border-r border-blue-300">
                         {quote.category === 'Fixed Departures' && quote.season_name ? (
                           <div className="text-xs">
                             <div className="font-semibold text-blue-800 truncate">{quote.season_name}</div>
@@ -269,7 +269,7 @@ export default function QuotesPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-2 border-r border-gray-500">
+                      <td className="px-2 py-2 border-r border-blue-300">
                         <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                           quote.tour_type === 'Private'
                             ? 'bg-orange-100 text-orange-800'
@@ -278,16 +278,16 @@ export default function QuotesPage() {
                           {quote.tour_type}
                         </span>
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-900 border-r border-gray-500">
+                      <td className="px-2 py-2 text-xs text-gray-900 border-r border-blue-300">
                         {quote.pax}
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-900 border-r border-gray-500">
+                      <td className="px-2 py-2 text-xs text-gray-900 border-r border-blue-300">
                         {quote.markup}%
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-900 border-r border-gray-500">
+                      <td className="px-2 py-2 text-xs text-gray-900 border-r border-blue-300">
                         {quote.tax}%
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-500 border-r border-gray-500">
+                      <td className="px-2 py-2 text-xs text-gray-500 border-r border-blue-300">
                         {new Date(quote.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </td>
                       <td className="px-2 py-2 text-xs font-medium">

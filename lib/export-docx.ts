@@ -82,7 +82,7 @@ function linesToBullets(text: string): Paragraph[] {
         new Paragraph({
           bullet: { level: 0 },
           children: [new TextRun({ text: l.replace(/^[-*•]\s*/, ""), size: 20 })],
-          spacing: { after: 80, line: 340 },
+          spacing: { after: 0, line: 280 },
         })
     );
 }

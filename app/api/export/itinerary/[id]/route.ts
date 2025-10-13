@@ -113,10 +113,10 @@ export async function GET(
 
     // Get hotels from quote expenses (simplified - just get unique hotel names)
     const [hotelRows] = await pool.execute<RowDataPacket[]>(
-      `SELECT DISTINCT qe.item_description as hotel_name
+      `SELECT DISTINCT qe.description as hotel_name
       FROM quote_days qd
-      LEFT JOIN quote_expenses qe ON qd.id = qe.day_id AND qe.category = 'hotelAccommodation'
-      WHERE qd.quote_id = ? AND qe.item_description IS NOT NULL AND qe.item_description != ''`,
+      LEFT JOIN quote_expenses qe ON qd.id = qe.quote_day_id AND qe.category = 'hotelAccommodation'
+      WHERE qd.quote_id = ? AND qe.description IS NOT NULL AND qe.description != ''`,
       [quoteId]
     );
 

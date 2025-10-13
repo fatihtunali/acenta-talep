@@ -266,9 +266,9 @@ function ItineraryPageContent() {
         category: data.category
       });
 
-      // For Fixed Departures, don't pass specific dates to AI (use generic dates instead)
+      // For Fixed Departures, use a dummy date but flag to use generic descriptions
       const isFixedDeparture = data.category === 'Fixed Departures';
-      const startDateOnly = isFixedDeparture ? null : data.startDate.split('T')[0];
+      const startDateOnly = isFixedDeparture ? '2025-01-01' : data.startDate.split('T')[0];
 
       if (isFixedDeparture) {
         console.log('Fixed Departures detected - using generic dates for AI generation');
@@ -283,13 +283,10 @@ function ItineraryPageContent() {
         tour_type: data.tourType,
         pax: data.pax,
         interests: [...new Set(interests)],
+        start_date: startDateOnly,  // Always required by API
+        use_generic_dates: isFixedDeparture,  // Flag for AI to use Day 1, Day 2 format
         day_details: dayDetails  // Send actual booked services
       };
-
-      // Only include start_date if not a Fixed Departure
-      if (!isFixedDeparture && startDateOnly) {
-        requestBody.start_date = startDateOnly;
-      }
 
       const response = await fetch('/api/funny-ai/generate', {
         method: 'POST',

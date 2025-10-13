@@ -16,6 +16,8 @@ import {
   TableCell,
   WidthType,
   VerticalAlign,
+  PageBreak,
+  ShadingType,
 } from "docx";
 
 export interface DayItineraryDoc {
@@ -52,15 +54,16 @@ async function fetchAsUint8Array(path: string): Promise<Uint8Array | null> {
   }
 }
 
-function linesToParagraphs(text: string): Paragraph[] {
+function linesToParagraphs(text: string, justify: boolean = false): Paragraph[] {
   const lines = (text || "").split(/\r?\n/);
   return lines
     .filter((l) => l.trim().length > 0)
     .map(
       (l) =>
         new Paragraph({
-          children: [new TextRun({ text: l.trim() })],
-          spacing: { after: 120 },
+          children: [new TextRun({ text: l.trim(), size: 22 })],
+          spacing: { after: 140, line: 360 },
+          alignment: justify ? AlignmentType.JUSTIFIED : AlignmentType.LEFT,
         })
     );
 }
@@ -74,19 +77,19 @@ function linesToBullets(text: string): Paragraph[] {
       (l) =>
         new Paragraph({
           bullet: { level: 0 },
-          children: [new TextRun({ text: l.replace(/^[-*]\s*/, "") })],
-          spacing: { after: 80 },
+          children: [new TextRun({ text: l.replace(/^[-*•]\s*/, ""), size: 22 })],
+          spacing: { after: 100, line: 360 },
         })
     );
 }
 
 const tableBorders = {
-  top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-  bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-  left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-  right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-  insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-  insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+  top: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
+  bottom: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
+  left: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
+  right: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
+  insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" },
+  insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" },
 };
 
 export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Blob> {
@@ -129,60 +132,149 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     children: [
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: website, color: "666666", size: 16 })],
+        border: {
+          top: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 6,
+          },
+        },
+        spacing: { before: 200 },
+        children: [
+          new TextRun({
+            text: "Funny Tourism",
+            bold: true,
+            color: "1F2937",
+            size: 18
+          }),
+        ],
       }),
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: email, color: "666666", size: 16 })],
+        children: [
+          new TextRun({
+            text: "Mehmet Akif Ersoy Mah. Hanımeli Sok No 5/B, Uskudar - Istanbul",
+            color: "6B7280",
+            size: 16
+          }),
+        ],
+        spacing: { after: 40 },
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({ text: website, color: "4F46E5", size: 16 }),
+          new TextRun({ text: " | ", color: "6B7280", size: 16 }),
+          new TextRun({ text: email, color: "4F46E5", size: 16 }),
+        ],
       }),
     ],
   });
 
   const body: (Paragraph | Table)[] = [];
 
-  // Title
-  body.push(
-    new Paragraph({
-      heading: HeadingLevel.TITLE,
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: tourName || "Itinerary", bold: true })],
-      spacing: { after: 160 },
-    })
-  );
+  // Title - split if contains colon
+  if (tourName.includes(':')) {
+    const [mainTitle, subTitle] = tourName.split(':').map(s => s.trim());
+    body.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: mainTitle, bold: true, size: 36, color: "312E81" })],
+        spacing: { after: 120 },
+        border: {
+          bottom: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 12,
+          },
+        },
+      })
+    );
+    body.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: subTitle, bold: true, size: 28, color: "4F46E5" })],
+        spacing: { after: 160, before: 120 },
+      })
+    );
+  } else {
+    body.push(
+      new Paragraph({
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: tourName || "Itinerary", bold: true, size: 36, color: "312E81" })],
+        spacing: { after: 160 },
+        border: {
+          bottom: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 12,
+          },
+        },
+      })
+    );
+  }
 
   // Duration
   if (duration) {
     body.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: duration, italics: true, color: "555555" })],
-        spacing: { after: 200 },
+        children: [new TextRun({ text: duration, italics: true, color: "6B7280", size: 24 })],
+        spacing: { after: 240 },
       })
     );
   }
 
   // Day by day
-  days.forEach((d) => {
+  days.forEach((d, index) => {
+    // Add page break before each day (except the first one) for better readability
+    if (index > 0 && index % 3 === 0) {
+      body.push(
+        new Paragraph({
+          children: [new PageBreak()],
+        })
+      );
+    }
+
     body.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
-        spacing: { before: 160, after: 80 },
+        spacing: { before: 200, after: 120 },
         children: [
-          new TextRun({ text: d.title || `Day ${d.dayNumber}`, bold: true }),
-          new TextRun({ text: d.mealCode ? `  ${d.mealCode}` : "" , color: "666666"}),
+          new TextRun({ text: d.title || `Day ${d.dayNumber}`, bold: true, size: 26, color: "1F2937" }),
+          new TextRun({ text: d.mealCode ? `  ${d.mealCode}` : "", color: "6B7280", size: 22 }),
         ],
       })
     );
-    body.push(...linesToParagraphs(d.description));
+    body.push(...linesToParagraphs(d.description, true)); // Justified text for professional look
   });
 
   // Sections: Inclusions, Exclusions
+  // Page break before inclusions for better separation
+  body.push(
+    new Paragraph({
+      children: [new PageBreak()],
+    })
+  );
+
   if (inclusions) {
     body.push(
       new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 80 },
-        children: [new TextRun({ text: "Inclusions", bold: true })],
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 240, after: 140 },
+        children: [new TextRun({ text: "INCLUSIONS", bold: true, size: 28, color: "312E81" })],
+        border: {
+          bottom: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 8,
+          },
+        },
       })
     );
     body.push(...linesToBullets(inclusions));
@@ -191,9 +283,17 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
   if (exclusions) {
     body.push(
       new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 80 },
-        children: [new TextRun({ text: "Exclusions", bold: true })],
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 300, after: 140 },
+        children: [new TextRun({ text: "EXCLUSIONS", bold: true, size: 28, color: "312E81" })],
+        border: {
+          bottom: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 8,
+          },
+        },
       })
     );
     body.push(...linesToBullets(exclusions));
@@ -201,26 +301,42 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
 
   // Accommodation table
   if (hotels && hotels.length > 0) {
+    // Page break before accommodation section
     body.push(
       new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 120 },
-        children: [new TextRun({ text: "Accommodation", bold: true })],
+        children: [new PageBreak()],
+      })
+    );
+
+    body.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 240, after: 140 },
+        children: [new TextRun({ text: "ACCOMMODATION", bold: true, size: 28, color: "312E81" })],
+        border: {
+          bottom: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 8,
+          },
+        },
       })
     );
 
     const headerRow = new TableRow({
+      tableHeader: true,
       children: ["City", "Check-In", "Check-Out", "Nights"].map(
         (h) =>
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            shading: { fill: "F3F4F6" },
+            shading: { fill: "4F46E5", type: ShadingType.SOLID },
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 100, bottom: 100, left: 100, right: 100 },
+            margins: { top: 140, bottom: 140, left: 120, right: 120 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true })],
+                children: [new TextRun({ text: h, bold: true, color: "FFFFFF", size: 22 })],
               }),
             ],
           })
@@ -228,22 +344,23 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     });
 
     const rows = hotels.map(
-      (h) =>
+      (h, idx) =>
         new TableRow({
           children: [
             h.city,
             new Date(h.checkIn).toLocaleDateString("en-GB"),
             new Date(h.checkOut).toLocaleDateString("en-GB"),
-            `${h.nights}`,
-          ].map((v, idx) =>
+            `${h.nights} ${h.nights === 1 ? 'Night' : 'Nights'}`,
+          ].map((v, colIdx) =>
             new TableCell({
               width: { size: 25, type: WidthType.PERCENTAGE },
+              shading: { fill: idx % 2 === 0 ? "FFFFFF" : "F9FAFB", type: ShadingType.SOLID },
               verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 80, bottom: 80, left: 100, right: 100 },
+              margins: { top: 120, bottom: 120, left: 120, right: 120 },
               children: [
                 new Paragraph({
-                  alignment: idx === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
-                  children: [new TextRun(String(v))],
+                  alignment: colIdx === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
+                  children: [new TextRun({ text: String(v), size: 22, color: "1F2937" })],
                 })
               ],
             })
@@ -258,98 +375,201 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         rows: [headerRow, ...rows],
       })
     );
+
+    // Add footnote for accommodation
+    body.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "* Accommodation will be provided in selected hotel category",
+            size: 18,
+            color: "6B7280",
+            italics: true,
+          }),
+        ],
+        spacing: { before: 100, after: 40 },
+      })
+    );
+    body.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "* Standard hotel check-in time: 14:00 | Standard check-out time: 12:00",
+            size: 18,
+            color: "6B7280",
+            italics: true,
+          }),
+        ],
+        spacing: { after: 80 },
+      })
+    );
   }
 
   // Hotel options by category table
   if (hotelsByCategory && hotelsByCategory.length > 0) {
-    body.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 240, after: 120 },
-        children: [new TextRun({ text: "Hotel Options by Category", bold: true })],
-      })
-    );
-
-    const headers = ["City", "3-Star", "4-Star", "5-Star"];
-    const headerRow = new TableRow({
-      children: headers.map(
-        (h, i) =>
-          new TableCell({
-            width: { size: i === 0 ? 25 : 25, type: WidthType.PERCENTAGE },
-            shading: { fill: "F3F4F6" },
-            verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 100, bottom: 100, left: 100, right: 100 },
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true })]
-              }),
-            ],
-          })
-      ),
+    // Detect which categories have hotels (same logic as itinerary page)
+    type HotelCategoryLabel = '3 stars' | '4 stars' | '5 stars';
+    const availableCategories: HotelCategoryLabel[] = [];
+    (['3 stars', '4 stars', '5 stars'] as HotelCategoryLabel[]).forEach(category => {
+      const hasHotels = hotelsByCategory.some(cityData =>
+        cityData.categories[category]?.length > 0
+      );
+      if (hasHotels) {
+        availableCategories.push(category);
+      }
     });
 
-    const rows = hotelsByCategory.map((entry) => {
-      const cellTexts = [
-        entry.city,
-        (entry.categories["3 stars"] || []).join("\n"),
-        (entry.categories["4 stars"] || []).join("\n"),
-        (entry.categories["5 stars"] || []).join("\n"),
-      ];
-      return new TableRow({
-        children: cellTexts.map((t, i) =>
-          new TableCell({
-            width: { size: i === 0 ? 25 : 25, type: WidthType.PERCENTAGE },
-            verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 80, bottom: 80, left: 100, right: 100 },
-            children: [
-              new Paragraph({
-                alignment: i === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
-                children: [new TextRun({ text: t })]
-              })
-            ],
-          })
+    if (availableCategories.length > 0) {
+      body.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 300, after: 140 },
+          children: [new TextRun({ text: "HOTEL OPTIONS", bold: true, size: 28, color: "312E81" })],
+          border: {
+            bottom: {
+              color: "4F46E5",
+              space: 1,
+              style: BorderStyle.SINGLE,
+              size: 8,
+            },
+          },
+        })
+      );
+
+      const categoryLabels: Record<HotelCategoryLabel, string> = {
+        '3 stars': '3-Star Hotels',
+        '4 stars': '4-Star Hotels',
+        '5 stars': '5-Star Hotels',
+      };
+
+      const headers = ["City", ...availableCategories.map(cat => categoryLabels[cat])];
+      const columnWidth = availableCategories.length > 0 ? (85 / availableCategories.length) : 28;
+
+      const headerRow = new TableRow({
+        tableHeader: true,
+        children: headers.map(
+          (h, i) =>
+            new TableCell({
+              width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
+              shading: { fill: "4F46E5", type: ShadingType.SOLID },
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 140, bottom: 140, left: 120, right: 120 },
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: h, bold: true, color: "FFFFFF", size: 22 })]
+                }),
+              ],
+            })
         ),
       });
-    });
 
-    body.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: tableBorders,
-        rows: [headerRow, ...rows]
-      })
-    );
+      const rows = hotelsByCategory.map((entry, idx) => {
+        const cellTexts: string[] = [entry.city];
+        availableCategories.forEach(cat => {
+          cellTexts.push((entry.categories[cat] || []).join(", ") || "-");
+        });
+
+        return new TableRow({
+          children: cellTexts.map((t, i) =>
+            new TableCell({
+              width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
+              shading: { fill: idx % 2 === 0 ? "FFFFFF" : "F9FAFB", type: ShadingType.SOLID },
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 120, bottom: 120, left: 120, right: 120 },
+              children: [
+                new Paragraph({
+                  alignment: i === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
+                  children: [new TextRun({ text: t, size: 20, color: "1F2937" })]
+                })
+              ],
+            })
+          ),
+        });
+      });
+
+      body.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: tableBorders,
+          rows: [headerRow, ...rows]
+        })
+      );
+
+      // Add footnote for hotel options
+      body.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "* Final hotel selection will be based on your chosen category and availability",
+              size: 18,
+              color: "6B7280",
+              italics: true,
+            }),
+          ],
+          spacing: { before: 100, after: 80 },
+        })
+      );
+    }
   }
 
   // Package Rates table
   if (hotelCategoryPricing && hotelCategoryPricing.length > 0) {
-    // Combine slabs by index; assume same slab count across categories
+    // Detect which categories have hotels (same logic as Hotel Options)
+    type HotelCategoryLabel = '3 stars' | '4 stars' | '5 stars';
+    const availablePricingCategories: HotelCategoryLabel[] = [];
+    (['3 stars', '4 stars', '5 stars'] as HotelCategoryLabel[]).forEach(category => {
+      const hasHotels = hotelsByCategory?.some(cityData =>
+        cityData.categories[category]?.length > 0
+      );
+      if (hasHotels) {
+        availablePricingCategories.push(category);
+      }
+    });
+
     const three = hotelCategoryPricing.find((c) => c.category === "3 stars");
     const four = hotelCategoryPricing.find((c) => c.category === "4 stars");
     const five = hotelCategoryPricing.find((c) => c.category === "5 stars");
     const slabCount = three?.pricingSlabs?.length || four?.pricingSlabs?.length || five?.pricingSlabs?.length || 0;
 
-    if (slabCount > 0) {
+    if (slabCount > 0 && availablePricingCategories.length > 0) {
       body.push(
         new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 240, after: 120 },
-          children: [new TextRun({ text: "Package Rates (PP in DBL)", bold: true })],
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 300, after: 140 },
+          children: [new TextRun({ text: "PACKAGE RATES", bold: true, size: 28, color: "312E81" })],
+          border: {
+            bottom: {
+              color: "4F46E5",
+              space: 1,
+              style: BorderStyle.SINGLE,
+              size: 8,
+            },
+          },
         })
       );
 
+      const categoryLabels: Record<HotelCategoryLabel, string> = {
+        '3 stars': '3-Star Hotels',
+        '4 stars': '4-Star Hotels',
+        '5 stars': '5-Star Hotels',
+      };
+
+      const headers = ["PAX / PP in DBL", ...availablePricingCategories.map(cat => categoryLabels[cat])];
+      const columnWidth = availablePricingCategories.length > 0 ? (70 / availablePricingCategories.length) : 26.666;
+
       const headerRow = new TableRow({
-        children: ["PAX", "3-Star Hotels", "4-Star Hotels", "5-Star Hotels"].map((h, i) =>
+        tableHeader: true,
+        children: headers.map((h, i) =>
           new TableCell({
-            width: { size: i === 0 ? 20 : 26.666, type: WidthType.PERCENTAGE },
-            shading: { fill: "F3F4F6" },
+            width: { size: i === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
+            shading: { fill: "4F46E5", type: ShadingType.SOLID },
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 100, bottom: 100, left: 100, right: 100 },
+            margins: { top: 140, bottom: 140, left: 120, right: 120 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true })]
+                children: [new TextRun({ text: h, bold: true, color: "FFFFFF", size: 22 })]
               })
             ],
           })
@@ -359,25 +579,35 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
       const rows: TableRow[] = [];
       for (let i = 0; i < slabCount; i++) {
         const pax = three?.pricingSlabs?.[i]?.pax ?? four?.pricingSlabs?.[i]?.pax ?? five?.pricingSlabs?.[i]?.pax ?? 0;
-        const v3 = three?.pricingSlabs?.[i]?.pricePerPerson ?? 0;
-        const v4 = four?.pricingSlabs?.[i]?.pricePerPerson ?? 0;
-        const v5 = five?.pricingSlabs?.[i]?.pricePerPerson ?? 0;
+
+        const cellValues: string[] = [`${pax} PAX`];
+        availablePricingCategories.forEach(cat => {
+          let price = 0;
+          if (cat === '3 stars') price = three?.pricingSlabs?.[i]?.pricePerPerson ?? 0;
+          else if (cat === '4 stars') price = four?.pricingSlabs?.[i]?.pricePerPerson ?? 0;
+          else if (cat === '5 stars') price = five?.pricingSlabs?.[i]?.pricePerPerson ?? 0;
+          cellValues.push(price ? `€${price}` : "-");
+        });
+
         rows.push(
           new TableRow({
-            children: [
-              String(pax),
-              v3 ? `€${v3}` : "",
-              v4 ? `€${v4}` : "",
-              v5 ? `€${v5}` : "",
-            ].map((txt, col) =>
+            children: cellValues.map((txt, col) =>
               new TableCell({
-                width: { size: col === 0 ? 20 : 26.666, type: WidthType.PERCENTAGE },
+                width: { size: col === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
+                shading: { fill: i % 2 === 0 ? "FFFFFF" : "F9FAFB", type: ShadingType.SOLID },
                 verticalAlign: VerticalAlign.CENTER,
-                margins: { top: 80, bottom: 80, left: 100, right: 100 },
+                margins: { top: 120, bottom: 120, left: 120, right: 120 },
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    children: [new TextRun(txt)]
+                    children: [
+                      new TextRun({
+                        text: txt,
+                        size: 22,
+                        color: col === 0 ? "1F2937" : "059669",
+                        bold: col > 0,
+                      })
+                    ]
                   })
                 ],
               })
@@ -393,6 +623,34 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           rows: [headerRow, ...rows]
         })
       );
+
+      // Add footnotes for pricing
+      body.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "* Prices are per person in Euro and may vary based on season and availability",
+              size: 18,
+              color: "6B7280",
+              italics: true,
+            }),
+          ],
+          spacing: { before: 100, after: 40 },
+        })
+      );
+      body.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "* Hotel category will be confirmed at time of booking",
+              size: 18,
+              color: "6B7280",
+              italics: true,
+            }),
+          ],
+          spacing: { after: 80 },
+        })
+      );
     }
   }
 
@@ -400,9 +658,17 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
   if (information) {
     body.push(
       new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 240, after: 80 },
-        children: [new TextRun({ text: "Important Information", bold: true })],
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 300, after: 140 },
+        children: [new TextRun({ text: "IMPORTANT INFORMATION", bold: true, size: 28, color: "312E81" })],
+        border: {
+          bottom: {
+            color: "4F46E5",
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 8,
+          },
+        },
       })
     );
     body.push(...linesToBullets(information));

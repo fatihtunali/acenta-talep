@@ -231,10 +231,10 @@ export default function QuotesPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y-2 divide-blue-500">
+                <tbody className="bg-white divide-y-4 divide-blue-600">
                   {filteredQuotes.map((quote) => (
-                    <tr key={quote.id} className="hover:bg-gray-50 border-b-2 border-blue-500">
-                      <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2 border-l-2">
+                    <tr key={quote.id} className="hover:bg-gray-50 border-b-4 border-blue-600">
+                      <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4 border-l-4">
                         <div className="text-xs font-medium text-gray-900 truncate">{quote.quote_name}</div>
                         {quote.category === 'Fixed Departures' && quote.season_name && (
                           <div className="text-xs font-semibold text-blue-700 mt-0.5 truncate">
@@ -242,7 +242,7 @@ export default function QuotesPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4">
                         <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                           quote.category === 'Fixed Departures'
                             ? 'bg-blue-100 text-blue-800'
@@ -255,7 +255,7 @@ export default function QuotesPage() {
                           {quote.category === 'Fixed Departures' ? 'FD' : quote.category}
                         </span>
                       </td>
-                      <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4">
                         {quote.category === 'Fixed Departures' && quote.season_name ? (
                           <div className="text-xs">
                             <div className="font-semibold text-blue-800 truncate">{quote.season_name}</div>
@@ -269,7 +269,7 @@ export default function QuotesPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4">
                         <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                           quote.tour_type === 'Private'
                             ? 'bg-orange-100 text-orange-800'
@@ -278,19 +278,19 @@ export default function QuotesPage() {
                           {quote.tour_type}
                         </span>
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-900 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 text-xs text-gray-900 border-r-4 border-blue-500 border-t-4">
                         {quote.pax}
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-900 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 text-xs text-gray-900 border-r-4 border-blue-500 border-t-4">
                         {quote.markup}%
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-900 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 text-xs text-gray-900 border-r-4 border-blue-500 border-t-4">
                         {quote.tax}%
                       </td>
-                      <td className="px-2 py-2 text-xs text-gray-500 border-r-2 border-blue-400 border-t-2">
+                      <td className="px-2 py-2 text-xs text-gray-500 border-r-4 border-blue-500 border-t-4">
                         {new Date(quote.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </td>
-                      <td className="px-2 py-2 text-xs font-medium border-t-2 border-blue-400 border-r-2">
+                      <td className="px-2 py-2 text-xs font-medium border-t-4 border-blue-500 border-r-4">
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => viewQuote(quote.id)}

@@ -128,11 +128,11 @@ export default function SavedItinerariesPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y-2 divide-blue-500">
+                <tbody className="bg-white divide-y-4 divide-blue-600">
                   {sortedItineraries.map((itinerary) => {
                     return (
-                      <tr key={itinerary.id} className="hover:bg-gray-50 border-b-2 border-blue-500">
-                        <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2 border-l-2">
+                      <tr key={itinerary.id} className="hover:bg-gray-50 border-b-4 border-blue-600">
+                        <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4 border-l-4">
                           <div className="text-xs font-medium text-gray-900 truncate">{itinerary.quoteName}</div>
                           {itinerary.category === 'Fixed Departures' && itinerary.seasonName && (
                             <div className="text-xs font-semibold text-blue-700 mt-0.5 truncate">
@@ -140,7 +140,7 @@ export default function SavedItinerariesPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2">
+                        <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4">
                           <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                             itinerary.category === 'Fixed Departures'
                               ? 'bg-blue-100 text-blue-800'
@@ -153,7 +153,7 @@ export default function SavedItinerariesPage() {
                             {itinerary.category === 'Fixed Departures' ? 'FD' : itinerary.category}
                           </span>
                         </td>
-                        <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2">
+                        <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4">
                           {itinerary.category === 'Fixed Departures' && itinerary.seasonName ? (
                             <div className="text-xs">
                               <div className="font-semibold text-blue-800 truncate">{itinerary.seasonName}</div>
@@ -167,7 +167,7 @@ export default function SavedItinerariesPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-2 py-2 border-r-2 border-blue-400 border-t-2">
+                        <td className="px-2 py-2 border-r-4 border-blue-500 border-t-4">
                           <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                             itinerary.tourType === 'Private'
                               ? 'bg-orange-100 text-orange-800'
@@ -176,13 +176,13 @@ export default function SavedItinerariesPage() {
                             {itinerary.tourType}
                           </span>
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-900 border-r-2 border-blue-400 border-t-2">
+                        <td className="px-2 py-2 text-xs text-gray-900 border-r-4 border-blue-500 border-t-4">
                           {itinerary.pax}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-500 border-r-2 border-blue-400 border-t-2">
+                        <td className="px-2 py-2 text-xs text-gray-500 border-r-4 border-blue-500 border-t-4">
                           {new Date(itinerary.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                         </td>
-                        <td className="px-2 py-2 text-xs font-medium border-t-2 border-blue-400 border-r-2">
+                        <td className="px-2 py-2 text-xs font-medium border-t-4 border-blue-500 border-r-4">
                           <div className="flex flex-wrap gap-2">
                             <Link
                               href={`/itinerary?quote=${itinerary.id}`}

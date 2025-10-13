@@ -156,6 +156,7 @@ function ItineraryPageContent() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
   const [hasSavedItinerary, setHasSavedItinerary] = useState<boolean>(false);
+  const [quoteCategory, setQuoteCategory] = useState<'Fixed Departures' | 'Groups' | 'B2B' | 'B2C' | null>(null);
 
   const markUnsavedChanges = useCallback(() => setHasUnsavedChanges(true), []);
   const saveMessageTimeoutRef = useRef<number | null>(null);
@@ -404,6 +405,7 @@ function ItineraryPageContent() {
 
       const data = (await response.json()) as QuoteResponse;
       setCurrentQuoteId(data.id);
+      setQuoteCategory(data.category);
       displaySaveMessage('', -1);
 
       const startDate = new Date(data.startDate);
@@ -885,7 +887,8 @@ function ItineraryPageContent() {
         inclusions,
         exclusions,
         information,
-        hotels: hotels.map(h => ({ city: h.city, checkIn: h.checkIn, checkOut: h.checkOut, nights: h.nights })),
+        // Only include hotels table if not Fixed Departures
+        hotels: quoteCategory !== 'Fixed Departures' ? hotels.map(h => ({ city: h.city, checkIn: h.checkIn, checkOut: h.checkOut, nights: h.nights })) : [],
         hotelsByCategory: hotelsByCategory.map(h => ({ city: h.city, categories: h.categories })),
         hotelCategoryPricing: hotelCategoryPricing.map(c => ({ category: c.category as any, pricingSlabs: c.pricingSlabs })),
       });
@@ -902,7 +905,7 @@ function ItineraryPageContent() {
       console.error('DOCX export failed', err);
       displaySaveMessage('Failed to generate Word document.', 5000);
     }
-  }, [displaySaveMessage, duration, exclusions, inclusions, information, tourName, days]);
+  }, [displaySaveMessage, duration, exclusions, inclusions, information, tourName, days, hotels, hotelsByCategory, hotelCategoryPricing, quoteCategory]);
 
   useEffect(() => {
     console.log("hasUnsavedChanges", hasUnsavedChanges);
@@ -1384,8 +1387,8 @@ function ItineraryPageContent() {
               />
             </div>
 
-            {/* Hotels and Rates */}
-            {hotels.length > 0 && (
+            {/* Hotels and Rates - Hidden for Fixed Departures */}
+            {hotels.length > 0 && quoteCategory !== 'Fixed Departures' && (
               <div className="px-12 pb-8 section-with-table">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Accommodation</h3>
                 <div className="overflow-x-auto">

@@ -1681,6 +1681,29 @@ function ItineraryPageContent() {
               >
                 Download Word (DOCX)
               </button>
+              {currentQuoteId && hasSavedItinerary && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/export/itinerary/${currentQuoteId}`);
+                      if (!response.ok) {
+                        const error = await response.json();
+                        alert(`Export failed: ${error.error || 'Unknown error'}`);
+                        return;
+                      }
+                      const data = await response.json();
+                      navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                      alert('✅ Itinerary exported to clipboard!\n\nThe JSON data has been copied. You can now paste it into Funny Tourism import page.');
+                    } catch (error) {
+                      console.error('Export error:', error);
+                      alert('Failed to export itinerary. Please try again.');
+                    }
+                  }}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow-sm transition-colors"
+                >
+                  Export to Funny Tourism
+                </button>
+              )}
               <button
                 onClick={handleSaveItinerary}
                 disabled={isSaveDisabled}

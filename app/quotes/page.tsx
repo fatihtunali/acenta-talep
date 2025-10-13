@@ -195,34 +195,34 @@ export default function QuotesPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-32">
                       Quote Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">
                       Category
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-32">
                       Tour Dates
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-20">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-12">
                       PAX
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-16">
                       Markup
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-12">
                       Tax
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">
                       Created
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-48">
                       Actions
                     </th>
                   </tr>
@@ -230,11 +230,11 @@ export default function QuotesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredQuotes.map((quote) => (
                     <tr key={quote.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{quote.quote_name}</div>
+                      <td className="px-2 py-2">
+                        <div className="text-xs font-medium text-gray-900 truncate">{quote.quote_name}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      <td className="px-2 py-2">
+                        <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                           quote.category === 'Fixed Departures'
                             ? 'bg-blue-100 text-blue-800'
                             : quote.category === 'Groups'
@@ -243,25 +243,25 @@ export default function QuotesPage() {
                             ? 'bg-indigo-100 text-indigo-800'
                             : 'bg-pink-100 text-pink-800'
                         }`}>
-                          {quote.category}
+                          {quote.category === 'Fixed Departures' ? 'FD' : quote.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 py-2">
                         {quote.category === 'Fixed Departures' && quote.season_name ? (
-                          <div className="text-sm">
-                            <div className="font-semibold text-blue-800">{quote.season_name}</div>
+                          <div className="text-xs">
+                            <div className="font-semibold text-blue-800 truncate">{quote.season_name}</div>
                             <div className="text-gray-600 text-xs">
-                              Valid: {quote.valid_from ? new Date(quote.valid_from).toLocaleDateString() : ''} - {quote.valid_to ? new Date(quote.valid_to).toLocaleDateString() : ''}
+                              {quote.valid_from ? new Date(quote.valid_from).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''} - {quote.valid_to ? new Date(quote.valid_to).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''}
                             </div>
                           </div>
                         ) : (
-                          <div className="text-sm text-gray-900">
-                            {new Date(quote.start_date).toLocaleDateString()} - {new Date(quote.end_date).toLocaleDateString()}
+                          <div className="text-xs text-gray-900">
+                            {new Date(quote.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} - {new Date(quote.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      <td className="px-2 py-2">
+                        <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
                           quote.tour_type === 'Private'
                             ? 'bg-orange-100 text-orange-800'
                             : 'bg-purple-100 text-purple-800'
@@ -269,54 +269,56 @@ export default function QuotesPage() {
                           {quote.tour_type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-2 text-xs text-gray-900">
                         {quote.pax}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-2 text-xs text-gray-900">
                         {quote.markup}%
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-2 text-xs text-gray-900">
                         {quote.tax}%
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(quote.created_at).toLocaleDateString()}
+                      <td className="px-2 py-2 text-xs text-gray-500">
+                        {new Date(quote.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => viewQuote(quote.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="View full quote details"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => loadQuote(quote.id)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                          title="Load and edit this quote"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => copyQuote(quote.id)}
-                          className="text-green-600 hover:text-green-900"
-                          title="Create a copy of this quote"
-                        >
-                          Copy
-                        </button>
-                        <button
-                          onClick={() => createItinerary(quote.id)}
-                          className="text-purple-600 hover:text-purple-900"
-                          title="Create itinerary from this quote"
-                        >
-                          Itinerary
-                        </button>
-                        <button
-                          onClick={() => deleteQuote(quote.id, quote.quote_name)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete this quote"
-                        >
-                          Delete
-                        </button>
+                      <td className="px-2 py-2 text-xs font-medium">
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => viewQuote(quote.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="View full quote details"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => loadQuote(quote.id)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Load and edit this quote"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => copyQuote(quote.id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Create a copy of this quote"
+                          >
+                            Copy
+                          </button>
+                          <button
+                            onClick={() => createItinerary(quote.id)}
+                            className="text-purple-600 hover:text-purple-900"
+                            title="Create itinerary from this quote"
+                          >
+                            Itinerary
+                          </button>
+                          <button
+                            onClick={() => deleteQuote(quote.id, quote.quote_name)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete this quote"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

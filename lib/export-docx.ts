@@ -65,8 +65,8 @@ function linesToParagraphs(text: string, justify: boolean = false): Paragraph[] 
     .map(
       (l) =>
         new Paragraph({
-          children: [new TextRun({ text: l.trim(), size: 22 })],
-          spacing: { after: 140, line: 360 },
+          children: [new TextRun({ text: l.trim(), size: 20 })],
+          spacing: { after: 120, line: 340 },
           alignment: justify ? AlignmentType.JUSTIFIED : AlignmentType.LEFT,
         })
     );
@@ -81,8 +81,8 @@ function linesToBullets(text: string): Paragraph[] {
       (l) =>
         new Paragraph({
           bullet: { level: 0 },
-          children: [new TextRun({ text: l.replace(/^[-*•]\s*/, ""), size: 22 })],
-          spacing: { after: 100, line: 360 },
+          children: [new TextRun({ text: l.replace(/^[-*•]\s*/, ""), size: 20 })],
+          spacing: { after: 80, line: 340 },
         })
     );
 }
@@ -335,11 +335,11 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 140, bottom: 140, left: 120, right: 120 },
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true, color: "000000", size: 22 })],
+                children: [new TextRun({ text: h, bold: true, color: "000000", size: 18 })],
               }),
             ],
           })
@@ -358,11 +358,11 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
             new TableCell({
               width: { size: 25, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 120, bottom: 120, left: 120, right: 120 },
+              margins: { top: 80, bottom: 80, left: 100, right: 100 },
               children: [
                 new Paragraph({
                   alignment: colIdx === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
-                  children: [new TextRun({ text: String(v), size: 22, color: "000000" })],
+                  children: [new TextRun({ text: String(v), size: 18, color: "000000" })],
                 })
               ],
             })
@@ -454,11 +454,11 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
             new TableCell({
               width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 140, bottom: 140, left: 120, right: 120 },
+              margins: { top: 100, bottom: 100, left: 100, right: 100 },
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: h, bold: true, color: "000000", size: 22 })]
+                  children: [new TextRun({ text: h, bold: true, color: "000000", size: 18 })]
                 }),
               ],
             })
@@ -476,11 +476,11 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
             new TableCell({
               width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 120, bottom: 120, left: 120, right: 120 },
+              margins: { top: 80, bottom: 80, left: 100, right: 100 },
               children: [
                 new Paragraph({
                   alignment: i === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
-                  children: [new TextRun({ text: t, size: 20, color: "000000" })]
+                  children: [new TextRun({ text: t, size: 17, color: "000000" })]
                 })
               ],
             })
@@ -564,11 +564,11 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           new TableCell({
             width: { size: i === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 140, bottom: 140, left: 120, right: 120 },
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true, color: "000000", size: 22 })]
+                children: [new TextRun({ text: h, bold: true, color: "000000", size: 18 })]
               })
             ],
           })
@@ -594,14 +594,14 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
               new TableCell({
                 width: { size: col === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
                 verticalAlign: VerticalAlign.CENTER,
-                margins: { top: 120, bottom: 120, left: 120, right: 120 },
+                margins: { top: 80, bottom: 80, left: 100, right: 100 },
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
                     children: [
                       new TextRun({
                         text: txt,
-                        size: 22,
+                        size: 18,
                         color: "000000",
                         bold: col > 0,
                       })

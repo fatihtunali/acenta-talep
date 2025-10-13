@@ -233,10 +233,30 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
     );
   }
 
-  // Day by day
+  // Day by day - smart pagination based on total days
+  // For better layout, we'll group days intelligently:
+  // - 1-6 days: No page breaks (fits on 1-2 pages)
+  // - 7-10 days: Break after day 5
+  // - 11-15 days: Break after days 5 and 10
+  // - 16+ days: Break every 5 days
+  const totalDays = days.length;
+  const getPageBreakPositions = (total: number): number[] => {
+    if (total <= 6) return []; // No breaks needed
+    if (total <= 10) return [5]; // One break after day 5
+    if (total <= 15) return [5, 10]; // Two breaks
+    // For longer itineraries, break every 5 days
+    const breaks: number[] = [];
+    for (let i = 5; i < total; i += 5) {
+      breaks.push(i);
+    }
+    return breaks;
+  };
+
+  const pageBreakPositions = getPageBreakPositions(totalDays);
+
   days.forEach((d, index) => {
-    // Add page break before each day (except the first one) for better readability
-    if (index > 0 && index % 3 === 0) {
+    // Add page break at strategic positions
+    if (pageBreakPositions.includes(index)) {
       body.push(
         new Paragraph({
           children: [new PageBreak()],

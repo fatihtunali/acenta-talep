@@ -834,6 +834,7 @@ function PricingPageContent() {
   const [tax, setTax] = useState<number>(0); // Tax percentage
   const [days, setDays] = useState<DayExpenses[]>([]);
   const [quoteName, setQuoteName] = useState<string>(''); // Quote name/reference
+  const [category, setCategory] = useState<'Fixed Departures' | 'Groups' | 'B2B' | 'B2C'>('B2C'); // Quote category
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
@@ -1063,12 +1064,14 @@ function PricingPageContent() {
         if (isCopy) {
           // For copy, add "-Copy" suffix and clear the loaded ID
           setQuoteName(data.quoteName + ' - Copy');
+          setCategory(data.category || 'B2C');
           setLoadedQuoteId(null);
           setSaveMessage('📋 Quote copied! Edit and save as new quote.');
           setTimeout(() => setSaveMessage(''), 3000);
         } else {
           // For edit, keep the name and ID
           setQuoteName(data.quoteName);
+          setCategory(data.category || 'B2C');
           setLoadedQuoteId(quoteId);
           setSaveMessage('📝 Quote loaded for editing.');
           setTimeout(() => setSaveMessage(''), 3000);
@@ -1385,6 +1388,7 @@ function PricingPageContent() {
         },
         body: JSON.stringify({
           quoteName,
+          category,
           startDate,
           endDate,
           tourType,
@@ -1795,6 +1799,21 @@ function PricingPageContent() {
                 placeholder="e.g., ABC123-2025-03-15"
                 className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm focus:border-indigo-700 focus:ring-2 focus:ring-indigo-200"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as 'Fixed Departures' | 'Groups' | 'B2B' | 'B2C')}
+                className="px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm focus:border-indigo-700 focus:ring-2 focus:ring-indigo-200"
+              >
+                <option value="B2C">B2C</option>
+                <option value="B2B">B2B</option>
+                <option value="Groups">Groups</option>
+                <option value="Fixed Departures">Fixed Departures</option>
+              </select>
             </div>
             <button
               onClick={saveQuote}

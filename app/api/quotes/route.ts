@@ -34,6 +34,7 @@ interface ExpenseItem {
 
 interface SaveQuoteRequest {
   quoteName: string;
+  category: 'Fixed Departures' | 'Groups' | 'B2B' | 'B2C';
   startDate: string;
   endDate: string;
   tourType: 'SIC' | 'Private';
@@ -215,11 +216,12 @@ export async function POST(request: NextRequest) {
       let quoteResult;
       try {
         [quoteResult] = await connection.execute<ResultSetHeader>(
-          `INSERT INTO quotes (user_id, quote_name, start_date, end_date, tour_type, pax, markup, tax, transport_pricing_mode, pricing_table)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO quotes (user_id, quote_name, category, start_date, end_date, tour_type, pax, markup, tax, transport_pricing_mode, pricing_table)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             userId,
             data.quoteName,
+            data.category || 'B2C',
             data.startDate,
             data.endDate,
             data.tourType,
@@ -328,7 +330,7 @@ export async function GET() {
     const userId = parseInt(session.user.id, 10);
 
     const [quotes] = await pool.execute<RowDataPacket[]>(
-      `SELECT id, quote_name, start_date, end_date, tour_type, pax, markup, tax,
+      `SELECT id, quote_name, category, start_date, end_date, tour_type, pax, markup, tax,
               transport_pricing_mode, created_at, updated_at
        FROM quotes
        WHERE user_id = ?

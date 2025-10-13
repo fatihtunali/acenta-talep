@@ -8,6 +8,7 @@ import { signOut } from 'next-auth/react';
 interface Quote {
   id: number;
   quote_name: string;
+  category: 'Fixed Departures' | 'Groups' | 'B2B' | 'B2C';
   start_date: string;
   end_date: string;
   tour_type: 'SIC' | 'Private';
@@ -25,6 +26,7 @@ export default function QuotesPage() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteMessage, setDeleteMessage] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -105,6 +107,18 @@ export default function QuotesPage() {
     return null;
   }
 
+  // Filter quotes by selected category
+  const filteredQuotes = selectedCategory === 'All'
+    ? quotes
+    : quotes.filter(q => q.category === selectedCategory);
+
+  // Group quotes by category
+  const categories: Array<'Fixed Departures' | 'Groups' | 'B2B' | 'B2C'> = ['Fixed Departures', 'Groups', 'B2B', 'B2C'];
+  const groupedQuotes = categories.reduce((acc, cat) => {
+    acc[cat] = quotes.filter(q => q.category === cat);
+    return acc;
+  }, {} as Record<string, Quote[]>);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm">
@@ -137,12 +151,36 @@ export default function QuotesPage() {
           </div>
         )}
 
+        {/* Category Filter */}
+        <div className="mb-4 bg-white shadow rounded-lg p-4">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-semibold text-gray-700">Filter by Category:</label>
+            <div className="flex gap-2">
+              {['All', 'Fixed Departures', 'Groups', 'B2B', 'B2C'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded font-medium text-sm transition-colors ${
+                    selectedCategory === cat
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat} {cat !== 'All' && `(${groupedQuotes[cat]?.length || 0})`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">All Quotes ({quotes.length})</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {selectedCategory === 'All' ? 'All Quotes' : selectedCategory} ({filteredQuotes.length})
+            </h2>
           </div>
 
-          {quotes.length === 0 ? (
+          {filteredQuotes.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <p className="text-gray-500 text-lg mb-4">No quotes saved yet</p>
               <a
@@ -159,6 +197,9 @@ export default function QuotesPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Quote Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Tour Dates
@@ -184,10 +225,23 @@ export default function QuotesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {quotes.map((quote) => (
+                  {filteredQuotes.map((quote) => (
                     <tr key={quote.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{quote.quote_name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          quote.category === 'Fixed Departures'
+                            ? 'bg-blue-100 text-blue-800'
+                            : quote.category === 'Groups'
+                            ? 'bg-green-100 text-green-800'
+                            : quote.category === 'B2B'
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : 'bg-pink-100 text-pink-800'
+                        }`}>
+                          {quote.category}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">

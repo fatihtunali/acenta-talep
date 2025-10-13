@@ -155,6 +155,7 @@ export async function GET(
     return NextResponse.json({
       id: quote.id,
       quoteName: quote.quote_name,
+      category: quote.category,
       startDate: quote.start_date,
       endDate: quote.end_date,
       tourType: quote.tour_type,
@@ -320,11 +321,12 @@ export async function PUT(
       // Update quote
       await connection.execute(
         `UPDATE quotes
-         SET quote_name = ?, start_date = ?, end_date = ?, tour_type = ?,
+         SET quote_name = ?, category = ?, start_date = ?, end_date = ?, tour_type = ?,
              pax = ?, markup = ?, tax = ?, transport_pricing_mode = ?, pricing_table = ?
          WHERE id = ?`,
         [
           data.quoteName,
+          data.category || 'B2C',
           data.startDate,
           data.endDate,
           data.tourType,

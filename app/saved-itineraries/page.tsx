@@ -216,18 +216,34 @@ export default function SavedItinerariesPage() {
                           {updatedAt}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Link
-                            href={`/itinerary?quote=${itinerary.id}`}
-                            className="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md mr-2"
-                          >
-                            View
-                          </Link>
-                          <Link
-                            href={`/quotes/${itinerary.id}`}
-                            className="inline-flex items-center px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded-md"
-                          >
-                            Quote
-                          </Link>
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <Link
+                              href={`/itinerary?quote=${itinerary.id}`}
+                              className="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs"
+                            >
+                              👁️ View
+                            </Link>
+                            <Link
+                              href={`/quotes/${itinerary.id}`}
+                              className="inline-flex items-center px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-xs"
+                            >
+                              📊 Quote
+                            </Link>
+                            <Link
+                              href={`/itinerary?quote=${itinerary.id}#download`}
+                              className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs"
+                              title="Open and download DOCX to share via Email/WhatsApp"
+                            >
+                              📧 Email
+                            </Link>
+                            <Link
+                              href={`/itinerary?quote=${itinerary.id}#download`}
+                              className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs"
+                              title="Open and download DOCX to share via WhatsApp"
+                            >
+                              💬 WhatsApp
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );

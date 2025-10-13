@@ -66,7 +66,7 @@ function linesToParagraphs(text: string, justify: boolean = false): Paragraph[] 
       (l) =>
         new Paragraph({
           children: [new TextRun({ text: l.trim(), size: 20 })],
-          spacing: { after: 120, line: 340 },
+          spacing: { after: 0, line: 340 },
           alignment: justify ? AlignmentType.JUSTIFIED : AlignmentType.LEFT,
         })
     );

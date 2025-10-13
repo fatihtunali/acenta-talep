@@ -110,10 +110,14 @@ export default function QuotesPage() {
     return null;
   }
 
-  // Filter quotes by selected category
-  const filteredQuotes = selectedCategory === 'All'
+  // Filter quotes by selected category and sort by quote name
+  const filteredQuotes = (selectedCategory === 'All'
     ? quotes
-    : quotes.filter(q => q.category === selectedCategory);
+    : quotes.filter(q => q.category === selectedCategory)
+  ).sort((a, b) => {
+    // Natural sort to handle numbers correctly (01, 02, 03... before 1, 2, 3)
+    return a.quote_name.localeCompare(b.quote_name, undefined, { numeric: true, sensitivity: 'base' });
+  });
 
   // Group quotes by category
   const categories: Array<'Fixed Departures' | 'Groups' | 'B2B' | 'B2C'> = ['Fixed Departures', 'Groups', 'B2B', 'B2C'];

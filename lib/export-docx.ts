@@ -84,12 +84,12 @@ function linesToBullets(text: string): Paragraph[] {
 }
 
 const tableBorders = {
-  top: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
-  bottom: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
-  left: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
-  right: { style: BorderStyle.SINGLE, size: 6, color: "4F46E5" },
-  insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" },
-  insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" },
+  top: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
+  bottom: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
+  left: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
+  right: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
+  insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "D1D5DB" },
+  insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "D1D5DB" },
 };
 
 export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Blob> {
@@ -330,13 +330,13 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         (h) =>
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            shading: { fill: "4F46E5", type: ShadingType.SOLID },
+            shading: { fill: "F3F4F6", type: ShadingType.SOLID },
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 140, bottom: 140, left: 120, right: 120 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true, color: "FFFFFF", size: 22 })],
+                children: [new TextRun({ text: h, bold: true, color: "1F2937", size: 22 })],
               }),
             ],
           })
@@ -451,13 +451,13 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           (h, i) =>
             new TableCell({
               width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
-              shading: { fill: "4F46E5", type: ShadingType.SOLID },
+              shading: { fill: "F3F4F6", type: ShadingType.SOLID },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 140, bottom: 140, left: 120, right: 120 },
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: h, bold: true, color: "FFFFFF", size: 22 })]
+                  children: [new TextRun({ text: h, bold: true, color: "1F2937", size: 22 })]
                 }),
               ],
             })
@@ -563,13 +563,13 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         children: headers.map((h, i) =>
           new TableCell({
             width: { size: i === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
-            shading: { fill: "4F46E5", type: ShadingType.SOLID },
+            shading: { fill: "F3F4F6", type: ShadingType.SOLID },
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 140, bottom: 140, left: 120, right: 120 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true, color: "FFFFFF", size: 22 })]
+                children: [new TextRun({ text: h, bold: true, color: "1F2937", size: 22 })]
               })
             ],
           })

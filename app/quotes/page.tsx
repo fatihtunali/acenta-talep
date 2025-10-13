@@ -232,6 +232,11 @@ export default function QuotesPage() {
                     <tr key={quote.id} className="hover:bg-gray-50">
                       <td className="px-2 py-2">
                         <div className="text-xs font-medium text-gray-900 truncate">{quote.quote_name}</div>
+                        {quote.category === 'Fixed Departures' && quote.season_name && (
+                          <div className="text-xs font-semibold text-blue-700 mt-0.5 truncate">
+                            {quote.season_name}
+                          </div>
+                        )}
                       </td>
                       <td className="px-2 py-2">
                         <span className={`px-1.5 py-0.5 inline-flex text-xs font-semibold rounded ${
@@ -282,41 +287,41 @@ export default function QuotesPage() {
                         {new Date(quote.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </td>
                       <td className="px-2 py-2 text-xs font-medium">
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => viewQuote(quote.id)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
                             title="View full quote details"
                           >
-                            View
+                            👁️
                           </button>
                           <button
                             onClick={() => loadQuote(quote.id)}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-indigo-600 hover:text-indigo-900 transition-colors"
                             title="Load and edit this quote"
                           >
-                            Edit
+                            ✏️
                           </button>
                           <button
                             onClick={() => copyQuote(quote.id)}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 hover:text-green-900 transition-colors"
                             title="Create a copy of this quote"
                           >
-                            Copy
+                            📋
                           </button>
                           <button
                             onClick={() => createItinerary(quote.id)}
-                            className="text-purple-600 hover:text-purple-900"
+                            className="text-purple-600 hover:text-purple-900 transition-colors"
                             title="Create itinerary from this quote"
                           >
-                            Itinerary
+                            📄
                           </button>
                           <button
                             onClick={() => deleteQuote(quote.id, quote.quote_name)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 transition-colors"
                             title="Delete this quote"
                           >
-                            Delete
+                            🗑️
                           </button>
                         </div>
                       </td>

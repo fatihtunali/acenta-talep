@@ -2,19 +2,34 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [itineraryCount, setItineraryCount] = useState<number>(0);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  // Fetch saved itineraries count
+  useEffect(() => {
+    if (session) {
+      fetch('/api/itineraries')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.itineraries) {
+            setItineraryCount(data.itineraries.length);
+          }
+        })
+        .catch((err) => console.error('Error fetching itineraries count:', err));
+    }
+  }, [session]);
 
   if (status === 'loading') {
     return (
@@ -62,7 +77,7 @@ export default function DashboardPage() {
           <p className="text-gray-600 mb-6">
             Create and manage your tour pricing quotes
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Link
               href="/pricing"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md text-lg"
@@ -74,6 +89,17 @@ export default function DashboardPage() {
               className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md text-lg"
             >
               📂 View Saved Quotes
+            </Link>
+            <Link
+              href="/saved-itineraries"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-lg relative"
+            >
+              📄 Saved Itineraries
+              {itineraryCount > 0 && (
+                <span className="ml-2 px-2.5 py-0.5 bg-white text-blue-600 rounded-full text-sm font-bold">
+                  {itineraryCount}
+                </span>
+              )}
             </Link>
             <Link
               href="/itinerary"

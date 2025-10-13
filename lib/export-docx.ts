@@ -18,6 +18,8 @@ import {
   VerticalAlign,
   PageBreak,
   ShadingType,
+  TabStopType,
+  TabStopPosition,
 } from "docx";
 
 export interface DayItineraryDoc {
@@ -236,14 +238,30 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
   // Day by day - let days flow naturally without forced page breaks
   // Word will handle pagination naturally based on content length
   days.forEach((d) => {
+    // Create day heading with meal code aligned to the right using tab stops
+    const dayTitle = d.title || `Day ${d.dayNumber}`;
+    const paragraphChildren: TextRun[] = [
+      new TextRun({ text: dayTitle, bold: true, size: 26, color: "1F2937" })
+    ];
+
+    if (d.mealCode) {
+      paragraphChildren.push(
+        new TextRun({ text: "\t", bold: true, size: 26 }), // Tab character
+        new TextRun({ text: `(${d.mealCode})`, bold: false, size: 22, color: "6B7280" })
+      );
+    }
+
     body.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
         spacing: { before: 200, after: 120 },
-        children: [
-          new TextRun({ text: d.title || `Day ${d.dayNumber}`, bold: true, size: 26, color: "1F2937" }),
-          new TextRun({ text: d.mealCode ? `  ${d.mealCode}` : "", color: "6B7280", size: 22 }),
+        tabStops: [
+          {
+            type: TabStopType.RIGHT,
+            position: TabStopPosition.MAX, // Right edge of page
+          },
         ],
+        children: paragraphChildren,
       })
     );
     body.push(...linesToParagraphs(d.description, true)); // Justified text for professional look

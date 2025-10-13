@@ -1284,13 +1284,13 @@ function ItineraryPageContent() {
 
             {/* Tour Title and Duration - shows on both screen and print */}
             <div className="px-12 text-center border-b-2 border-indigo-600 pb-6 mb-0 print:mb-6">
-              {tourName.includes(':') ? (
+              {(tourName.includes(':') || tourName.includes(' - ')) ? (
                 <div>
                   <div className="text-4xl font-bold text-indigo-900 mb-1">
-                    {tourName.split(':')[0].trim()}
+                    {tourName.split(tourName.includes(':') ? ':' : ' - ')[0].trim()}
                   </div>
                   <div className="text-2xl font-semibold text-indigo-700 mb-2">
-                    {tourName.split(':')[1].trim()}
+                    {tourName.split(tourName.includes(':') ? ':' : ' - ').slice(1).join(tourName.includes(':') ? ':' : ' - ').trim()}
                   </div>
                 </div>
               ) : (

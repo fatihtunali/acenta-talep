@@ -157,6 +157,9 @@ function ItineraryPageContent() {
   const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
   const [hasSavedItinerary, setHasSavedItinerary] = useState<boolean>(false);
   const [quoteCategory, setQuoteCategory] = useState<'Fixed Departures' | 'Groups' | 'B2B' | 'B2C' | null>(null);
+  const [seasonName, setSeasonName] = useState<string>('');
+  const [validFrom, setValidFrom] = useState<string>('');
+  const [validTo, setValidTo] = useState<string>('');
 
   const markUnsavedChanges = useCallback(() => setHasUnsavedChanges(true), []);
   const saveMessageTimeoutRef = useRef<number | null>(null);
@@ -406,6 +409,9 @@ function ItineraryPageContent() {
       const data = (await response.json()) as QuoteResponse;
       setCurrentQuoteId(data.id);
       setQuoteCategory(data.category);
+      setSeasonName(data.seasonName || '');
+      setValidFrom(data.validFrom || '');
+      setValidTo(data.validTo || '');
       displaySaveMessage('', -1);
 
       const startDate = new Date(data.startDate);
@@ -891,6 +897,10 @@ function ItineraryPageContent() {
         hotels: quoteCategory !== 'Fixed Departures' ? hotels.map(h => ({ city: h.city, checkIn: h.checkIn, checkOut: h.checkOut, nights: h.nights })) : [],
         hotelsByCategory: hotelsByCategory.map(h => ({ city: h.city, categories: h.categories })),
         hotelCategoryPricing: hotelCategoryPricing.map(c => ({ category: c.category as any, pricingSlabs: c.pricingSlabs })),
+        // Pass season information for Fixed Departures
+        isFixedDeparture: quoteCategory === 'Fixed Departures',
+        validFrom: validFrom || undefined,
+        validTo: validTo || undefined,
       });
 
       const url = URL.createObjectURL(blob);
@@ -905,7 +915,7 @@ function ItineraryPageContent() {
       console.error('DOCX export failed', err);
       displaySaveMessage('Failed to generate Word document.', 5000);
     }
-  }, [displaySaveMessage, duration, exclusions, inclusions, information, tourName, days, hotels, hotelsByCategory, hotelCategoryPricing, quoteCategory]);
+  }, [displaySaveMessage, duration, exclusions, inclusions, information, tourName, days, hotels, hotelsByCategory, hotelCategoryPricing, quoteCategory, validFrom, validTo]);
 
   useEffect(() => {
     console.log("hasUnsavedChanges", hasUnsavedChanges);
@@ -1589,6 +1599,11 @@ function ItineraryPageContent() {
                     <p className="text-xs text-gray-500 italic">
                       * Prices are per person in Euro and may vary based on season and availability
                     </p>
+                    {quoteCategory === 'Fixed Departures' && validFrom && validTo && (
+                      <p className="text-xs text-gray-500 mt-1 italic">
+                        * Prices are valid from {new Date(validFrom).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} to {new Date(validTo).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1 italic">
                       * Hotel category will be confirmed at time of booking
                     </p>

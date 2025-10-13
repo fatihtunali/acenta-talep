@@ -41,6 +41,10 @@ export interface ExportDocxOptions {
   hotels?: Array<{ city: string; checkIn: string; checkOut: string; nights: number }>;
   hotelsByCategory?: Array<{ city: string; categories: Record<'3 stars'|'4 stars'|'5 stars', string[]> }>;
   hotelCategoryPricing?: Array<{ category: '3 stars'|'4 stars'|'5 stars'; pricingSlabs: Array<{ pax: number; pricePerPerson: number; totalPrice: number }> }>;
+  // Season information for Fixed Departures
+  isFixedDeparture?: boolean;
+  validFrom?: string;
+  validTo?: string;
 }
 
 async function fetchAsUint8Array(path: string): Promise<Uint8Array | null> {
@@ -632,6 +636,26 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           spacing: { before: 100, after: 40 },
         })
       );
+
+      // Add season validity for Fixed Departures
+      if (opts.isFixedDeparture && opts.validFrom && opts.validTo) {
+        const validFromDate = new Date(opts.validFrom).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const validToDate = new Date(opts.validTo).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        body.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `* Prices are valid from ${validFromDate} to ${validToDate}`,
+                size: 18,
+                color: "6B7280",
+                italics: true,
+              }),
+            ],
+            spacing: { after: 40 },
+          })
+        );
+      }
+
       body.push(
         new Paragraph({
           children: [

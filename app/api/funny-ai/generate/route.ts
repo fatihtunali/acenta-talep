@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import http from 'http';
-
-// Create HTTP agent with keepalive for long-running requests
-const httpAgent = new http.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 30000, // Send keepalive packet every 30s
-  timeout: 600000, // 10 minute socket timeout
-  maxSockets: 5
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,12 +34,13 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Connection': 'keep-alive'
+          'Accept': 'application/json',
+          'Connection': 'close' // Use close instead of keep-alive to avoid connection resets
         },
         body: JSON.stringify(body),
         signal: controller.signal,
-        // @ts-expect-error - agent option exists in Node.js fetch
-        agent: httpAgent
+        // Remove cache to ensure fresh requests
+        cache: 'no-store'
       });
 
       clearTimeout(timeoutId);

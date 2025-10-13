@@ -486,6 +486,9 @@ function ItineraryPageContent() {
           computedDays = funnyAIResult.days;
           setHasSavedItinerary(false);
           displaySaveMessage('✓ Itinerary generated successfully! Review the content and save when ready.', 5000);
+
+          // Show alert popup for generation success
+          alert('✅ Itinerary Generated Successfully!\n\nThe AI has finished generating your itinerary. Please review the content and save when ready.');
         } else {
           // Funny AI failed - show error
           displaySaveMessage('Failed to generate itinerary. Please try again.', 5000);
@@ -786,6 +789,9 @@ function ItineraryPageContent() {
         setHasSavedItinerary(false);
         setHasUnsavedChanges(true);
         displaySaveMessage('✓ Itinerary regenerated successfully! You can now review and save your changes.', 8000);
+
+        // Show alert popup for regeneration success
+        alert('✅ Itinerary Regenerated Successfully!\n\nThe AI has finished generating your new itinerary. Please review the content and save when ready.');
       } else {
         console.error('Funny AI returned null result');
         displaySaveMessage('Failed to regenerate itinerary. Check console for details.', 5000);

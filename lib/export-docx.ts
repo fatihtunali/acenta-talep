@@ -84,12 +84,12 @@ function linesToBullets(text: string): Paragraph[] {
 }
 
 const tableBorders = {
-  top: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
-  bottom: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
-  left: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
-  right: { style: BorderStyle.SINGLE, size: 6, color: "9CA3AF" },
-  insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "D1D5DB" },
-  insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "D1D5DB" },
+  top: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+  bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+  left: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+  right: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+  insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
+  insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
 };
 
 export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Blob> {
@@ -330,13 +330,12 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         (h) =>
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            shading: { fill: "F3F4F6", type: ShadingType.SOLID },
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 140, bottom: 140, left: 120, right: 120 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true, color: "1F2937", size: 22 })],
+                children: [new TextRun({ text: h, bold: true, color: "000000", size: 22 })],
               }),
             ],
           })
@@ -354,13 +353,12 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           ].map((v, colIdx) =>
             new TableCell({
               width: { size: 25, type: WidthType.PERCENTAGE },
-              shading: { fill: idx % 2 === 0 ? "FFFFFF" : "F9FAFB", type: ShadingType.SOLID },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 120, bottom: 120, left: 120, right: 120 },
               children: [
                 new Paragraph({
                   alignment: colIdx === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
-                  children: [new TextRun({ text: String(v), size: 22, color: "1F2937" })],
+                  children: [new TextRun({ text: String(v), size: 22, color: "000000" })],
                 })
               ],
             })
@@ -451,13 +449,12 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           (h, i) =>
             new TableCell({
               width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
-              shading: { fill: "F3F4F6", type: ShadingType.SOLID },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 140, bottom: 140, left: 120, right: 120 },
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: h, bold: true, color: "1F2937", size: 22 })]
+                  children: [new TextRun({ text: h, bold: true, color: "000000", size: 22 })]
                 }),
               ],
             })
@@ -474,13 +471,12 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
           children: cellTexts.map((t, i) =>
             new TableCell({
               width: { size: i === 0 ? 15 : columnWidth, type: WidthType.PERCENTAGE },
-              shading: { fill: idx % 2 === 0 ? "FFFFFF" : "F9FAFB", type: ShadingType.SOLID },
               verticalAlign: VerticalAlign.CENTER,
               margins: { top: 120, bottom: 120, left: 120, right: 120 },
               children: [
                 new Paragraph({
                   alignment: i === 0 ? AlignmentType.LEFT : AlignmentType.CENTER,
-                  children: [new TextRun({ text: t, size: 20, color: "1F2937" })]
+                  children: [new TextRun({ text: t, size: 20, color: "000000" })]
                 })
               ],
             })
@@ -563,13 +559,12 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
         children: headers.map((h, i) =>
           new TableCell({
             width: { size: i === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
-            shading: { fill: "F3F4F6", type: ShadingType.SOLID },
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 140, bottom: 140, left: 120, right: 120 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: h, bold: true, color: "1F2937", size: 22 })]
+                children: [new TextRun({ text: h, bold: true, color: "000000", size: 22 })]
               })
             ],
           })
@@ -594,7 +589,6 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
             children: cellValues.map((txt, col) =>
               new TableCell({
                 width: { size: col === 0 ? 30 : columnWidth, type: WidthType.PERCENTAGE },
-                shading: { fill: i % 2 === 0 ? "FFFFFF" : "F9FAFB", type: ShadingType.SOLID },
                 verticalAlign: VerticalAlign.CENTER,
                 margins: { top: 120, bottom: 120, left: 120, right: 120 },
                 children: [
@@ -604,7 +598,7 @@ export async function exportItineraryToDocx(opts: ExportDocxOptions): Promise<Bl
                       new TextRun({
                         text: txt,
                         size: 22,
-                        color: col === 0 ? "1F2937" : "059669",
+                        color: "000000",
                         bold: col > 0,
                       })
                     ]

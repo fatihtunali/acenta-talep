@@ -95,6 +95,10 @@ type QuoteDay = Record<ExpenseCategory, QuoteExpense[]> & {
 interface QuoteResponse {
   id: number;
   quoteName: string;
+  category: 'Fixed Departures' | 'Groups' | 'B2B' | 'B2C';
+  seasonName?: string;
+  validFrom?: string;
+  validTo?: string;
   startDate: string;
   endDate: string;
   tourType: 'SIC' | 'Private';
@@ -258,27 +262,39 @@ function ItineraryPageContent() {
         tour_type: data.tourType,
         pax: data.pax,
         interests: [...new Set(interests)],
-        day_details: dayDetails
+        day_details: dayDetails,
+        category: data.category
       });
 
-      // Extract just the date part (YYYY-MM-DD) from ISO datetime string
-      const startDateOnly = data.startDate.split('T')[0];
+      // For Fixed Departures, don't pass specific dates to AI (use generic dates instead)
+      const isFixedDeparture = data.category === 'Fixed Departures';
+      const startDateOnly = isFixedDeparture ? null : data.startDate.split('T')[0];
 
-      console.log('Start date formatted:', startDateOnly);
+      if (isFixedDeparture) {
+        console.log('Fixed Departures detected - using generic dates for AI generation');
+      } else {
+        console.log('Start date formatted:', startDateOnly);
+      }
 
       // Call Funny AI via proxy API to avoid CORS issues
+      const requestBody: Record<string, unknown> = {
+        days: data.days.length,
+        cities: cities,
+        tour_type: data.tourType,
+        pax: data.pax,
+        interests: [...new Set(interests)],
+        day_details: dayDetails  // Send actual booked services
+      };
+
+      // Only include start_date if not a Fixed Departure
+      if (!isFixedDeparture && startDateOnly) {
+        requestBody.start_date = startDateOnly;
+      }
+
       const response = await fetch('/api/funny-ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          days: data.days.length,
-          cities: cities,
-          tour_type: data.tourType,
-          pax: data.pax,
-          interests: [...new Set(interests)],
-          start_date: startDateOnly,
-          day_details: dayDetails  // Send actual booked services
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log('Funny AI API response status:', response.status);

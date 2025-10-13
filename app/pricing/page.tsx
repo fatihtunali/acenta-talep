@@ -835,6 +835,9 @@ function PricingPageContent() {
   const [days, setDays] = useState<DayExpenses[]>([]);
   const [quoteName, setQuoteName] = useState<string>(''); // Quote name/reference
   const [category, setCategory] = useState<'Fixed Departures' | 'Groups' | 'B2B' | 'B2C'>('B2C'); // Quote category
+  const [seasonName, setSeasonName] = useState<string>(''); // Season name for Fixed Departures
+  const [validFrom, setValidFrom] = useState<string>(''); // Valid from date for Fixed Departures
+  const [validTo, setValidTo] = useState<string>(''); // Valid to date for Fixed Departures
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [loadedQuoteId, setLoadedQuoteId] = useState<number | null>(null); // Track loaded quote for updates
@@ -1065,6 +1068,9 @@ function PricingPageContent() {
           // For copy, add "-Copy" suffix and clear the loaded ID
           setQuoteName(data.quoteName + ' - Copy');
           setCategory(data.category || 'B2C');
+          setSeasonName(data.seasonName || '');
+          setValidFrom(data.validFrom || '');
+          setValidTo(data.validTo || '');
           setLoadedQuoteId(null);
           setSaveMessage('📋 Quote copied! Edit and save as new quote.');
           setTimeout(() => setSaveMessage(''), 3000);
@@ -1072,6 +1078,9 @@ function PricingPageContent() {
           // For edit, keep the name and ID
           setQuoteName(data.quoteName);
           setCategory(data.category || 'B2C');
+          setSeasonName(data.seasonName || '');
+          setValidFrom(data.validFrom || '');
+          setValidTo(data.validTo || '');
           setLoadedQuoteId(quoteId);
           setSaveMessage('📝 Quote loaded for editing.');
           setTimeout(() => setSaveMessage(''), 3000);
@@ -1389,6 +1398,9 @@ function PricingPageContent() {
         body: JSON.stringify({
           quoteName,
           category,
+          seasonName: category === 'Fixed Departures' ? seasonName : null,
+          validFrom: category === 'Fixed Departures' ? validFrom : null,
+          validTo: category === 'Fixed Departures' ? validTo : null,
           startDate,
           endDate,
           tourType,
@@ -1839,24 +1851,63 @@ function PricingPageContent() {
         {/* Tour Details */}
         <div className="mb-3 bg-white shadow rounded-lg p-3">
           <div className="grid grid-cols-8 gap-3 items-end">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm"
-              />
-            </div>
+            {category === 'Fixed Departures' ? (
+              <>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Season Name</label>
+                  <input
+                    type="text"
+                    value={seasonName}
+                    onChange={(e) => setSeasonName(e.target.value)}
+                    placeholder="e.g., Winter 2025-2026"
+                    className="w-full px-2 py-1.5 border-2 border-blue-500 rounded text-gray-900 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Valid From</label>
+                  <input
+                    type="date"
+                    value={validFrom}
+                    onChange={(e) => setValidFrom(e.target.value)}
+                    className="w-full px-2 py-1.5 border-2 border-blue-500 rounded text-gray-900 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Valid To</label>
+                  <input
+                    type="date"
+                    value={validTo}
+                    onChange={(e) => setValidTo(e.target.value)}
+                    className="w-full px-2 py-1.5 border-2 border-blue-500 rounded text-gray-900 text-sm"
+                  />
+                </div>
+                <div style={{display: 'none'}}>
+                  <input type="date" value={startDate} readOnly />
+                  <input type="date" value={endDate} readOnly />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-2 py-1.5 border-2 border-indigo-500 rounded text-gray-900 text-sm"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Tour Type</label>
               <select

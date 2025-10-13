@@ -156,6 +156,9 @@ export async function GET(
       id: quote.id,
       quoteName: quote.quote_name,
       category: quote.category,
+      seasonName: quote.season_name,
+      validFrom: quote.valid_from,
+      validTo: quote.valid_to,
       startDate: quote.start_date,
       endDate: quote.end_date,
       tourType: quote.tour_type,
@@ -321,12 +324,15 @@ export async function PUT(
       // Update quote
       await connection.execute(
         `UPDATE quotes
-         SET quote_name = ?, category = ?, start_date = ?, end_date = ?, tour_type = ?,
+         SET quote_name = ?, category = ?, season_name = ?, valid_from = ?, valid_to = ?, start_date = ?, end_date = ?, tour_type = ?,
              pax = ?, markup = ?, tax = ?, transport_pricing_mode = ?, pricing_table = ?
          WHERE id = ?`,
         [
           data.quoteName,
           data.category || 'B2C',
+          data.seasonName || null,
+          data.validFrom || null,
+          data.validTo || null,
           data.startDate,
           data.endDate,
           data.tourType,

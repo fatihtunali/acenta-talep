@@ -9,6 +9,9 @@ interface Quote {
   id: number;
   quote_name: string;
   category: 'Fixed Departures' | 'Groups' | 'B2B' | 'B2C';
+  season_name?: string;
+  valid_from?: string;
+  valid_to?: string;
   start_date: string;
   end_date: string;
   tour_type: 'SIC' | 'Private';
@@ -243,10 +246,19 @@ export default function QuotesPage() {
                           {quote.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(quote.start_date).toLocaleDateString()} - {new Date(quote.end_date).toLocaleDateString()}
-                        </div>
+                      <td className="px-6 py-4">
+                        {quote.category === 'Fixed Departures' && quote.season_name ? (
+                          <div className="text-sm">
+                            <div className="font-semibold text-blue-800">{quote.season_name}</div>
+                            <div className="text-gray-600 text-xs">
+                              Valid: {quote.valid_from ? new Date(quote.valid_from).toLocaleDateString() : ''} - {quote.valid_to ? new Date(quote.valid_to).toLocaleDateString() : ''}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-900">
+                            {new Date(quote.start_date).toLocaleDateString()} - {new Date(quote.end_date).toLocaleDateString()}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

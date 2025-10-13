@@ -37,11 +37,7 @@ interface QuoteRow extends RowDataPacket {
   user_id: number;
 }
 
-interface HotelRow extends RowDataPacket {
-  city: string;
-  hotel_names: string;
-  star_category: string;
-}
+// Removed HotelRow interface - using RowDataPacket directly
 
 function slugify(text: string): string {
   return text
@@ -115,48 +111,31 @@ export async function GET(
     // Parse pricing table
     const pricingTable = JSON.parse(quote.pricing_table);
 
-    // Get hotels from quote days
-    const [dayRows] = await pool.execute<RowDataPacket[]>(
-      `SELECT DISTINCT city FROM quote_days WHERE quote_id = ? ORDER BY day_number`,
-      [quoteId]
-    );
-
-    const cities = dayRows.map(row => row.city).filter(city => city);
-
-    // Get hotels by city and category
-    const [hotelRows] = await pool.execute<HotelRow[]>(
-      `SELECT
-        qd.city,
-        GROUP_CONCAT(DISTINCT qe.item_description SEPARATOR ', ') as hotel_names,
-        '5 stars' as star_category
+    // Get hotels from quote expenses (simplified - just get unique hotel names)
+    const [hotelRows] = await pool.execute<RowDataPacket[]>(
+      `SELECT DISTINCT qe.item_description as hotel_name
       FROM quote_days qd
       LEFT JOIN quote_expenses qe ON qd.id = qe.day_id AND qe.category = 'hotelAccommodation'
-      WHERE qd.quote_id = ? AND qd.city != ''
-      GROUP BY qd.city`,
+      WHERE qd.quote_id = ? AND qe.item_description IS NOT NULL AND qe.item_description != ''`,
       [quoteId]
     );
 
-    // Build hotels object
+    // Build hotels object - group by star category based on hotel names
     const hotels: { threestar?: string[]; fourstar?: string[]; fivestar?: string[] } = {};
-    const hotelsByCategory: Record<string, { threestar?: string; fourstar?: string; fivestar?: string }> = {};
 
     hotelRows.forEach(row => {
-      if (row.hotel_names) {
-        // Determine category from hotel name (if it contains star info)
-        const hotelName = row.hotel_names;
+      if (row.hotel_name) {
+        const hotelName = row.hotel_name;
         if (hotelName.includes('3 star') || hotelName.includes('3 Star') || hotelName.includes('3-star')) {
           if (!hotels.threestar) hotels.threestar = [];
-          hotels.threestar.push(hotelName);
-          hotelsByCategory[row.city] = { ...hotelsByCategory[row.city], threestar: hotelName };
+          if (!hotels.threestar.includes(hotelName)) hotels.threestar.push(hotelName);
         } else if (hotelName.includes('4 star') || hotelName.includes('4 Star') || hotelName.includes('4-star')) {
           if (!hotels.fourstar) hotels.fourstar = [];
-          hotels.fourstar.push(hotelName);
-          hotelsByCategory[row.city] = { ...hotelsByCategory[row.city], fourstar: hotelName };
+          if (!hotels.fourstar.includes(hotelName)) hotels.fourstar.push(hotelName);
         } else {
           // Default to 5 star
           if (!hotels.fivestar) hotels.fivestar = [];
-          hotels.fivestar.push(hotelName);
-          hotelsByCategory[row.city] = { ...hotelsByCategory[row.city], fivestar: hotelName };
+          if (!hotels.fivestar.includes(hotelName)) hotels.fivestar.push(hotelName);
         }
       }
     });

@@ -1771,17 +1771,18 @@ function PricingPageContent() {
 
   const totals = calculateGrandTotals();
 
-  // Generate PAX slabs - extend beyond 20 if current PAX is higher
+  // Generate PAX slabs based on current PAX range
   const generatePaxSlabs = () => {
-    const basePaxSlabs = [1, 2, 4, 6, 8, 10, 15, 20];
-    if (pax <= 20) return basePaxSlabs;
-
-    const maxSlab = Math.ceil(pax / 5) * 5;
-    const additionalSlabs = [];
-    for (let i = 25; i <= maxSlab; i += 5) {
-      additionalSlabs.push(i);
+    if (pax <= 10) {
+      // Show slabs from 1 to 10
+      return [1, 2, 4, 6, 8, 10];
+    } else if (pax <= 20) {
+      // Show slabs from 10 to 20 with +2 increments
+      return [10, 12, 14, 16, 18, 20];
+    } else {
+      // Show slabs from 20 to 40 with +5 increments
+      return [20, 25, 30, 35, 40];
     }
-    return [...basePaxSlabs, ...additionalSlabs];
   };
   const paxSlabs = generatePaxSlabs();
 

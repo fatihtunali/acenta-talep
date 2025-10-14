@@ -1770,7 +1770,16 @@ function PricingPageContent() {
   }
 
   const totals = calculateGrandTotals();
-  const paxSlabs = [1, 2, 4, 6, 8, 10, 15, 20];
+
+  // Generate PAX slabs - extend beyond 20 if current PAX is higher
+  let paxSlabs = [1, 2, 4, 6, 8, 10, 15, 20];
+  if (pax > 20) {
+    // Add slabs in increments of 5 from 25 up to the current PAX (rounded up to nearest 5)
+    const maxSlab = Math.ceil(pax / 5) * 5;
+    for (let i = 25; i <= maxSlab; i += 5) {
+      paxSlabs.push(i);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

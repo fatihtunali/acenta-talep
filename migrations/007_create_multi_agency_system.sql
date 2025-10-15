@@ -53,7 +53,7 @@ ADD INDEX idx_agency_id (agency_id);
 -- 3. Update quotes table for multi-agency and status tracking
 ALTER TABLE quotes
 ADD COLUMN agency_id INT DEFAULT NULL AFTER user_id,
-ADD COLUMN quote_status ENUM('draft', 'sent', 'accepted', 'rejected', 'expired', 'confirmed') DEFAULT 'draft' AFTER quoteName,
+ADD COLUMN quote_status ENUM('draft', 'sent', 'accepted', 'rejected', 'expired', 'confirmed') DEFAULT 'draft' AFTER quote_name,
 ADD COLUMN client_name VARCHAR(255) DEFAULT NULL AFTER quote_status,
 ADD COLUMN client_email VARCHAR(255) DEFAULT NULL AFTER client_name,
 ADD COLUMN client_phone VARCHAR(50) DEFAULT NULL AFTER client_email,

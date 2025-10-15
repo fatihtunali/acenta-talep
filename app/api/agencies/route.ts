@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = (session.user as { id?: number }).id;
-    const userRole = (session.user as { role?: string }).role;
+    const userId = parseInt(session.user.id);
+    const userRole = session.user.role;
 
     // Admin can see all agencies
     if (userRole === 'admin') {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = (session.user as { role?: string }).role;
+    const userRole = session.user.role;
 
     // Only admin can create agencies
     if (userRole !== 'admin') {

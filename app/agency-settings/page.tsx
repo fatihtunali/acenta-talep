@@ -75,10 +75,19 @@ export default function AgencySettingsPage() {
         data
       });
 
-      if (response.ok && data.agency) {
-        console.log('[Agency Settings] Agency found:', data.agency);
-        setAgency(data.agency);
-        populateForm(data.agency);
+      // Handle both single agency and agencies array (for admin)
+      let agencyData = null;
+      if (data.agency) {
+        agencyData = data.agency;
+      } else if (data.agencies && data.agencies.length > 0) {
+        // If admin, find their personal agency (not System Admin)
+        agencyData = data.agencies.find((a: Agency) => a.company_name !== 'System Admin') || data.agencies[0];
+      }
+
+      if (response.ok && agencyData) {
+        console.log('[Agency Settings] Agency found:', agencyData);
+        setAgency(agencyData);
+        populateForm(agencyData);
       } else {
         console.log('[Agency Settings] No agency in response');
         showMessage('No agency found for your account', 'error');

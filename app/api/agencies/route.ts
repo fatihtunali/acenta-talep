@@ -39,16 +39,20 @@ export async function GET(request: NextRequest) {
     const userId = parseInt(session.user.id);
     const userRole = session.user.role;
 
+    console.log('[GET /api/agencies] User:', userId, 'Role:', userRole);
+
     // Admin can see all agencies
     if (userRole === 'admin') {
       const [agencies] = await pool.execute<Agency[]>(
         `SELECT * FROM agencies ORDER BY company_name ASC`
       );
 
+      console.log('[GET /api/agencies] Admin - returning all agencies:', agencies.length);
       return NextResponse.json({ agencies });
     }
 
     // Regular users see only their agency
+    console.log('[GET /api/agencies] Regular user - fetching agency for userId:', userId);
     const [agencies] = await pool.execute<Agency[]>(
       `SELECT a.* FROM agencies a
        INNER JOIN users u ON u.agency_id = a.id
@@ -56,6 +60,7 @@ export async function GET(request: NextRequest) {
       [userId]
     );
 
+    console.log('[GET /api/agencies] Found agencies:', agencies.length, agencies[0] ? agencies[0].company_name : 'none');
     return NextResponse.json({ agency: agencies[0] || null });
   } catch (error) {
     console.error('Error fetching agencies:', error);

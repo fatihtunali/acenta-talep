@@ -8,7 +8,13 @@
       "Bash(ssh root@188.132.230.193 \"su - acenta -c ''cat acenta-talep/package.json | grep -A 5 scripts''\")",
       "Bash(cat:*)",
       "Bash(ssh root@188.132.230.193 \"su - acenta -c ''cd acenta-talep && git pull origin main && npm start > app.log 2>&1 &''\")",
-      "Bash(ssh root@188.132.230.193 \"netstat -tlnp | grep 1492357\")"
+      "Bash(ssh root@188.132.230.193 \"netstat -tlnp | grep 1492357\")",
+      "Bash(ssh root@188.132.230.193 \"su - acenta -c ''cd acenta-talep && git pull origin main && npm run build 2>&1 | tail -40''\")",
+      "Bash(ssh root@188.132.230.193 \"ps aux | grep ''next-server'' | grep acenta | head -1 | awk ''{print $2}''\")",
+      "Bash(ssh root@188.132.230.193 'ps aux | grep next-server | grep 1492357')",
+      "Bash(ssh root@188.132.230.193 \"kill 1492357; sleep 3; su - acenta -c ''cd acenta-talep && npm start > app.log 2>&1 &''\")",
+      "Bash(ssh root@188.132.230.193 \"netstat -tlnp | grep 3002\")",
+      "Bash(ssh root@188.132.230.193 \"mysql -u acenta -p''Dlr235672.-Yt'' acenta_talep -e \"\"SELECT u.id, u.email, u.agency_id, a.company_name FROM users u LEFT JOIN agencies a ON u.agency_id = a.id WHERE u.email = ''fatihtunali@gmail.com'';\"\"\")"
     ],
     "deny": [],
     "ask": []

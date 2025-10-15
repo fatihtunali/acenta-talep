@@ -65,15 +65,26 @@ export default function AgencySettingsPage() {
   const loadAgency = async () => {
     try {
       setIsLoading(true);
+      console.log('[Agency Settings] Fetching agency data...');
       const response = await fetch('/api/agencies');
       const data = await response.json();
 
+      console.log('[Agency Settings] Response:', {
+        ok: response.ok,
+        status: response.status,
+        data
+      });
+
       if (response.ok && data.agency) {
+        console.log('[Agency Settings] Agency found:', data.agency);
         setAgency(data.agency);
         populateForm(data.agency);
+      } else {
+        console.log('[Agency Settings] No agency in response');
+        showMessage('No agency found for your account', 'error');
       }
     } catch (error) {
-      console.error('Error loading agency:', error);
+      console.error('[Agency Settings] Error loading agency:', error);
       showMessage('Failed to load agency settings', 'error');
     } finally {
       setIsLoading(false);

@@ -23,8 +23,8 @@ export async function GET(
 
     const resolvedParams = await params;
     const agencyId = parseInt(resolvedParams.id);
-    const userId = (session.user as { id?: number }).id;
-    const userRole = (session.user as { role?: string }).role;
+    const userId = (session.user as { id?: number; role?: string }).id;
+    const userRole = (session.user as { id?: number; role?: string }).role;
 
     // Check if user has access to this agency
     if (userRole !== 'admin') {
@@ -71,8 +71,8 @@ export async function PUT(
 
     const resolvedParams = await params;
     const agencyId = parseInt(resolvedParams.id);
-    const userId = (session.user as { id?: number }).id;
-    const userRole = (session.user as { role?: string }).role;
+    const userId = (session.user as { id?: number; role?: string }).id;
+    const userRole = (session.user as { id?: number; role?: string }).role;
 
     // Check if user has access to this agency
     if (userRole !== 'admin') {
@@ -226,7 +226,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = (session.user as { role?: string }).role;
+    const userRole = (session.user as { id?: number; role?: string }).role;
 
     if (userRole !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

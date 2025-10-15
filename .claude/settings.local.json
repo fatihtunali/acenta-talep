@@ -12,7 +12,8 @@
       "Bash(ssh root@188.132.230.193 \"bash /home/ruzgargucu/deploy.sh\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(ssh root@188.132.230.193 \"su - acenta -c ''cd acenta-talep && git pull origin main && npm run build 2>&1 | tail -30''\")"
     ],
     "deny": [],
     "ask": []

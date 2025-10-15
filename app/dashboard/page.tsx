@@ -110,6 +110,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Agency Settings Section */}
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            ⚙️ Settings
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Manage your agency profile and white-label branding
+          </p>
+          <div className="flex gap-4">
+            <Link
+              href="/agency-settings"
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md text-lg"
+            >
+              🏢 Agency Settings
+            </Link>
+          </div>
+        </div>
+
         {/* AI Training Section */}
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">

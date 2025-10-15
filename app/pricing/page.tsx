@@ -830,7 +830,8 @@ function PricingPageContent() {
   const [endDate, setEndDate] = useState<string>('');
   const [tourType, setTourType] = useState<'SIC' | 'Private'>('Private');
   const [transportPricingMode, setTransportPricingMode] = useState<'total' | 'vehicle'>('total');
-  const [markup, setMarkup] = useState<number>(0); // Markup percentage
+  const [markup, setMarkup] = useState<number>(0); // Operator markup percentage
+  const [agencyMarkup, setAgencyMarkup] = useState<number>(0); // Agency markup percentage
   const [tax, setTax] = useState<number>(0); // Tax percentage
   const [days, setDays] = useState<DayExpenses[]>([]);
   const [quoteName, setQuoteName] = useState<string>(''); // Quote name/reference
@@ -1046,6 +1047,7 @@ function PricingPageContent() {
         setTourType(data.tourType);
         setTransportPricingMode(data.transportPricingMode);
         setMarkup(data.markup);
+        setAgencyMarkup(data.agencyMarkup || data.markup_percentage || 0);
         setTax(data.tax);
 
         // Load days with new IDs
@@ -1406,6 +1408,7 @@ function PricingPageContent() {
           tourType,
           pax,
           markup,
+          agencyMarkup,
           tax,
           transportPricingMode,
           days
@@ -1460,13 +1463,17 @@ function PricingPageContent() {
     const costPerPerson = totalPerPerson + generalPerPerson;
     const subtotal = costPerPerson * pax;
 
-    // Apply markup
+    // Apply operator markup
     const markupAmount = subtotal * (markup / 100);
     const afterMarkup = subtotal + markupAmount;
 
     // Apply tax
     const taxAmount = afterMarkup * (tax / 100);
-    const grandTotal = afterMarkup + taxAmount;
+    const afterTax = afterMarkup + taxAmount;
+
+    // Apply agency markup (on top of operator price + tax)
+    const agencyMarkupAmount = afterTax * (agencyMarkup / 100);
+    const grandTotal = afterTax + agencyMarkupAmount;
 
     const finalPerPerson = grandTotal / pax;
 
@@ -1483,6 +1490,8 @@ function PricingPageContent() {
       markupAmount,
       afterMarkup,
       taxAmount,
+      afterTax,
+      agencyMarkupAmount,
       grandTotal,
       finalPerPerson
     };
@@ -1955,7 +1964,7 @@ function PricingPageContent() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Markup %</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Cost Markup %</label>
               <input
                 type="number"
                 min="0"
@@ -1963,6 +1972,19 @@ function PricingPageContent() {
                 value={markup}
                 onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)}
                 className="w-20 px-2 py-1.5 border-2 border-green-500 rounded text-gray-900 font-bold text-sm"
+                title="Your operational markup on costs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Agency Markup %</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={agencyMarkup}
+                onChange={(e) => setAgencyMarkup(parseFloat(e.target.value) || 0)}
+                className="w-20 px-2 py-1.5 border-2 border-blue-500 rounded text-gray-900 font-bold text-sm"
+                title="Agency's profit margin"
               />
             </div>
             <div>
@@ -2278,7 +2300,7 @@ function PricingPageContent() {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Markup ({markup}%):</span>
+                  <span className="text-gray-600">Cost Markup ({markup}%):</span>
                   <span className="font-semibold text-green-700">+€{totals.markupAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -2289,8 +2311,20 @@ function PricingPageContent() {
                   <span className="text-gray-600">Tax ({tax}%):</span>
                   <span className="font-semibold text-red-700">+€{totals.taxAmount.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Operator Price (after tax):</span>
+                  <span className="font-semibold text-gray-700">€{totals.afterTax.toFixed(2)}</span>
+                </div>
+                {agencyMarkup > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Agency Markup ({agencyMarkup}%):</span>
+                      <span className="font-semibold text-blue-700">+€{totals.agencyMarkupAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-lg pt-2 border-t">
-                  <span className="text-gray-900 font-bold">Grand Total:</span>
+                  <span className="text-gray-900 font-bold">{agencyMarkup > 0 ? 'Final Client Price:' : 'Grand Total:'}</span>
                   <span className="font-bold text-green-600">€{totals.grandTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm bg-indigo-50 p-2 rounded">

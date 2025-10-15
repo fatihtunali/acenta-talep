@@ -43,6 +43,7 @@ interface SaveQuoteRequest {
   tourType: 'SIC' | 'Private';
   pax: number;
   markup: number;
+  agencyMarkup?: number;
   tax: number;
   transportPricingMode: 'total' | 'vehicle';
   days: DayExpenses[];
@@ -219,8 +220,8 @@ export async function POST(request: NextRequest) {
       let quoteResult;
       try {
         [quoteResult] = await connection.execute<ResultSetHeader>(
-          `INSERT INTO quotes (user_id, quote_name, category, season_name, valid_from, valid_to, start_date, end_date, tour_type, pax, markup, tax, transport_pricing_mode, pricing_table)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO quotes (user_id, quote_name, category, season_name, valid_from, valid_to, start_date, end_date, tour_type, pax, markup, markup_percentage, tax, transport_pricing_mode, pricing_table)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             userId,
             data.quoteName,
@@ -233,6 +234,7 @@ export async function POST(request: NextRequest) {
             data.tourType,
             data.pax,
             data.markup,
+            data.agencyMarkup || 0,
             data.tax,
             data.transportPricingMode,
             JSON.stringify(pricingTable)
@@ -336,8 +338,8 @@ export async function GET() {
     const userId = parseInt(session.user.id, 10);
 
     const [quotes] = await pool.execute<RowDataPacket[]>(
-      `SELECT id, quote_name, category, season_name, valid_from, valid_to, start_date, end_date, tour_type, pax, markup, tax,
-              transport_pricing_mode, created_at, updated_at
+      `SELECT id, quote_name, quote_status, category, season_name, valid_from, valid_to, start_date, end_date, tour_type, pax,
+              markup, markup_percentage, tax, transport_pricing_mode, created_at, updated_at
        FROM quotes
        WHERE user_id = ?
        ORDER BY created_at DESC`,

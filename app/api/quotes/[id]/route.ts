@@ -164,6 +164,8 @@ export async function GET(
       tourType: quote.tour_type,
       pax: quote.pax,
       markup: parseFloat(quote.markup),
+      agencyMarkup: quote.markup_percentage ? parseFloat(quote.markup_percentage) : 0,
+      markup_percentage: quote.markup_percentage ? parseFloat(quote.markup_percentage) : 0,
       tax: parseFloat(quote.tax),
       transportPricingMode: quote.transport_pricing_mode,
       pricingTable,
@@ -325,7 +327,7 @@ export async function PUT(
       await connection.execute(
         `UPDATE quotes
          SET quote_name = ?, category = ?, season_name = ?, valid_from = ?, valid_to = ?, start_date = ?, end_date = ?, tour_type = ?,
-             pax = ?, markup = ?, tax = ?, transport_pricing_mode = ?, pricing_table = ?
+             pax = ?, markup = ?, markup_percentage = ?, tax = ?, transport_pricing_mode = ?, pricing_table = ?
          WHERE id = ?`,
         [
           data.quoteName,
@@ -338,6 +340,7 @@ export async function PUT(
           data.tourType,
           data.pax,
           data.markup,
+          data.agencyMarkup || 0,
           data.tax,
           data.transportPricingMode,
           JSON.stringify(pricingTable),

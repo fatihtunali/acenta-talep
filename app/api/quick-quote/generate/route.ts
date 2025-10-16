@@ -285,6 +285,59 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check if any data was found
+    let hasAnyData = false
+    const missingData: string[] = []
+
+    for (const day of days) {
+      if (day.hotelAccommodation.length > 0 ||
+          day.meals.length > 0 ||
+          day.transportation.length > 0 ||
+          day.guide.length > 0 ||
+          day.sicTourCost.length > 0) {
+        hasAnyData = true
+        break
+      }
+    }
+
+    // Check what's missing for each city
+    if (!hasAnyData) {
+      for (const cityStay of cityStays) {
+        const cityMissing: string[] = []
+
+        // Check if hotel exists for this city
+        const [hotelCheck] = await pool.execute<RowDataPacket[]>(
+          'SELECT COUNT(*) as count FROM hotels WHERE user_id = ? AND city_id IN (SELECT id FROM cities WHERE user_id = ? AND name LIKE ?)',
+          [userId, userId, `%${cityStay.city}%`]
+        )
+        if (hotelCheck[0].count === 0) {
+          cityMissing.push('hotels')
+        }
+
+        // Check if meals exist for this city
+        const [mealCheck] = await pool.execute<RowDataPacket[]>(
+          'SELECT COUNT(*) as count FROM restaurants WHERE user_id = ? AND city_id IN (SELECT id FROM cities WHERE user_id = ? AND name LIKE ?)',
+          [userId, userId, `%${cityStay.city}%`]
+        )
+        if (mealCheck[0].count === 0) {
+          cityMissing.push('meals')
+        }
+
+        // Check if transfers exist for this city
+        const [transferCheck] = await pool.execute<RowDataPacket[]>(
+          'SELECT COUNT(*) as count FROM transfers WHERE user_id = ? AND city_id IN (SELECT id FROM cities WHERE user_id = ? AND name LIKE ?)',
+          [userId, userId, `%${cityStay.city}%`]
+        )
+        if (transferCheck[0].count === 0) {
+          cityMissing.push('transfers')
+        }
+
+        if (cityMissing.length > 0) {
+          missingData.push(`${cityStay.city}: ${cityMissing.join(', ')}`)
+        }
+      }
+    }
+
     // Build response
     const result = {
       quoteName,
@@ -297,7 +350,9 @@ export async function POST(request: NextRequest) {
       cityStays,
       markup: 10, // Default operator markup
       tax: 8, // Default tax
-      agencyMarkup: session.user.role === 'admin' ? 0 : 15 // Default agency markup
+      agencyMarkup: session.user.role === 'admin' ? 0 : 15, // Default agency markup
+      hasData: hasAnyData,
+      missingData: missingData
     }
 
     return NextResponse.json(result)

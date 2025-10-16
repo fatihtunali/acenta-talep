@@ -44,6 +44,8 @@ interface QuoteData {
   markup: number
   tax: number
   agencyMarkup: number
+  hasData?: boolean
+  missingData?: string[]
 }
 
 function PreviewContent() {
@@ -199,6 +201,58 @@ function PreviewContent() {
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
               {error}
+            </div>
+          )}
+
+          {/* Warning when no data found */}
+          {quoteData.hasData === false && (
+            <div className="mb-6 p-6 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-yellow-900 mb-2">No Master Data Found!</h3>
+                  <p className="text-yellow-800 mb-3">
+                    The Quick Quote generator couldn't find any hotels, meals, or transfers in your database for the selected cities.
+                    You need to add master data first before generating quotes.
+                  </p>
+                  {quoteData.missingData && quoteData.missingData.length > 0 && (
+                    <div className="mb-3">
+                      <p className="font-semibold text-yellow-900 mb-1">Missing data:</p>
+                      <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
+                        {quoteData.missingData.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => router.push('/hotels')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm"
+                    >
+                      Add Hotels
+                    </button>
+                    <button
+                      onClick={() => router.push('/meals')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm"
+                    >
+                      Add Meals
+                    </button>
+                    <button
+                      onClick={() => router.push('/transfers')}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-sm"
+                    >
+                      Add Transfers
+                    </button>
+                    <button
+                      onClick={() => router.push('/quick-quote')}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold text-sm"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -452,11 +506,16 @@ function PreviewContent() {
               <div className="mt-6 space-y-3">
                 <button
                   onClick={handleSaveQuote}
-                  disabled={loading}
+                  disabled={loading || quoteData.hasData === false}
                   className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
                 >
                   {loading ? 'Saving...' : 'Save Quote'}
                 </button>
+                {quoteData.hasData === false && (
+                  <p className="text-xs text-center text-gray-600">
+                    Cannot save quote without master data. Please add hotels, meals, and transfers first.
+                  </p>
+                )}
 
                 <button
                   onClick={() => router.push('/quick-quote')}

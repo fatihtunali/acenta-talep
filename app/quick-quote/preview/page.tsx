@@ -212,7 +212,7 @@ function PreviewContent() {
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-yellow-900 mb-2">No Master Data Found!</h3>
                   <p className="text-yellow-800 mb-3">
-                    The Quick Quote generator couldn't find any hotels, meals, or transfers in your database for the selected cities.
+                    The Quick Quote generator could not find any hotels, meals, or transfers in your database for the selected cities.
                     You need to add master data first before generating quotes.
                   </p>
                   {quoteData.missingData && quoteData.missingData.length > 0 && (

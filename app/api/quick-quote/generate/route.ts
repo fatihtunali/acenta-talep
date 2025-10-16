@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
                   stp.child_0to2, stp.child_3to5, stp.child_6to11,
                   stp.start_date, stp.end_date
            FROM sic_tours st
-           JOIN sic_tour_pricing stp ON st.id = stp.sic_tour_id
+           JOIN sic_tour_pricing stp ON st.id = stp.tour_id
            WHERE st.user_id = ? AND st.city_id = ?
            ORDER BY st.id DESC
            LIMIT 1`,

@@ -468,7 +468,7 @@ export async function POST(request: NextRequest) {
           for (const item of allItems) {
             await connection.execute(
               `INSERT INTO quote_expenses
-               (day_id, category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle, hotel_category)
+               (quote_day_id, category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle, hotel_category)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
                 dayId,

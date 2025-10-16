@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
               child0to2: selectedHotel.child_0to2 ? parseFloat(selectedHotel.child_0to2) : 0,
               child3to5: selectedHotel.child_3to5 ? parseFloat(selectedHotel.child_3to5) : 0,
               child6to11: selectedHotel.child_6to11 ? parseFloat(selectedHotel.child_6to11) : 0,
-              hotelCategory: `${hotelCategory}-star`
+              hotelCategory: selectedHotel.category // Use actual DB value: "4 stars", "5 stars", etc.
             })
           }
 

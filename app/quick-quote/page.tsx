@@ -135,7 +135,7 @@ export default function QuickQuotePage() {
                 value={quoteName}
                 onChange={(e) => setQuoteName(e.target.value)}
                 placeholder="e.g., Istanbul & Cappadocia Tour"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -153,7 +153,7 @@ export default function QuickQuotePage() {
                         value={stay.city}
                         onChange={(e) => updateCityStay(stay.id, 'city', e.target.value)}
                         placeholder="City name (e.g., Istanbul)"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                       />
                     </div>
                     <div className="w-32">
@@ -163,7 +163,7 @@ export default function QuickQuotePage() {
                         max="30"
                         value={stay.nights}
                         onChange={(e) => updateCityStay(stay.id, 'nights', parseInt(e.target.value) || 1)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                       />
                     </div>
                     <span className="text-sm text-gray-600 w-16">nights</span>
@@ -197,7 +197,7 @@ export default function QuickQuotePage() {
                   max="50"
                   value={pax}
                   onChange={(e) => setPax(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 />
               </div>
 
@@ -209,7 +209,7 @@ export default function QuickQuotePage() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 />
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function QuickQuotePage() {
                 <select
                   value={hotelCategory}
                   onChange={(e) => setHotelCategory(e.target.value as '3' | '4' | '5')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 >
                   <option value="3">3 Star</option>
                   <option value="4">4 Star</option>
@@ -238,7 +238,7 @@ export default function QuickQuotePage() {
                 <select
                   value={tourType}
                   onChange={(e) => setTourType(e.target.value as 'Private' | 'SIC')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 >
                   <option value="Private">Private Tour</option>
                   <option value="SIC">SIC (Seat in Coach)</option>

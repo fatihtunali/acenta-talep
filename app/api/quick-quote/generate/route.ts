@@ -417,21 +417,280 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build response
+    // Save quote to database
+    let savedQuoteId: number | null = null
+
+    try {
+      const connection = await pool.getConnection()
+      try {
+        await connection.beginTransaction()
+
+        // Insert quote
+        const [quoteResult] = await connection.execute<any>(
+          `INSERT INTO quotes (user_id, name, tour_type, start_date, end_date, pax, hotel_category, markup, tax, agency_markup, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          [
+            userId,
+            quoteName,
+            tourType,
+            startDate,
+            days[days.length - 1]?.date || startDate,
+            pax,
+            `${hotelCategory} stars`,
+            10, // markup
+            8,  // tax
+            session.user.role === 'admin' ? 0 : 15 // agencyMarkup
+          ]
+        )
+
+        savedQuoteId = quoteResult.insertId
+
+        // Insert days and items
+        for (const day of days) {
+          const [dayResult] = await connection.execute<any>(
+            'INSERT INTO quote_days (quote_id, day_number, date) VALUES (?, ?, ?)',
+            [savedQuoteId, day.dayNumber, day.date]
+          )
+          const dayId = dayResult.insertId
+
+          // Insert all expense items
+          const allItems = [
+            ...day.hotelAccommodation.map(item => ({ ...item, category: 'hotelAccommodation' })),
+            ...day.meals.map(item => ({ ...item, category: 'meals' })),
+            ...day.entranceFees.map(item => ({ ...item, category: 'entranceFees' })),
+            ...day.sicTourCost.map(item => ({ ...item, category: 'sicTourCost' })),
+            ...day.tips.map(item => ({ ...item, category: 'tips' })),
+            ...day.transportation.map(item => ({ ...item, category: 'transportation' })),
+            ...day.guide.map(item => ({ ...item, category: 'guide' })),
+            ...day.guideDriverAccommodation.map(item => ({ ...item, category: 'guideDriverAccommodation' })),
+            ...day.parking.map(item => ({ ...item, category: 'parking' }))
+          ]
+
+          for (const item of allItems) {
+            await connection.execute(
+              `INSERT INTO quote_expenses
+               (day_id, category, location, description, price, single_supplement, child_0to2, child_3to5, child_6to11, vehicle_count, price_per_vehicle, hotel_category)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                dayId,
+                item.category,
+                item.location || '',
+                item.description || '',
+                item.price || 0,
+                item.singleSupplement || null,
+                item.child0to2 || null,
+                item.child3to5 || null,
+                item.child6to11 || null,
+                item.vehicleCount || null,
+                item.pricePerVehicle || null,
+                item.hotelCategory || null
+              ]
+            )
+          }
+        }
+
+        await connection.commit()
+        console.log(`[Quick Quote] ✓ Saved quote ID: ${savedQuoteId}`)
+      } catch (error) {
+        await connection.rollback()
+        console.error('[Quick Quote] Error saving quote:', error)
+        throw error
+      } finally {
+        connection.release()
+      }
+    } catch (error) {
+      console.error('[Quick Quote] Database error:', error)
+      // Continue even if save fails
+    }
+
+    // Generate AI itinerary descriptions
+    let itinerary: any = { days: [] }
+
+    try {
+      console.log('[Quick Quote] Generating AI itinerary descriptions...')
+
+      const cityList = cityStays.map(cs => cs.city).join(', ')
+      const aiPrompt = {
+        cities: cityStays,
+        pax,
+        tourType,
+        hotelCategory,
+        totalNights,
+        days: days.map(day => ({
+          dayNumber: day.dayNumber,
+          date: day.date,
+          hasHotel: day.hotelAccommodation.length > 0,
+          hasMeals: day.meals.length > 0,
+          hasTransportation: day.transportation.length > 0,
+          hasActivities: day.sicTourCost.length > 0 || day.entranceFees.length > 0,
+          hotelName: day.hotelAccommodation[0]?.description || '',
+          cityName: day.hotelAccommodation[0]?.location || ''
+        }))
+      }
+
+      const aiResponse = await fetch('https://itinerary-ai.ruzgargucu.com/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Create a day-by-day itinerary description for a ${totalNights}-night tour visiting ${cityList}.
+          Tour type: ${tourType}. PAX: ${pax}. Hotel category: ${hotelCategory} stars.
+
+          For each day, provide:
+          1. A descriptive paragraph about the day's activities
+          2. Specific activities with times (e.g., "09:00 AM - Hotel Check-in", "10:00 AM - City Tour", etc.)
+
+          Format as JSON with this structure:
+          {
+            "days": [
+              {
+                "dayNumber": 1,
+                "date": "YYYY-MM-DD",
+                "city": "CityName",
+                "description": "Full day description",
+                "activities": [
+                  { "time": "09:00 AM", "title": "Activity name", "description": "Activity details", "type": "hotel|meal|tour|transport|free-time" }
+                ]
+              }
+            ]
+          }`,
+          data: aiPrompt
+        })
+      })
+
+      if (aiResponse.ok) {
+        const aiData = await aiResponse.json()
+        if (aiData.itinerary || aiData.days) {
+          itinerary = aiData.itinerary || { days: aiData.days }
+          console.log('[Quick Quote] ✓ AI itinerary generated successfully')
+        }
+      } else {
+        console.error('[Quick Quote] AI API returned error:', await aiResponse.text())
+      }
+    } catch (error) {
+      console.error('[Quick Quote] Error generating AI itinerary:', error)
+      // Create fallback itinerary
+      itinerary = {
+        days: days.map((day, idx) => {
+          const cityName = day.hotelAccommodation[0]?.location || cityStays[Math.floor(idx / (days.length / cityStays.length))]?.city || 'City'
+          const isFirstDay = day.dayNumber === 1
+          const isLastDay = day.dayNumber === days.length
+          const hasTransportation = day.transportation.length > 0
+
+          let description = ''
+          const activities: any[] = []
+
+          if (isFirstDay) {
+            description = `Welcome to ${cityName}! Upon arrival at the airport, you'll be met by your transfer service and taken to your hotel. After check-in, enjoy the rest of the day at leisure to explore the local area or relax at your hotel.`
+            if (hasTransportation) {
+              activities.push({
+                time: '10:00 AM',
+                title: 'Airport Arrival & Transfer',
+                description: `Arrival at airport and private transfer to hotel in ${cityName}`,
+                type: 'transport'
+              })
+            }
+            activities.push({
+              time: '12:00 PM',
+              title: 'Hotel Check-in',
+              description: `Check in to ${day.hotelAccommodation[0]?.description || 'your hotel'}`,
+              type: 'hotel'
+            })
+            activities.push({
+              time: '02:00 PM',
+              title: 'Free Time',
+              description: 'Leisure time to explore the area or relax',
+              type: 'free-time'
+            })
+          } else if (isLastDay) {
+            description = `Your final day in ${cityName}. After breakfast and hotel check-out, transfer to the airport for your departure flight. We hope you enjoyed your journey!`
+            if (day.meals.length > 0) {
+              activities.push({
+                time: '08:00 AM',
+                title: 'Breakfast',
+                description: day.meals[0].description || 'Hotel breakfast',
+                type: 'meal'
+              })
+            }
+            activities.push({
+              time: '10:00 AM',
+              title: 'Hotel Check-out',
+              description: 'Check out from hotel',
+              type: 'hotel'
+            })
+            if (hasTransportation) {
+              activities.push({
+                time: '11:00 AM',
+                title: 'Airport Transfer',
+                description: `Private transfer to airport for departure`,
+                type: 'transport'
+              })
+            }
+          } else {
+            description = `Full day in ${cityName}. ${day.sicTourCost.length > 0 ? 'Join a guided tour to explore the city\'s highlights.' : 'Explore the city at your own pace.'} ${day.meals.length > 0 ? 'Meals included as per itinerary.' : ''}`
+
+            if (day.meals.length > 0) {
+              activities.push({
+                time: '08:00 AM',
+                title: 'Breakfast',
+                description: day.meals[0].description || 'Hotel breakfast',
+                type: 'meal'
+              })
+            }
+
+            if (day.sicTourCost.length > 0) {
+              activities.push({
+                time: '09:00 AM',
+                title: day.sicTourCost[0].description || 'City Tour',
+                description: `Guided sightseeing tour of ${cityName}`,
+                type: 'tour'
+              })
+            } else {
+              activities.push({
+                time: '10:00 AM',
+                title: 'Free Time',
+                description: `Leisure time to explore ${cityName}`,
+                type: 'free-time'
+              })
+            }
+
+            activities.push({
+              time: '06:00 PM',
+              title: 'Return to Hotel',
+              description: 'Evening at leisure',
+              type: 'free-time'
+            })
+          }
+
+          return {
+            dayNumber: day.dayNumber,
+            date: day.date,
+            city: cityName,
+            description,
+            activities
+          }
+        })
+      }
+    }
+
+    // Build response with saved quote and itinerary
     const result = {
-      quoteName,
-      tourType,
-      startDate,
-      endDate: days[days.length - 1]?.date || startDate,
-      pax,
-      hotelCategory,
-      days,
-      cityStays,
-      markup: 10, // Default operator markup
-      tax: 8, // Default tax
-      agencyMarkup: session.user.role === 'admin' ? 0 : 15, // Default agency markup
-      hasData: hasAnyData,
-      missingData: missingData
+      quote: {
+        id: savedQuoteId,
+        name: quoteName,
+        tourType,
+        startDate,
+        endDate: days[days.length - 1]?.date || startDate,
+        pax,
+        hotelCategory,
+        days,
+        cityStays,
+        markup: 10,
+        tax: 8,
+        agencyMarkup: session.user.role === 'admin' ? 0 : 15,
+        hasData: hasAnyData,
+        missingData: missingData
+      },
+      itinerary
     }
 
     return NextResponse.json(result)

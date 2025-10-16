@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
 
         // Find transfer (for arrival at first city or inter-city transfers)
         const [transferRows] = await pool.execute<RowDataPacket[]>(
-          `SELECT transfer_type, vehicle_type, price, max_pax
+          `SELECT transfer_type, price
            FROM transfers
            WHERE user_id = ? AND city_id = ?
            ORDER BY id DESC
@@ -215,6 +215,7 @@ export async function POST(request: NextRequest) {
         )
 
         const selectedTransfer = transferRows.length > 0 ? transferRows[0] : null
+        console.log(`[Quick Quote] Found ${transferRows.length} transfers for city ${cityName}`)
 
         // Add hotel accommodation for each night in this city
         for (let night = 0; night < cityStay.nights; night++) {
@@ -261,15 +262,15 @@ export async function POST(request: NextRequest) {
 
         // Add transfer on arrival day (first day of city)
         if (selectedTransfer && dayIndex < days.length) {
-          const vehicleCount = Math.ceil(pax / (selectedTransfer.max_pax || pax))
           days[dayIndex].transportation.push({
             id: generateId(),
             location: cityName,
-            description: `${selectedTransfer.transfer_type} - ${selectedTransfer.vehicle_type}`,
+            description: selectedTransfer.transfer_type,
             price: 0,
-            vehicleCount: vehicleCount,
+            vehicleCount: 1,
             pricePerVehicle: parseFloat(selectedTransfer.price) || 0
           })
+          console.log(`[Quick Quote] ✓ Transfer added: ${selectedTransfer.transfer_type}`)
         }
 
         // Add guide/driver for private tours

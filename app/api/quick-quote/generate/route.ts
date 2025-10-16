@@ -110,8 +110,12 @@ export async function POST(request: NextRequest) {
 
     // Now populate expenses for each city stay
     let dayIndex = 0
+    const totalCities = cityStays.length
 
-    for (const cityStay of cityStays) {
+    for (let cityIndex = 0; cityIndex < cityStays.length; cityIndex++) {
+      const cityStay = cityStays[cityIndex]
+      const isFirstCity = cityIndex === 0
+      const isLastCity = cityIndex === totalCities - 1
       try {
         console.log(`[Quick Quote] Processing city: ${cityStay.city}, nights: ${cityStay.nights}`)
 
@@ -260,17 +264,48 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Add transfer on arrival day (first day of city)
+        // Add transfers based on city position
         if (selectedTransfer && dayIndex < days.length) {
-          days[dayIndex].transportation.push({
-            id: generateId(),
-            location: cityName,
-            description: selectedTransfer.transfer_type,
-            price: 0,
-            vehicleCount: 1,
-            pricePerVehicle: parseFloat(selectedTransfer.price) || 0
-          })
-          console.log(`[Quick Quote] ✓ Transfer added: ${selectedTransfer.transfer_type}`)
+          if (isFirstCity) {
+            // Airport arrival transfer for first city
+            days[dayIndex].transportation.push({
+              id: generateId(),
+              location: cityName,
+              description: `Airport Arrival - ${selectedTransfer.transfer_type}`,
+              price: 0,
+              vehicleCount: 1,
+              pricePerVehicle: parseFloat(selectedTransfer.price) || 0
+            })
+            console.log(`[Quick Quote] ✓ Airport arrival transfer added for ${cityName}`)
+          } else {
+            // Inter-city transfer for subsequent cities
+            const previousCity = cityStays[cityIndex - 1].city
+            days[dayIndex].transportation.push({
+              id: generateId(),
+              location: cityName,
+              description: `Transfer from ${previousCity} to ${cityName}`,
+              price: 0,
+              vehicleCount: 1,
+              pricePerVehicle: parseFloat(selectedTransfer.price) || 0
+            })
+            console.log(`[Quick Quote] ✓ Inter-city transfer added: ${previousCity} → ${cityName}`)
+          }
+        }
+
+        // Add airport departure transfer on the last day of last city
+        if (isLastCity && selectedTransfer) {
+          const lastDayIndex = dayIndex + cityStay.nights
+          if (lastDayIndex < days.length) {
+            days[lastDayIndex].transportation.push({
+              id: generateId(),
+              location: cityName,
+              description: `Airport Departure - ${selectedTransfer.transfer_type}`,
+              price: 0,
+              vehicleCount: 1,
+              pricePerVehicle: parseFloat(selectedTransfer.price) || 0
+            })
+            console.log(`[Quick Quote] ✓ Airport departure transfer added for ${cityName}`)
+          }
         }
 
         // Add guide/driver for private tours

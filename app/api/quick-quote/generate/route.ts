@@ -208,18 +208,53 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Find transfer (for arrival at first city or inter-city transfers)
-        const [transferRows] = await pool.execute<RowDataPacket[]>(
-          `SELECT transfer_type, price
-           FROM transfers
-           WHERE user_id = ? AND city_id = ?
-           ORDER BY id DESC
-           LIMIT 1`,
-          [userId, cityId]
-        )
+        // Query for specific transfer types based on city position
+        let arrivalTransfer: any = null
+        let departureTransfer: any = null
+        let intercityTransfer: any = null
 
-        const selectedTransfer = transferRows.length > 0 ? transferRows[0] : null
-        console.log(`[Quick Quote] Found ${transferRows.length} transfers for city ${cityName}`)
+        if (isFirstCity) {
+          // Get "Airport to Hotel" transfer for first city
+          const [arrivalRows] = await pool.execute<RowDataPacket[]>(
+            `SELECT transfer_type, price
+             FROM transfers
+             WHERE user_id = ? AND city_id = ? AND transfer_type LIKE '%Airport%Hotel%'
+             ORDER BY id DESC
+             LIMIT 1`,
+            [userId, cityId]
+          )
+          arrivalTransfer = arrivalRows.length > 0 ? arrivalRows[0] : null
+          console.log(`[Quick Quote] Airport arrival transfer: ${arrivalTransfer ? arrivalTransfer.transfer_type + ' €' + arrivalTransfer.price : 'not found'}`)
+        }
+
+        if (!isFirstCity) {
+          // Get "Intercity Transfer" for subsequent cities
+          const previousCityId = await resolveCityId(userId, { cityName: cityStays[cityIndex - 1].city })
+          const [intercityRows] = await pool.execute<RowDataPacket[]>(
+            `SELECT transfer_type, price
+             FROM transfers
+             WHERE user_id = ? AND city_id IN (?, ?) AND transfer_type LIKE '%Intercity%'
+             ORDER BY id DESC
+             LIMIT 1`,
+            [userId, previousCityId, cityId]
+          )
+          intercityTransfer = intercityRows.length > 0 ? intercityRows[0] : null
+          console.log(`[Quick Quote] Inter-city transfer: ${intercityTransfer ? intercityTransfer.transfer_type + ' €' + intercityTransfer.price : 'not found'}`)
+        }
+
+        if (isLastCity) {
+          // Get "Hotel to Airport" transfer for last city
+          const [departureRows] = await pool.execute<RowDataPacket[]>(
+            `SELECT transfer_type, price
+             FROM transfers
+             WHERE user_id = ? AND city_id = ? AND transfer_type LIKE '%Hotel%Airport%'
+             ORDER BY id DESC
+             LIMIT 1`,
+            [userId, cityId]
+          )
+          departureTransfer = departureRows.length > 0 ? departureRows[0] : null
+          console.log(`[Quick Quote] Airport departure transfer: ${departureTransfer ? departureTransfer.transfer_type + ' €' + departureTransfer.price : 'not found'}`)
+        }
 
         // Add hotel accommodation for each night in this city
         for (let night = 0; night < cityStay.nights; night++) {
@@ -264,47 +299,46 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Add transfers based on city position
-        if (selectedTransfer && dayIndex < days.length) {
-          if (isFirstCity) {
-            // Airport arrival transfer for first city
-            days[dayIndex].transportation.push({
-              id: generateId(),
-              location: cityName,
-              description: `Airport Arrival - ${selectedTransfer.transfer_type}`,
-              price: 0,
-              vehicleCount: 1,
-              pricePerVehicle: parseFloat(selectedTransfer.price) || 0
-            })
-            console.log(`[Quick Quote] ✓ Airport arrival transfer added for ${cityName}`)
-          } else {
-            // Inter-city transfer for subsequent cities
-            const previousCity = cityStays[cityIndex - 1].city
-            days[dayIndex].transportation.push({
-              id: generateId(),
-              location: cityName,
-              description: `Transfer from ${previousCity} to ${cityName}`,
-              price: 0,
-              vehicleCount: 1,
-              pricePerVehicle: parseFloat(selectedTransfer.price) || 0
-            })
-            console.log(`[Quick Quote] ✓ Inter-city transfer added: ${previousCity} → ${cityName}`)
-          }
+        // Add arrival transfer for first city
+        if (isFirstCity && arrivalTransfer && dayIndex < days.length) {
+          days[dayIndex].transportation.push({
+            id: generateId(),
+            location: cityName,
+            description: arrivalTransfer.transfer_type,
+            price: 0,
+            vehicleCount: 1,
+            pricePerVehicle: parseFloat(arrivalTransfer.price) || 0
+          })
+          console.log(`[Quick Quote] ✓ Added: ${arrivalTransfer.transfer_type}`)
+        }
+
+        // Add inter-city transfer for subsequent cities
+        if (!isFirstCity && intercityTransfer && dayIndex < days.length) {
+          const previousCity = cityStays[cityIndex - 1].city
+          days[dayIndex].transportation.push({
+            id: generateId(),
+            location: `${previousCity} → ${cityName}`,
+            description: intercityTransfer.transfer_type,
+            price: 0,
+            vehicleCount: 1,
+            pricePerVehicle: parseFloat(intercityTransfer.price) || 0
+          })
+          console.log(`[Quick Quote] ✓ Added: ${intercityTransfer.transfer_type} (${previousCity} → ${cityName})`)
         }
 
         // Add airport departure transfer on the last day of last city
-        if (isLastCity && selectedTransfer) {
+        if (isLastCity && departureTransfer) {
           const lastDayIndex = dayIndex + cityStay.nights
           if (lastDayIndex < days.length) {
             days[lastDayIndex].transportation.push({
               id: generateId(),
               location: cityName,
-              description: `Airport Departure - ${selectedTransfer.transfer_type}`,
+              description: departureTransfer.transfer_type,
               price: 0,
               vehicleCount: 1,
-              pricePerVehicle: parseFloat(selectedTransfer.price) || 0
+              pricePerVehicle: parseFloat(departureTransfer.price) || 0
             })
-            console.log(`[Quick Quote] ✓ Airport departure transfer added for ${cityName}`)
+            console.log(`[Quick Quote] ✓ Added: ${departureTransfer.transfer_type}`)
           }
         }
 

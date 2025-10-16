@@ -427,8 +427,8 @@ export async function POST(request: NextRequest) {
 
         // Insert quote
         const [quoteResult] = await connection.execute<any>(
-          `INSERT INTO quotes (user_id, name, tour_type, start_date, end_date, pax, hotel_category, markup, tax, agency_markup, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          `INSERT INTO quotes (user_id, quote_name, tour_type, start_date, end_date, pax, markup, tax, markup_percentage, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
           [
             userId,
             quoteName,
@@ -436,10 +436,9 @@ export async function POST(request: NextRequest) {
             startDate,
             days[days.length - 1]?.date || startDate,
             pax,
-            `${hotelCategory} stars`,
             10, // markup
             8,  // tax
-            session.user.role === 'admin' ? 0 : 15 // agencyMarkup
+            session.user.role === 'admin' ? 0 : 15 // markup_percentage (agency markup)
           ]
         )
 
@@ -676,17 +675,19 @@ export async function POST(request: NextRequest) {
     const result = {
       quote: {
         id: savedQuoteId,
-        name: quoteName,
+        quote_name: quoteName,
+        name: quoteName, // Keep for backward compatibility
         tourType,
         startDate,
         endDate: days[days.length - 1]?.date || startDate,
         pax,
-        hotelCategory,
+        hotelCategory: `${hotelCategory} stars`,
         days,
         cityStays,
         markup: 10,
         tax: 8,
-        agencyMarkup: session.user.role === 'admin' ? 0 : 15,
+        markup_percentage: session.user.role === 'admin' ? 0 : 15,
+        agencyMarkup: session.user.role === 'admin' ? 0 : 15, // Keep for backward compatibility
         hasData: hasAnyData,
         missingData: missingData
       },

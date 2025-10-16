@@ -75,9 +75,18 @@ export default function DashboardPage() {
             📋 Pricing & Quotes
           </h2>
           <p className="text-gray-600 mb-6">
-            Create and manage your tour pricing quotes
+            Create quotes in seconds with Quick Quote, or build detailed custom quotes
           </p>
           <div className="flex flex-wrap gap-4">
+            <Link
+              href="/quick-quote"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-lg relative"
+            >
+              ⚡ Quick Quote
+              <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-blue-900 rounded-full text-xs font-bold">
+                NEW
+              </span>
+            </Link>
             <Link
               href="/pricing"
               className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md text-lg"

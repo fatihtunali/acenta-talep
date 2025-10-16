@@ -1024,13 +1024,30 @@ function PricingPageContent() {
     }
   };
 
-  // Load quote if ?load=<id> or ?copy=<id> parameter is present
+  // Load quote if ?load=<id> or ?copy=<id> or ?quickQuoteData parameter is present
   useEffect(() => {
     const loadId = searchParams.get('load');
     const copyId = searchParams.get('copy');
+    const quickQuoteDataParam = searchParams.get('quickQuoteData');
     const quoteId = loadId || copyId;
 
-    if (quoteId && status === 'authenticated') {
+    if (quickQuoteDataParam && status === 'authenticated') {
+      // Load quick quote data directly
+      try {
+        const quickData = JSON.parse(decodeURIComponent(quickQuoteDataParam));
+        setQuoteName(quickData.quoteName);
+        setPax(quickData.pax);
+        setStartDate(quickData.startDate);
+        setEndDate(quickData.endDate);
+        setTourType(quickData.tourType);
+        setMarkup(quickData.markup || 0);
+        setTax(quickData.tax || 0);
+        setAgencyMarkup(quickData.agencyMarkup || 0);
+        setDays(quickData.days);
+      } catch (error) {
+        console.error('Failed to load quick quote data:', error);
+      }
+    } else if (quoteId && status === 'authenticated') {
       loadQuoteData(parseInt(quoteId), !!copyId);
     }
   }, [searchParams, status]);

@@ -84,10 +84,8 @@ export async function POST(request: NextRequest) {
     const totalNights = cityStays.reduce((sum, stay) => sum + stay.nights, 0)
     const days: DayExpenses[] = []
     const start = new Date(startDate)
-    let currentDate = new Date(start)
+    const currentDate = new Date(start)
     let dayCounter = 1
-    let cityIndex = 0
-    let nightsInCurrentCity = 0
 
     // Generate days
     for (let i = 0; i <= totalNights; i++) {

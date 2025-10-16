@@ -407,7 +407,7 @@ export default function QuickQuotePage() {
                 </h3>
                 <div className="space-y-4">
                   {quotePackage.quote.days.map((day: any, idx: number) => {
-                    const hotelItems = day.items.filter((item: any) => item.category === 'hotelAccommodation')
+                    const hotelItems = day.hotelAccommodation || []
                     return hotelItems.map((hotel: any, hotelIdx: number) => (
                       <div key={`${idx}-${hotelIdx}`} className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                         <div className="flex justify-between items-start">

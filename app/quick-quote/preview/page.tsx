@@ -315,14 +315,15 @@ function PreviewContent() {
                         <h3 className="text-sm font-semibold text-gray-700">Hotel</h3>
                       </div>
                       {day.hotelAccommodation.map(item => (
-                        <div key={item.id} className="bg-gray-50 p-3 rounded flex items-center justify-between">
+                        <div key={item.id} className="bg-blue-50 p-3 rounded flex items-center justify-between border border-blue-200">
                           <div>
                             <div className="font-medium text-gray-900">{item.description}</div>
-                            <div className="text-sm text-gray-600">{item.location}</div>
+                            <div className="text-sm text-gray-700">{item.location}</div>
+                            <div className="text-xs text-gray-600 mt-1">{item.hotelCategory}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-gray-900">€{item.price.toFixed(2)}</div>
-                            <div className="text-xs text-gray-500">per person</div>
+                            <div className="text-xs text-gray-600">per person/night</div>
                           </div>
                         </div>
                       ))}
@@ -336,14 +337,14 @@ function PreviewContent() {
                         <h3 className="text-sm font-semibold text-gray-700">Meals</h3>
                       </div>
                       {day.meals.map(item => (
-                        <div key={item.id} className="bg-blue-50 p-3 rounded flex items-center justify-between">
+                        <div key={item.id} className="bg-green-50 p-3 rounded flex items-center justify-between border border-green-200">
                           <div>
                             <div className="font-medium text-gray-900">{item.description}</div>
-                            <div className="text-sm text-gray-600">{item.location}</div>
+                            <div className="text-sm text-gray-700">{item.location}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-gray-900">€{item.price.toFixed(2)}</div>
-                            <div className="text-xs text-gray-500">per person</div>
+                            <div className="text-xs text-gray-600">per person</div>
                           </div>
                         </div>
                       ))}
@@ -357,14 +358,14 @@ function PreviewContent() {
                         <h3 className="text-sm font-semibold text-gray-700">Tours</h3>
                       </div>
                       {day.sicTourCost.map(item => (
-                        <div key={item.id} className="bg-green-50 p-3 rounded flex items-center justify-between">
+                        <div key={item.id} className="bg-purple-50 p-3 rounded flex items-center justify-between border border-purple-200">
                           <div>
                             <div className="font-medium text-gray-900">{item.description}</div>
-                            <div className="text-sm text-gray-600">{item.location}</div>
+                            <div className="text-sm text-gray-700">{item.location}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-gray-900">€{item.price.toFixed(2)}</div>
-                            <div className="text-xs text-gray-500">per person</div>
+                            <div className="text-xs text-gray-600">per person</div>
                           </div>
                         </div>
                       ))}
@@ -378,16 +379,16 @@ function PreviewContent() {
                         <h3 className="text-sm font-semibold text-gray-700">Transportation</h3>
                       </div>
                       {day.transportation.map(item => (
-                        <div key={item.id} className="bg-yellow-50 p-3 rounded flex items-center justify-between">
-                          <div>
+                        <div key={item.id} className="bg-yellow-50 p-3 rounded flex items-center justify-between border border-yellow-200">
+                          <div className="flex-1">
                             <div className="font-medium text-gray-900">{item.description}</div>
-                            <div className="text-sm text-gray-600">{item.location}</div>
+                            <div className="text-sm text-gray-700">{item.location}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-gray-900">
                               €{((item.vehicleCount || 0) * (item.pricePerVehicle || item.price)).toFixed(2)}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-600">
                               {item.vehicleCount && item.pricePerVehicle ? `${item.vehicleCount} × €${item.pricePerVehicle}` : 'total'}
                             </div>
                           </div>
@@ -403,16 +404,16 @@ function PreviewContent() {
                         <h3 className="text-sm font-semibold text-gray-700">Guide</h3>
                       </div>
                       {day.guide.map(item => (
-                        <div key={item.id} className="bg-purple-50 p-3 rounded flex items-center justify-between">
+                        <div key={item.id} className="bg-indigo-50 p-3 rounded flex items-center justify-between border border-indigo-200">
                           <div>
                             <div className="font-medium text-gray-900">{item.description}</div>
-                            <div className="text-sm text-gray-600">{item.location}</div>
+                            <div className="text-sm text-gray-700">{item.location}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-gray-900">
                               €{((item.vehicleCount || 0) * (item.pricePerVehicle || item.price)).toFixed(2)}
                             </div>
-                            <div className="text-xs text-gray-500">per day</div>
+                            <div className="text-xs text-gray-600">per day</div>
                           </div>
                         </div>
                       ))}

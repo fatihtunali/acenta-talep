@@ -228,18 +228,54 @@ export async function POST(request: NextRequest) {
         }
 
         if (!isFirstCity) {
-          // Get "Intercity Transfer" for subsequent cities
+          // Get inter-city transfer for subsequent cities
           const previousCityId = await resolveCityId(userId, { cityName: cityStays[cityIndex - 1].city })
-          const [intercityRows] = await pool.execute<RowDataPacket[]>(
+          const previousCityName = cityStays[cityIndex - 1].city
+
+          // Try to find specific transfer with city names
+          // First try: Look for "CityA to CityB - Flight"
+          const [flightRows] = await pool.execute<RowDataPacket[]>(
             `SELECT transfer_type, price
              FROM transfers
-             WHERE user_id = ? AND city_id IN (?, ?) AND transfer_type LIKE '%Intercity%'
-             ORDER BY id DESC
+             WHERE user_id = ? AND city_id = ?
+             AND transfer_type LIKE CONCAT('%', ?, '%', ?, '%Flight%')
              LIMIT 1`,
-            [userId, previousCityId, cityId]
+            [userId, cityId, previousCityName, cityName]
           )
-          intercityTransfer = intercityRows.length > 0 ? intercityRows[0] : null
-          console.log(`[Quick Quote] Inter-city transfer: ${intercityTransfer ? intercityTransfer.transfer_type + ' €' + intercityTransfer.price : 'not found'}`)
+
+          if (flightRows.length > 0) {
+            intercityTransfer = flightRows[0]
+            console.log(`[Quick Quote] ✓ Found Flight transfer: ${intercityTransfer.transfer_type}`)
+          } else {
+            // Second try: Look for "CityA to CityB - Drive"
+            const [driveRows] = await pool.execute<RowDataPacket[]>(
+              `SELECT transfer_type, price
+               FROM transfers
+               WHERE user_id = ? AND city_id = ?
+               AND transfer_type LIKE CONCAT('%', ?, '%', ?, '%Drive%')
+               LIMIT 1`,
+              [userId, cityId, previousCityName, cityName]
+            )
+
+            if (driveRows.length > 0) {
+              intercityTransfer = driveRows[0]
+              console.log(`[Quick Quote] ✓ Found Drive transfer: ${intercityTransfer.transfer_type}`)
+            } else {
+              // Last resort: Generic "Intercity Transfer"
+              const [genericRows] = await pool.execute<RowDataPacket[]>(
+                `SELECT transfer_type, price
+                 FROM transfers
+                 WHERE user_id = ? AND city_id IN (?, ?) AND transfer_type LIKE '%Intercity%'
+                 ORDER BY id DESC
+                 LIMIT 1`,
+                [userId, previousCityId, cityId]
+              )
+              intercityTransfer = genericRows.length > 0 ? genericRows[0] : null
+              console.log(`[Quick Quote] Fallback generic transfer: ${intercityTransfer ? intercityTransfer.transfer_type : 'not found'}`)
+            }
+          }
+
+          console.log(`[Quick Quote] Inter-city transfer (${previousCityName} → ${cityName}): ${intercityTransfer ? intercityTransfer.transfer_type + ' €' + intercityTransfer.price : 'not found'}`)
         }
 
         if (isLastCity) {

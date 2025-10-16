@@ -113,8 +113,11 @@ export async function POST(request: NextRequest) {
 
     for (const cityStay of cityStays) {
       try {
+        console.log(`[Quick Quote] Processing city: ${cityStay.city}, nights: ${cityStay.nights}`)
+
         // Resolve city ID
         const cityId = await resolveCityId(userId, { cityName: cityStay.city })
+        console.log(`[Quick Quote] Resolved city ID: ${cityId}`)
 
         // Get city name from database
         const [cityRows] = await pool.execute<RowDataPacket[]>(
@@ -122,6 +125,7 @@ export async function POST(request: NextRequest) {
           [cityId, userId]
         )
         const cityName = cityRows.length > 0 ? cityRows[0].name : cityStay.city
+        console.log(`[Quick Quote] City name from DB: ${cityName}`)
 
         // Find hotel for this city and category
         const [hotelRows] = await pool.execute<RowDataPacket[]>(
@@ -136,15 +140,20 @@ export async function POST(request: NextRequest) {
            LIMIT 1`,
           [userId, cityId, `${hotelCategory}%`]
         )
+        console.log(`[Quick Quote] Found ${hotelRows.length} hotels for city ${cityName}, category ${hotelCategory}`)
 
         let selectedHotel: any = null
         if (hotelRows.length > 0) {
           // Find pricing that matches the date range
           const hotel = hotelRows[0]
           const checkDate = new Date(days[dayIndex].date)
+          console.log(`[Quick Quote] Hotel: ${hotel.hotel_name}, Price: ${hotel.pp_dbl_rate}, Date: ${days[dayIndex].date}, Range: ${hotel.start_date} to ${hotel.end_date}`)
 
           if (hotel.pp_dbl_rate && isDateInRange(checkDate, hotel.start_date, hotel.end_date)) {
             selectedHotel = hotel
+            console.log(`[Quick Quote] ✓ Hotel selected: ${hotel.hotel_name}`)
+          } else {
+            console.log(`[Quick Quote] ✗ Hotel NOT selected - price: ${hotel.pp_dbl_rate}, inRange: ${isDateInRange(checkDate, hotel.start_date, hotel.end_date)}`)
           }
         }
 

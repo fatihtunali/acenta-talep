@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Sparkles, Calendar, Users, DollarSign, Hotel, Compass, Car } from 'lucide-react'
 
 interface CityStay {
   id: string
@@ -293,17 +292,7 @@ export default function QuickQuotePage() {
                 disabled={loading}
                 className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-all"
               >
-                {loading ? (
-                  <>
-                    <Sparkles className="inline-block w-5 h-5 mr-2 animate-spin" />
-                    Generating Your Perfect Itinerary...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="inline-block w-5 h-5 mr-2" />
-                    Generate Quick Quote
-                  </>
-                )}
+                {loading ? '⏳ Generating Your Perfect Itinerary...' : '⚡ Generate Quick Quote'}
               </button>
               <button
                 onClick={() => router.push('/dashboard')}
@@ -336,21 +325,21 @@ export default function QuickQuotePage() {
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-xl p-8 text-white">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-6 h-6" />
+                <span className="text-2xl">✨</span>
                 <span className="text-sm font-medium uppercase tracking-wide">AI Generated Itinerary</span>
               </div>
               <h2 className="text-4xl font-bold mb-2">{quotePackage.quote?.name || quoteName}</h2>
               <div className="flex flex-wrap gap-6 text-blue-100">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
+                  <span>📅</span>
                   <span>{totalNights} Nights</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
+                  <span>👥</span>
                   <span>{pax} Travelers</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Hotel className="w-5 h-5" />
+                  <span>🏨</span>
                   <span>{hotelCategory} Star Hotels</span>
                 </div>
               </div>
@@ -360,7 +349,7 @@ export default function QuickQuotePage() {
             {quotePackage.itinerary?.days && quotePackage.itinerary.days.length > 0 && (
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <Calendar className="w-6 h-6 text-blue-600" />
+                  <span className="text-3xl">📅</span>
                   Day-by-Day Itinerary
                 </h3>
                 <div className="space-y-6">
@@ -413,7 +402,7 @@ export default function QuickQuotePage() {
             {quotePackage.quote?.days && (
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <Hotel className="w-6 h-6 text-blue-600" />
+                  <span className="text-3xl">🏨</span>
                   Accommodation
                 </h3>
                 <div className="space-y-4">

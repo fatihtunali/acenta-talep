@@ -131,10 +131,10 @@ export async function POST(request: NextRequest) {
                   hp.start_date, hp.end_date
            FROM hotels h
            LEFT JOIN hotel_pricing hp ON h.id = hp.hotel_id
-           WHERE h.user_id = ? AND h.city_id = ? AND h.category = ?
+           WHERE h.user_id = ? AND h.city_id = ? AND h.category LIKE ?
            ORDER BY h.id DESC
            LIMIT 1`,
-          [userId, cityId, `${hotelCategory}-star`]
+          [userId, cityId, `${hotelCategory}%`]
         )
 
         let selectedHotel: any = null

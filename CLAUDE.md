@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-An AI-powered travel itinerary generator that creates personalized travel packages with hotels, sightseeing, transportation, and day-by-day itineraries using OpenAI's GPT-4. Built with React/TypeScript frontend, Express backend, PostgreSQL database, and Replit authentication.
+An AI-powered travel itinerary generator that creates personalized travel packages with hotels, sightseeing, transportation, and day-by-day itineraries using a custom AI endpoint. Built with React/TypeScript frontend, Express backend, and MySQL database.
 
 ## Development Commands
 
@@ -12,15 +12,13 @@ An AI-powered travel itinerary generator that creates personalized travel packag
 - **Build**: `npm run build` (Vite build + esbuild for server)
 - **Production**: `npm start` (runs built server from `dist/`)
 - **Type check**: `npm run check`
-- **Database push**: `npm run db:push` (push Drizzle schema to PostgreSQL)
 
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS 4, Wouter (routing), TanStack Query
 - **Backend**: Express.js, Node.js
-- **Database**: PostgreSQL (Neon) with Drizzle ORM
-- **Auth**: Replit OpenID Connect (Google, GitHub, X, Apple, email/password)
-- **AI**: OpenAI API via Replit AI Integrations (gpt-4o-mini)
+- **Database**: MySQL with direct mysql2 driver
+- **AI**: Custom AI endpoint (https://itinerary-ai.ruzgargucu.com)
 - **UI Library**: Shadcn UI with Radix UI primitives
 - **Build**: Vite (client), esbuild (server)
 
@@ -50,7 +48,7 @@ shared/
 
 ### Port Configuration
 
-**IMPORTANT**: The app ALWAYS runs on the port specified in `process.env.PORT` or defaults to 5000. This is the only port that is not firewalled in Replit environments. The Express server serves both API routes and the Vite-built client.
+**IMPORTANT**: The app runs on the port specified in `process.env.PORT` or defaults to 5000. The Express server serves both API routes and the Vite-built client.
 
 ### Request Flow
 
@@ -58,56 +56,61 @@ shared/
 2. **Production**: Express → Serve static files from `dist/public/` → React SPA
 3. API requests always go to `/api/*` endpoints handled by Express
 
-### Authentication Flow
+### Database Tables
 
-- Uses Replit OpenID Connect via `replitAuth.ts`
-- Session storage in PostgreSQL `sessions` table
-- Middleware `isAuthenticated` protects routes requiring auth
-- User data stored in `users` table (Replit `sub` claim as primary key)
-- Trip packages associated with `userId` (nullable for unauthenticated users)
+The application uses MySQL with three main tables:
+- **sessions** - Session storage for future authentication implementation
+- **users** - User accounts (for future use)
+- **trip_packages** - Generated travel packages with JSON columns for complex data
 
-### Database Schema (Drizzle ORM)
+### Database Schema
 
 **Tables:**
-- `sessions` - Express session storage (Replit Auth)
-- `users` - User accounts (id, email, firstName, lastName, profileImageUrl)
-- `trip_packages` - Generated travel packages (userId FK, trip details as JSONB)
+- `sessions` - Session storage with sid, sess (JSON), expire timestamp
+- `users` - User accounts (id, email, first_name, last_name, profile_image_url)
+- `trip_packages` - Generated travel packages with JSON columns:
+  - trip_request (JSON) - User input data
+  - hotel (JSON) - Selected hotel details
+  - sightseeing (JSON) - Array of activities
+  - transportation (JSON) - Array of transport options
+  - itinerary (JSON) - Day-by-day schedule
+  - pricing (JSON) - Price breakdown
 
-**Key Pattern**: Complex nested data (hotel, sightseeing, transportation, itinerary) stored as JSONB for flexibility.
-
-**Relations**: `users` → many `trip_packages`
+**Key Pattern**: Complex nested data stored as JSON for flexibility
 
 ### AI Service Pattern
 
 Located in `server/ai-service.ts`:
 
-1. **Prompt Engineering**: Detailed prompt instructs GPT-4 to generate structured JSON
-2. **Response Parsing**: Handles markdown code blocks, validates JSON structure
-3. **Data Transformation**: Adds UUIDs to generated items, calculates pricing (subtotal + 8% tax)
-4. **Error Handling**: Catches OpenAI errors, provides user-friendly messages
+1. **API Integration**: Calls custom AI endpoint at `https://itinerary-ai.ruzgargucu.com/generate-itinerary`
+2. **Request Format**: Sends trip request data (destination, nights, dates, travelers, budget, preferences)
+3. **Response Parsing**: Handles JSON response, strips markdown code blocks if present
+4. **Data Transformation**: Adds UUIDs to generated items, calculates pricing (subtotal + 8% tax)
+5. **Error Handling**: Catches API errors, provides user-friendly messages
 
-**Important**: OpenAI is instructed to return ONLY JSON (no markdown). Code defensively strips markdown code blocks if present.
+**Endpoint Configuration**: Can be overridden via `AI_ENDPOINT` environment variable
 
 ## API Endpoints
 
-- `POST /api/generate-itinerary` - Generate AI travel package (req.body: TripRequest schema)
-  - Optionally authenticated (userId from session if logged in)
+- `POST /api/generate-itinerary` - Generate AI travel package
+  - Request body: TripRequest schema (destination, nights, dates, travelers, budget, preferences)
   - Returns: `{ success: true, package: TripPackage }`
+  - Saves package to database automatically
 
-- `GET /api/trip-packages` - List all saved packages (no auth required currently)
+- `GET /api/trip-packages` - List all saved packages
+  - Returns: `{ success: true, packages: TripPackage[] }`
 
 - `GET /api/trip-packages/:id` - Get specific package by ID
-
-- `GET /api/auth/user` - Get current authenticated user (requires `isAuthenticated`)
+  - Returns: `{ success: true, package: TripPackage }`
 
 All API routes defined in `server/routes.ts` via `registerRoutes(app)`.
 
 ## Shared Schema System
 
-**Critical**: `shared/schema.ts` is the single source of truth for:
+**Critical**: `shared/schema.ts` contains:
 1. Zod validation schemas (runtime validation)
 2. TypeScript types (compile-time type safety)
-3. Drizzle database table definitions
+3. Database table schemas (for reference)
 
 **Main Types:**
 - `TripRequest` - User input (destination, dates, nights, travelers, budget, preferences)
@@ -140,9 +143,13 @@ See `design_guidelines.md` for complete visual specifications.
 
 ## Environment Variables
 
-- `DATABASE_URL` - PostgreSQL connection string (required, auto-provisioned by Replit)
-- `AI_INTEGRATIONS_OPENAI_API_KEY` - OpenAI API key (Replit AI Integrations)
-- `AI_INTEGRATIONS_OPENAI_BASE_URL` - OpenAI base URL (Replit AI Integrations)
+- `DATABASE_URL` - MySQL connection string (optional if using direct connection params)
+- `DB_HOST` - MySQL host
+- `DB_USER` - MySQL username
+- `DB_PASSWORD` - MySQL password
+- `DB_NAME` - Database name
+- `DB_PORT` - MySQL port (default: 3306)
+- `AI_ENDPOINT` - Custom AI API endpoint (default: https://itinerary-ai.ruzgargucu.com)
 - `PORT` - Server port (default: 5000)
 - `NODE_ENV` - "development" or "production"
 
@@ -151,18 +158,17 @@ See `design_guidelines.md` for complete visual specifications.
 - Vite dev server only runs in development (`NODE_ENV=development`)
 - Production serves static files from `dist/public/`
 - All routes except `/api/*` fall through to React SPA (client-side routing)
-- OpenAI model used: `gpt-4o-mini` (cost-effective, fast)
-- Temperature: `0.8` (balance between creativity and consistency)
-- Max tokens: `3000` (sufficient for detailed itineraries)
+- AI endpoint can be customized via `AI_ENDPOINT` environment variable
 - Tax calculation: 8% on subtotal
-- Trip packages can be saved without authentication (userId nullable)
+- Trip packages saved to database automatically after generation
+- No authentication required - all users can generate and view packages
 
 ## Development Workflow
 
 1. Make changes to client or server code
 2. Vite HMR updates frontend instantly in dev mode
 3. Backend changes require manual restart (tsx watches files)
-4. Drizzle schema changes: update `shared/schema.ts` → run `npm run db:push`
+4. Database schema changes: update SQL tables directly in MySQL
 5. Test AI generation with various inputs (destinations, budgets, preferences)
 
 ## Database Operations Pattern
@@ -170,17 +176,14 @@ See `design_guidelines.md` for complete visual specifications.
 Located in `server/storage.ts`:
 
 ```typescript
-// Save trip package (with or without user)
-await storage.saveTripPackage(tripPackage, userId?)
+// Save trip package
+await storage.saveTripPackage(tripPackage)
 
 // Get all packages
 await storage.getAllTripPackages()
 
 // Get specific package
 await storage.getTripPackage(id)
-
-// Upsert user (auth callback)
-await storage.upsertUser(userData)
 ```
 
-All use Drizzle ORM query builder for type safety.
+All use direct MySQL queries with prepared statements for security.
